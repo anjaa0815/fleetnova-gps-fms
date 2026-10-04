@@ -26,6 +26,7 @@ import Settings from './pages/Settings.jsx';
 import Organizations from './pages/Organizations.jsx';
 import Devices from './pages/Devices.jsx';
 import VerifyEmail from './pages/VerifyEmail.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 import Geofences from './pages/Geofences.jsx';
 import GpsReports from './pages/GpsReports.jsx';
 import { useT } from './i18n/LanguageContext.jsx';
@@ -37,9 +38,12 @@ function MainApp() {
 
   // Link from the confirmation email: /?verify=<token>
   const [verifyToken, setVerifyToken] = useState(() => new URLSearchParams(window.location.search).get('verify'));
+  // Link from the password reset email: /?reset=<token>
+  const [resetToken, setResetToken] = useState(() => new URLSearchParams(window.location.search).get('reset'));
   const finishVerification = () => {
     window.history.replaceState({}, '', window.location.pathname);
     setVerifyToken(null);
+    setResetToken(null);
     setAuthView('login');
   };
 
@@ -67,6 +71,7 @@ function MainApp() {
   // Unauthenticated screen
   if (!isAuthenticated) {
     if (verifyToken) return <VerifyEmail token={verifyToken} onDone={finishVerification} />;
+    if (resetToken) return <ResetPassword token={resetToken} onDone={finishVerification} />;
 
     let authScreen;
     if (authView === 'register') {
