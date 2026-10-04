@@ -36,6 +36,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    // Self-service sign-ups confirm their email address; everyone else (invited users, legacy accounts) counts as verified
+    emailVerified: { type: Boolean, default: true },
+    emailVerificationTokenHash: { type: String, default: null, select: false },
+    emailVerificationExpires: { type: Date, default: null, select: false },
+    emailVerificationSentAt: { type: Date, default: null, select: false },
+    language: { type: String, enum: ['mn', 'en'], default: 'mn' },
     // Which external channels this user receives alerts on (also requires the organization to enable them)
     alertChannels: {
       email: { type: Boolean, default: false },

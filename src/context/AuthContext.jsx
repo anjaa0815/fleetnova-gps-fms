@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
       throw new Error(res.message || 'Login failed');
     } catch (err) {
       setError(tr(err.message));
-      return { success: false, message: err.message };
+      return { success: false, message: err.message, code: err.code, retryAfter: err.retryAfter };
     }
   };
 
@@ -68,6 +68,10 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const res = await authApi.register(userData);
+      if (res.success && res.data?.verificationRequired) {
+        // the email address must be confirmed before the first sign-in: no session yet
+        return { success: true, verificationRequired: true, email: res.data.email };
+      }
       if (res.success && res.data) {
         localStorage.setItem('fleetnova_token', res.data.token);
         setUser(res.data);
@@ -76,7 +80,7 @@ export const AuthProvider = ({ children }) => {
       throw new Error(res.message || 'Registration failed');
     } catch (err) {
       setError(tr(err.message));
-      return { success: false, message: err.message };
+      return { success: false, message: err.message, code: err.code, retryAfter: err.retryAfter };
     }
   };
 

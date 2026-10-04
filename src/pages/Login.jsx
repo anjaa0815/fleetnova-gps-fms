@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Truck, Lock, Mail, ArrowRight, ShieldCheck, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { publicApi } from '../services/api.js';
+import { describeApiError } from '../utils/apiError.js';
+import CheckEmailPanel from '../components/CheckEmailPanel.jsx';
 import { getOrgSlugFromLocation } from '../utils/orgSlug.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
@@ -13,6 +15,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [orgBrand, setOrgBrand] = useState(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null); // account exists but its email is not confirmed yet
 
   // Per-organization login page: ?org=<slug> or <slug>.yourdomain
   useEffect(() => {
@@ -47,7 +50,11 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
     const res = await login(email, password);
     setLoading(false);
     if (!res.success) {
-      setError(tr(res.message));
+      if (res.code === 'EMAIL_NOT_VERIFIED') {
+        setUnverifiedEmail(email);
+      } else {
+        setError(describeApiError(res, tr));
+      }
     }
   };
 
@@ -55,6 +62,16 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
     setEmail(demoEmail);
     setPassword(demoPass);
   };
+
+  if (unverifiedEmail) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+        <div className="card" style={{ maxWidth: '460px', width: '100%', padding: '2.25rem 2rem' }}>
+          <CheckEmailPanel email={unverifiedEmail} onBackToLogin={() => setUnverifiedEmail(null)} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

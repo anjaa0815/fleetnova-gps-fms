@@ -248,6 +248,41 @@ Other tracker brands (Queclink, Ruptela, Meitrack, ...) are not implemented yet:
 
 ---
 
+## 🔐 Sign-up security: email confirmation and rate limits
+
+**Email confirmation.** New self-service accounts must confirm their email address before the first sign-in (the
+confirmation link is valid for 24 hours and works once; asking for a new link invalidates the old one, with a
+60 second cool-down). It is required when `REQUIRE_EMAIL_VERIFICATION=true`, or - if the variable is not set - when
+an SMTP server is configured; `REQUIRE_EMAIL_VERIFICATION=false` turns it off. Without SMTP in development the link
+is printed in the server log. Users invited by an organization admin, organizations created by the platform owner
+and accounts that existed before this feature are treated as confirmed. Set `APP_BASE_URL` (e.g.
+`https://fleet.example.com`) so the links point to your site.
+
+**Rate limits** (per client IP, in memory - see the note below):
+
+| Endpoint | Default | Counted |
+|---|---|---|
+| Sign in (per account + IP / per IP) | 8 / 60 per 15 min | failed attempts only, so a locked account stays locked even with the right password until the window ends |
+| Sign up | 5 per hour | every attempt |
+| Forgot password | 5 per hour per address + IP | every attempt |
+| Resend confirmation | 3 per hour per address, 10 per IP | every attempt |
+| Confirm email | 30 per hour | every attempt |
+| Public organization page | 60 per minute | every request |
+| Whole API | 1200 per minute | every request |
+
+Over the limit the API answers `429` with `Retry-After`, `RateLimit-*` headers and a JSON body
+`{ code: "RATE_LIMITED", retryAfter }` that the web UI turns into "try again in N seconds". Tune a limiter with
+`RATE_LIMIT_<NAME>_MAX` / `RATE_LIMIT_<NAME>_WINDOW_SEC` (names: `API`, `REGISTER`, `LOGIN`, `LOGIN_IP`,
+`PASSWORD_RESET`, `VERIFY`, `RESEND_IP`, `RESEND_EMAIL`, `PUBLIC`) or switch everything off with
+`RATE_LIMIT_DISABLED=true`. Behind a reverse proxy set `TRUST_PROXY=1` (number of proxies) so the real client IP is
+used; otherwise every visitor looks like the proxy and shares one limit.
+
+The counters live in the server process. With several instances each counts on its own: enforce the limits at the
+reverse proxy as well, or move the counters to a shared store (Redis) behind `server/middleware/rateLimit.js`.
+The password reset itself is still a placeholder (it sends nothing yet); it is rate limited all the same.
+
+---
+
 ## 🔑 Demo Credentials
 
 Only created in development (or with `SEED_DEMO_DATA=true`):
@@ -277,6 +312,11 @@ GEMINI_API_KEY=your_google_gemini_api_key
 # GPS tracker listener (0 = disabled)
 GPS_TCP_PORT=5027
 GT06_TCP_PORT=5023
+
+# Sign-up security (see "Sign-up security")
+APP_BASE_URL=https://fleet.example.com
+REQUIRE_EMAIL_VERIFICATION=true
+TRUST_PROXY=1
 
 # Alert delivery (see "Email and SMS alerts")
 SMTP_HOST=smtp.example.com

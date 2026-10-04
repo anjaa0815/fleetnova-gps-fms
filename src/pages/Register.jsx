@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Truck, Lock, Mail, User, Phone, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import CheckEmailPanel from '../components/CheckEmailPanel.jsx';
+import { describeApiError } from '../utils/apiError.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Register({ onSwitchToLogin }) {
-  const { tr } = useT();
+  const { tr, lang } = useT();
   const { register } = useAuth();
   const [formData, setFormData] = useState({
     organizationName: '',
@@ -15,6 +17,7 @@ export default function Register({ onSwitchToLogin }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [pendingEmail, setPendingEmail] = useState(null); // set once the sign-up asks for email confirmation
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,12 +32,24 @@ export default function Register({ onSwitchToLogin }) {
 
     setLoading(true);
     setError(null);
-    const res = await register(formData);
+    const res = await register({ ...formData, lang });
     setLoading(false);
     if (!res.success) {
-      setError(tr(res.message));
+      setError(describeApiError(res, tr));
+    } else if (res.verificationRequired) {
+      setPendingEmail(res.email || formData.email);
     }
   };
+
+  if (pendingEmail) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+        <div className="card" style={{ maxWidth: '460px', width: '100%', padding: '2.25rem 2rem' }}>
+          <CheckEmailPanel email={pendingEmail} onBackToLogin={onSwitchToLogin} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

@@ -173,7 +173,7 @@ before(async () => {
   server = spawn(process.execPath, ['server.js'], {
     env: {
       ...process.env, NODE_ENV: 'production', PORT: String(HTTP_PORT), HOST: '127.0.0.1',
-      GPS_TCP_PORT: String(TCP_PORT), GT06_TCP_PORT: '0', GPS_TCP_HOST: '127.0.0.1', JWT_SECRET: 'test-secret', FLEETNOVA_DATA_FILE: DATA_FILE,
+      GPS_TCP_PORT: String(TCP_PORT), GT06_TCP_PORT: '0', GPS_TCP_HOST: '127.0.0.1', JWT_SECRET: 'test-secret', RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false', FLEETNOVA_DATA_FILE: DATA_FILE,
       SMTP_HOST: '127.0.0.1', SMTP_PORT: String(SMTP_PORT), EMAIL_FROM: 'FLEETNOVA <alerts@test.example>',
       SMS_PROVIDER: 'http', SMS_HTTP_URL: `http://127.0.0.1:${SMS_PORT}/send`, SMS_HTTP_TOKEN: 'gateway-token',
       DELIVERY_POLL_MS: '200', DELIVERY_RETRY_DELAYS_MS: '100,100,100'

@@ -30,6 +30,7 @@ import { startGpsServers } from './server/gps/tcpServer.js';
 import organizationRoutes from './server/routes/organizationRoutes.js';
 import platformRoutes from './server/routes/platformRoutes.js';
 import publicRoutes from './server/routes/publicRoutes.js';
+import { apiLimiter, rateLimitDisabled, trustProxySetting } from './server/middleware/rateLimit.js';
 import { errorHandler, notFound } from './server/middleware/errorMiddleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -43,8 +44,13 @@ async function startServer() {
   await connectDB();
   await seedFleetData();
 
+  // Behind a reverse proxy set TRUST_PROXY (e.g. 1) so client IPs, and therefore rate limits, are the real ones
+  app.set('trust proxy', trustProxySetting());
+  if (rateLimitDisabled()) console.warn('[FLEETNOVA] Rate limiting is DISABLED (RATE_LIMIT_DISABLED=true).');
+
   // Middleware
   app.use(express.json({ limit: '1mb' }));
+  app.use('/api', apiLimiter);
   app.use(express.urlencoded({ extended: true }));
 
   // REST API Routes

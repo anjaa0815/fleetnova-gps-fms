@@ -29,7 +29,11 @@ export async function apiRequest(endpoint, method = 'GET', data = null, customHe
 
     if (!res.ok) {
       const errorMsg = json?.message || `Request failed with status ${res.status}`;
-      throw new Error(errorMsg);
+      const apiError = new Error(errorMsg);
+      apiError.status = res.status;
+      apiError.code = json?.code;
+      apiError.retryAfter = json?.retryAfter;
+      throw apiError;
     }
 
     return json;
@@ -45,6 +49,8 @@ export const authApi = {
   register: (userData) => apiRequest('/auth/register', 'POST', userData),
   getMe: () => apiRequest('/auth/me', 'GET'),
   updateProfile: (profileData) => apiRequest('/auth/profile', 'PUT', profileData),
+  verifyEmail: (token) => apiRequest('/auth/verify-email', 'POST', { token }),
+  resendVerification: (email) => apiRequest('/auth/resend-verification', 'POST', { email }),
   forgotPassword: (email) => apiRequest('/auth/forgot-password', 'POST', { email }),
   getAllUsers: () => apiRequest('/auth/users', 'GET'),
   createUser: (userData) => apiRequest('/auth/users', 'POST', userData),
