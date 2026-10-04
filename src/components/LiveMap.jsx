@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useT } from '../i18n/LanguageContext.jsx';
 import L from 'leaflet';
 import FitBounds from './FitBounds.jsx';
-import { trackingApi } from '../services/api.js';
+import { trackingApi, geofenceApi } from '../services/api.js';
 
 const POLL_MS = 10000;
 
@@ -32,6 +32,7 @@ const demoIcon = new L.DivIcon({
 export default function LiveMap({ vehicles = [] }) {
   const { tr } = useT();
   const [live, setLive] = useState([]);
+  const [geofences, setGeofences] = useState([]);
   const [fitKey, setFitKey] = useState(0);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function LiveMap({ vehicles = [] }) {
       }
     };
     load();
+    geofenceApi.getAll().then((res) => !cancelled && res.success && setGeofences(res.data.filter((g) => g.active))).catch(() => {});
     const timer = setInterval(load, POLL_MS);
     return () => {
       cancelled = true;
@@ -105,6 +107,14 @@ export default function LiveMap({ vehicles = [] }) {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <FitBounds points={fitPoints} fitKey={fitKey} />
+
+          {geofences.map((g) =>
+            g.shape === 'circle' && g.center ? (
+              <Circle key={g._id} center={[g.center.lat, g.center.lng]} radius={g.radiusM} pathOptions={{ color: g.color, fillOpacity: 0.12, weight: 2 }} />
+            ) : g.polygon ? (
+              <Polygon key={g._id} positions={g.polygon} pathOptions={{ color: g.color, fillOpacity: 0.12, weight: 2 }} />
+            ) : null
+          )}
 
           {hasLive &&
             live.map((p) => (

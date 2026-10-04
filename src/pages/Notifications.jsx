@@ -7,7 +7,8 @@ import {
   Calendar,
   Info,
   CheckCircle2,
-  Trash2
+  Trash2,
+  MapPin
 } from 'lucide-react';
 import Loading from '../components/Loading.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -61,10 +62,13 @@ export default function Notifications() {
     if (filter === 'maintenance') return n.type.includes('maint');
     if (filter === 'expiry') return n.type.includes('expiry');
     if (filter === 'trip') return n.type.includes('trip');
+    if (filter === 'gps') return n.type === 'speeding' || n.type.startsWith('geofence');
     return true;
   });
 
   const getIcon = (type) => {
+    if (type === 'speeding') return <ShieldAlert size={20} color="#fb7185" />;
+    if (type.startsWith('geofence')) return <MapPin size={20} color="#a78bfa" />;
     if (type.includes('overdue')) return <ShieldAlert size={20} color="#fb7185" />;
     if (type.includes('expiry') || type.includes('due')) return <AlertTriangle size={20} color="#fbbf24" />;
     if (type.includes('trip')) return <Calendar size={20} color="#60a5fa" />;
@@ -98,7 +102,8 @@ export default function Notifications() {
           { id: 'unread', label: tr('Unread ({n})', { n: unreadCount }) },
           { id: 'expiry', label: tr("Document Expiries") },
           { id: 'maintenance', label: tr("Maintenance Due") },
-          { id: 'trip', label: tr("Trips & Dispatch") }
+          { id: 'trip', label: tr("Trips & Dispatch") },
+          { id: 'gps', label: tr("GPS Alerts") }
         ].map((t) => (
           <button
             key={t.id}
@@ -142,14 +147,14 @@ export default function Notifications() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
                     <div style={{ fontWeight: 700, fontSize: '0.925rem', color: 'var(--text-primary)' }}>
-                      {n.title}
+                      {n.titleKey ? tr(n.titleKey, n.params) : n.title}
                     </div>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                       {new Date(n.createdAt).toLocaleString()}
                     </span>
                   </div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.4 }}>
-                    {n.message}
+                    {n.messageKey ? tr(n.messageKey, n.params) : n.message}
                   </div>
                 </div>
 

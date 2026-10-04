@@ -26,7 +26,10 @@ const notificationSchema = new mongoose.Schema(
         'trip_started',
         'trip_completed',
         'vehicle_status_change',
-        'alert'
+        'alert',
+        'speeding',
+        'geofence_enter',
+        'geofence_exit'
       ]
     },
     title: {
@@ -43,6 +46,10 @@ const notificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    // Untranslated templates + values so the UI can show the alert in the viewer's language
+    titleKey: { type: String, default: null },
+    messageKey: { type: String, default: null },
+    params: { type: mongoose.Schema.Types.Mixed, default: null },
     relatedEntity: {
       type: String,
       default: null
