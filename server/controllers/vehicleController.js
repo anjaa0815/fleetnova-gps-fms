@@ -1,4 +1,6 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { findMissingRef } from '../utils/refs.js';
+import { getPlan, isWithinLimit } from '../config/plans.js';
 
 // @desc Get all vehicles with filtering, search, pagination
 // @route GET /api/vehicles
@@ -173,6 +175,14 @@ export const createVehicle = async (req, res, next) => {
       });
     }
 
+    const missing = await findMissingRef([['drivers', assignedDriver, 'Driver']]);
+    if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
+
+    const vehicleCount = await DataEngine.countDocuments('vehicles');
+    if (!isWithinLimit(getPlan(req.org?.plan).maxVehicles, vehicleCount)) {
+      return res.status(403).json({ success: false, message: 'Vehicle limit reached for your plan' });
+    }
+
     const regUpper = registrationNumber.trim().toUpperCase();
     const existing = await DataEngine.findOne('vehicles', { registrationNumber: regUpper });
     if (existing) {
@@ -243,6 +253,9 @@ export const updateVehicle = async (req, res, next) => {
     if (updateData.registrationNumber) {
       updateData.registrationNumber = String(updateData.registrationNumber).trim().toUpperCase();
     }
+
+    const missing = await findMissingRef([['drivers', updateData.assignedDriver, 'Driver']]);
+    if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
 
     const updated = await DataEngine.findByIdAndUpdate('vehicles', req.params.id, updateData);
 

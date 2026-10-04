@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { findMissingRef } from '../utils/refs.js';
 
 // @desc Get all maintenance records with filters & pagination
 // @route GET /api/maintenance
@@ -171,6 +172,13 @@ export const updateMaintenanceRecord = async (req, res, next) => {
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Record not found' });
     }
+
+    const missing = await findMissingRef([
+      ['vehicles', req.body.vehicle, 'Vehicle'],
+      ['drivers', req.body.driver, 'Driver'],
+      ['trips', req.body.trip, 'Trip']
+    ]);
+    if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
 
     const updated = await DataEngine.findByIdAndUpdate('maintenances', req.params.id, req.body);
 

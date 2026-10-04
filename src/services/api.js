@@ -47,7 +47,26 @@ export const authApi = {
   updateProfile: (profileData) => apiRequest('/auth/profile', 'PUT', profileData),
   forgotPassword: (email) => apiRequest('/auth/forgot-password', 'POST', { email }),
   getAllUsers: () => apiRequest('/auth/users', 'GET'),
+  createUser: (userData) => apiRequest('/auth/users', 'POST', userData),
   updateUserStatus: (id, statusData) => apiRequest(`/auth/users/${id}/status`, 'PUT', statusData)
+};
+
+// Organization (tenant) API
+export const organizationApi = {
+  get: () => apiRequest('/organization'),
+  update: (data) => apiRequest('/organization', 'PUT', data)
+};
+
+// Platform administration API (super admin only)
+export const platformApi = {
+  listOrganizations: () => apiRequest('/platform/organizations'),
+  createOrganization: (data) => apiRequest('/platform/organizations', 'POST', data),
+  updateOrganization: (id, data) => apiRequest(`/platform/organizations/${id}`, 'PUT', data)
+};
+
+// Public (unauthenticated) API used for per-organization login pages
+export const publicApi = {
+  getOrganization: (slug) => apiRequest(`/public/organizations/${encodeURIComponent(slug)}`)
 };
 
 // Vehicles API

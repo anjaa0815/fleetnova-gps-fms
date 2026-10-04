@@ -3,6 +3,12 @@ import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema(
   {
+    orgId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true
+    },
     name: {
       type: String,
       required: [true, 'Please provide a name'],
@@ -23,7 +29,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'fleet_manager', 'driver'],
+      enum: ['super_admin', 'admin', 'fleet_manager', 'driver'],
       default: 'fleet_manager'
     },
     phone: {
@@ -41,15 +47,8 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
+// Passwords are hashed by the controllers before they reach the model, so there is no pre-save hook
+// (a second hash here would make every login fail).
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

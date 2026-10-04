@@ -2,16 +2,20 @@ import mongoose from 'mongoose';
 
 const vehicleSchema = new mongoose.Schema(
   {
+    orgId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true
+    },
     vehicleId: {
       type: String,
       required: true,
-      unique: true,
       trim: true
     },
     registrationNumber: {
       type: String,
       required: [true, 'Registration number is required'],
-      unique: true,
       uppercase: true,
       trim: true
     },
@@ -83,6 +87,10 @@ const vehicleSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+// Identifiers are unique per organization, not globally
+vehicleSchema.index({ orgId: 1, vehicleId: 1 }, { unique: true });
+vehicleSchema.index({ orgId: 1, registrationNumber: 1 }, { unique: true });
 
 const Vehicle = mongoose.models.Vehicle || mongoose.model('Vehicle', vehicleSchema);
 export default Vehicle;

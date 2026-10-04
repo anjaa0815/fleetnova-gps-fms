@@ -9,6 +9,7 @@ export default function Navbar({ currentTitle, onToggleMobile, onNavigate, onOpe
   const { tr } = useT();
   const { user, logout } = useAuth();
   const role = user?.role || 'driver';
+  const isPlatform = role === 'super_admin';
 
   return (
     <header className="navbar">
@@ -39,7 +40,8 @@ export default function Navbar({ currentTitle, onToggleMobile, onNavigate, onOpe
       </div>
 
       <div className="navbar-right">
-        {/* Quick FleetAI Launcher in Navbar */}
+        {/* Quick FleetAI Launcher in Navbar (organization users only) */}
+        {!isPlatform && (
         <button
           className="btn btn-secondary btn-sm"
           onClick={onOpenFleetAI}
@@ -51,11 +53,12 @@ export default function Navbar({ currentTitle, onToggleMobile, onNavigate, onOpe
           <Sparkles size={14} />
           <span className="hidden-mobile">{tr("FleetAI")}</span>
         </button>
+        )}
 
         <LanguageSwitch />
 
         {/* Notifications Component */}
-        <NotificationBell onNavigate={onNavigate} />
+        {!isPlatform && <NotificationBell onNavigate={onNavigate} />}
 
         {/* Role Tag */}
         <span className={`role-badge ${role}`}>

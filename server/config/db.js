@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 let isMongooseConnected = false;
-const DATA_FILE = path.join(process.cwd(), 'server', 'data', 'fleetnova_store.json');
+const DATA_FILE = process.env.FLEETNOVA_DATA_FILE || path.join(process.cwd(), 'server', 'data', 'fleetnova_store.json');
 
 // Ensure data directory exists
 const dataDir = path.dirname(DATA_FILE);
@@ -13,6 +13,7 @@ if (!fs.existsSync(dataDir)) {
 
 // Memory / JSON Store for fallback when live Mongo cluster is not configured
 let localStore = {
+  organizations: [],
   users: [],
   vehicles: [],
   drivers: [],
@@ -28,6 +29,7 @@ if (fs.existsSync(DATA_FILE)) {
   try {
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
     localStore = JSON.parse(raw);
+    if (!localStore.organizations) localStore.organizations = [];
   } catch (err) {
     console.warn('Could not parse local data store, starting fresh', err);
   }

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Truck, Lock, Mail, ArrowRight, ShieldCheck, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { publicApi } from '../services/api.js';
+import { getOrgSlugFromLocation } from '../utils/orgSlug.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
@@ -10,6 +12,29 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [orgBrand, setOrgBrand] = useState(null);
+
+  // Per-organization login page: ?org=<slug> or <slug>.yourdomain
+  useEffect(() => {
+    const slug = getOrgSlugFromLocation();
+    if (!slug) return undefined;
+    let cancelled = false;
+    publicApi
+      .getOrganization(slug)
+      .then((res) => {
+        if (!cancelled && res.success) setOrgBrand(res.data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const color = orgBrand?.branding?.primaryColor;
+    if (color) document.documentElement.style.setProperty('--primary', color);
+    return () => document.documentElement.style.removeProperty('--primary');
+  }, [orgBrand]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,10 +101,14 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
               boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)'
             }}
           >
-            <Truck size={28} />
+            {orgBrand?.branding?.logoUrl ? (
+              <img src={orgBrand.branding.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'var(--radius-md)' }} />
+            ) : (
+              <Truck size={28} />
+            )}
           </div>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            {tr("FLEETNOVA")}
+            {orgBrand ? orgBrand.name : tr("FLEETNOVA")}
           </h2>
           <p style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 700, letterSpacing: '0.1em', marginTop: '2px' }}>
             {tr("SMART FLEET MANAGEMENT SYSTEM")}

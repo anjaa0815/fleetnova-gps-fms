@@ -1,51 +1,60 @@
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../config/jwt.js';
 import { DataEngine } from '../models/dataEngine.js';
+import { JWT_SECRET } from '../config/jwt.js';
+import { runWithTenant } from './tenantContext.js';
 
+const deny = (res, status, message) => res.status(status).json({ success: false, message });
 
 export const protect = async (req, res, next) => {
-  let token;
-
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, JWT_SECRET);
-
-      const user = await DataEngine.findById('users', decoded.id);
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Not authorized, user no longer exists'
-        });
-      }
-
-      if (user.status === 'inactive') {
-        return res.status(403).json({
-          success: false,
-          message: 'Account is deactivated. Please contact your Fleet Administrator.'
-        });
-      }
-
-      req.user = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-        status: user.status
-      };
-
-      return next();
-    } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized, token failed or expired'
-      });
-    }
+  if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+    return deny(res, 401, 'Not authorized, no token provided');
   }
 
-  return res.status(401).json({
-    success: false,
-    message: 'Not authorized, no token provided'
-  });
+  let user;
+  let org = null;
+
+  try {
+    const token = req.headers.authorization.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    user = await DataEngine.findById('users', decoded.id);
+    if (!user) return deny(res, 401, 'Not authorized, user no longer exists');
+    if (user.status === 'inactive') {
+      return deny(res, 403, 'Account is deactivated. Please contact your Fleet Administrator.');
+    }
+
+    if (user.role !== 'super_admin') {
+      org = user.orgId ? await DataEngine.findById('organizations', user.orgId) : null;
+      if (!org) return deny(res, 403, 'Your account is not linked to an organization');
+      if (org.status === 'suspended') {
+        return deny(res, 403, 'This organization is suspended. Please contact support.');
+      }
+      // An expired trial keeps read access but blocks changes until a plan is chosen
+      if (
+        org.plan === 'trial' &&
+        org.trialEndsAt &&
+        new Date(org.trialEndsAt) < new Date() &&
+        !['GET', 'HEAD', 'OPTIONS'].includes(req.method)
+      ) {
+        return deny(res, 402, 'Your trial has expired. Please choose a plan to continue.');
+      }
+    }
+  } catch (error) {
+    return deny(res, 401, 'Not authorized, token failed or expired');
+  }
+
+  req.user = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone,
+    status: user.status,
+    orgId: user.orgId || null
+  };
+  req.org = org;
+
+  // Everything after this point runs inside the caller's tenant context
+  const context = user.role === 'super_admin' ? { platform: true } : { orgId: String(user.orgId) };
+  return runWithTenant(context, () => next());
 };

@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { findMissingRef } from '../utils/refs.js';
 
 // @desc Get all drivers with filtering, search, pagination
 // @route GET /api/drivers
@@ -133,6 +134,9 @@ export const createDriver = async (req, res, next) => {
       });
     }
 
+    const missing = await findMissingRef([['vehicles', assignedVehicle, 'Vehicle']]);
+    if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
+
     const licenseUpper = licenseNumber.trim().toUpperCase();
     const existing = await DataEngine.findOne('drivers', { licenseNumber: licenseUpper });
     if (existing) {
@@ -189,6 +193,9 @@ export const updateDriver = async (req, res, next) => {
     if (updateData.licenseNumber) {
       updateData.licenseNumber = updateData.licenseNumber.trim().toUpperCase();
     }
+
+    const missing = await findMissingRef([['vehicles', updateData.assignedVehicle, 'Vehicle']]);
+    if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
 
     const updated = await DataEngine.findByIdAndUpdate('drivers', req.params.id, updateData);
 
