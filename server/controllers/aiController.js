@@ -7,10 +7,10 @@ export const chatWithFleetAI = async (req, res, next) => {
   try {
     const { message } = req.body;
 
-    if (!message || message.trim() === '') {
+    if (typeof message !== 'string' || message.trim() === '' || message.length > 2000) {
       return res.status(400).json({
         success: false,
-        message: 'Message is required'
+        message: 'Message is required (max 2000 characters)'
       });
     }
 

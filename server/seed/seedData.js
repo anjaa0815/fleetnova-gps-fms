@@ -2,8 +2,36 @@ import bcrypt from 'bcryptjs';
 import { getLocalStore, saveLocalStore } from '../config/db.js';
 import { generateId } from '../models/dataEngine.js';
 
+async function bootstrapAdmin(store) {
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password || (store.users && store.users.length > 0)) return;
+  if (password.length < 8) {
+    console.warn('[FLEETNOVA] ADMIN_PASSWORD must be at least 8 characters; admin not created.');
+    return;
+  }
+  store.users = [{
+    _id: generateId(),
+    name: 'Administrator',
+    email: email.toLowerCase(),
+    password: await bcrypt.hash(password, 10),
+    role: 'admin',
+    phone: '',
+    status: 'active',
+    createdAt: new Date().toISOString()
+  }];
+  saveLocalStore();
+  console.log('[FLEETNOVA] Initial admin account created from ADMIN_EMAIL / ADMIN_PASSWORD.');
+}
+
 export async function seedFleetData() {
   const store = getLocalStore();
+
+  // Demo data ships with well-known default passwords: never seed it in production unless explicitly requested
+  if (process.env.NODE_ENV === 'production' && process.env.SEED_DEMO_DATA !== 'true') {
+    await bootstrapAdmin(store);
+    return;
+  }
 
   // If already seeded with vehicles and users, skip unless forced
   if (store.users && store.users.length > 0 && store.vehicles && store.vehicles.length >= 10) {

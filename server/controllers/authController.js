@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { JWT_SECRET } from '../config/jwt.js';
 import { DataEngine, generateId } from '../models/dataEngine.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fleetnova_super_secure_jwt_secret_key_2026';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, JWT_SECRET, { expiresIn: '7d' });
@@ -12,7 +12,9 @@ const generateToken = (id) => {
 // @route POST /api/auth/register
 export const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, role = 'fleet_manager', phone = '' } = req.body;
+    // Public registration never grants elevated roles; admins promote users via PUT /users/:id/status
+    const { name, email, password, phone = '' } = req.body;
+    const role = 'driver';
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -21,10 +23,10 @@ export const registerUser = async (req, res, next) => {
       });
     }
 
-    if (password.length < 6) {
+    if (typeof email !== 'string' || typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters long'
+        message: 'Password must be at least 8 characters long'
       });
     }
 
@@ -162,10 +164,10 @@ export const updateProfile = async (req, res, next) => {
     if (phone !== undefined) updateData.phone = phone;
 
     if (password) {
-      if (password.length < 6) {
+      if (typeof password !== 'string' || password.length < 8) {
         return res.status(400).json({
           success: false,
-          message: 'New password must be at least 6 characters'
+          message: 'New password must be at least 8 characters'
         });
       }
       const salt = await bcrypt.genSalt(10);
@@ -196,17 +198,14 @@ export const updateProfile = async (req, res, next) => {
 export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const user = await DataEngine.findOne('users', { email: email?.toLowerCase() });
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'No account found with this email'
-      });
+    if (typeof email === 'string') {
+      await DataEngine.findOne('users', { email: email.toLowerCase() });
     }
 
+    // Same response whether or not the account exists (prevents user enumeration)
     return res.status(200).json({
       success: true,
-      message: 'Password reset instructions have been sent to your email.'
+      message: 'If an account exists for this email, password reset instructions have been sent.'
     });
   } catch (error) {
     next(error);
@@ -239,14 +238,34 @@ export const updateUserStatus = async (req, res, next) => {
   try {
     const { status, role } = req.body;
     const updateData = {};
-    if (status) updateData.status = status;
-    if (role) updateData.role = role;
+    if (status !== undefined) {
+      if (!['active', 'inactive'].includes(status)) {
+        return res.status(400).json({ success: false, message: 'Invalid status' });
+      }
+      updateData.status = status;
+    }
+    if (role !== undefined) {
+      if (!['admin', 'fleet_manager', 'driver'].includes(role)) {
+        return res.status(400).json({ success: false, message: 'Invalid role' });
+      }
+      updateData.role = role;
+    }
 
     const user = await DataEngine.findByIdAndUpdate('users', req.params.id, updateData);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    return res.status(200).json({ success: true, data: user });
+    return res.status(200).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        status: user.status
+      }
+    });
   } catch (error) {
     next(error);
   }
