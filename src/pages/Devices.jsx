@@ -79,7 +79,7 @@ export default function Devices() {
         await deviceApi.update(editing._id, { name: form.name, vehicle: form.vehicle || null, simNumber: form.simNumber });
       } else {
         const res = await deviceApi.create({ ...form, vehicle: form.vehicle || null });
-        setCreated(res.data);
+        setCreated({ ...res.data, traccarSync: res.traccarSync });
       }
       setIsFormOpen(false);
       load();
@@ -159,6 +159,13 @@ export default function Devices() {
               )}
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
                 {tr('Set the tracker server IP/domain and port; it identifies itself with its IMEI.')}
+              </div>
+            </div>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>TRACCAR (200+ PROTOCOLS)</div>
+              <strong>{info.traccar?.enabled ? tr('Enabled') : tr('Disabled on this server')}</strong>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                {tr('Trackers connect to the Traccar server; register the device here with its Traccar unique ID (usually the IMEI).')}
               </div>
             </div>
             <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
@@ -244,10 +251,11 @@ export default function Devices() {
                 <option value="teltonika">Teltonika (TCP)</option>
                 <option value="gt06">GT06 / Concox (TCP)</option>
                 <option value="osmand">OsmAnd / Traccar Client (HTTP)</option>
+                <option value="traccar">{tr('Via Traccar server (other protocols)')}</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">{form.protocol === 'osmand' ? tr('Device ID *') : tr('IMEI (15 digits) *')}</label>
+              <label className="form-label">{form.protocol === 'osmand' || form.protocol === 'traccar' ? tr('Device ID *') : tr('IMEI (15 digits) *')}</label>
               <input className="form-control" required disabled={Boolean(editing)} value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value.trim() })} />
             </div>
             <div className="form-group">
@@ -287,6 +295,13 @@ export default function Devices() {
                 <button className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => copy(httpUrl(created))}>
                   <Copy size={14} /> {tr('Copy')}
                 </button>
+              </>
+            ) : created.protocol === 'traccar' ? (
+              <>
+                <p>{tr('Point the tracker to your Traccar server (its protocol port). Traccar forwards the positions here.')}</p>
+                {created.traccarSync === 'failed' && (
+                  <p style={{ color: '#fbbf24' }}>{tr('The device could not be added to the Traccar server automatically; add it there with the same unique ID.')}</p>
+                )}
               </>
             ) : (
               <p>

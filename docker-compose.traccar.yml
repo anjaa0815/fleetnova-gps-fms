@@ -1,0 +1,30 @@
+# Traccar next to FLEETNOVA:  docker compose -f docker-compose.traccar.yml up
+# Set the same secret in forward.url (deploy/traccar/traccar.xml) and in TRACCAR_FORWARD_TOKEN below.
+services:
+  traccar:
+    image: traccar/traccar:latest
+    restart: unless-stopped
+    ports:
+      - "8082:8082"        # Traccar web / REST API (keep it private; FLEETNOVA uses it for device sync)
+      - "5000-5150:5000-5150"  # tracker protocol ports (open only the ones you use)
+      - "5000-5150:5000-5150/udp"
+    volumes:
+      - ./deploy/traccar/traccar.xml:/opt/traccar/conf/traccar.xml:ro
+      - traccar-data:/opt/traccar/data
+      - traccar-logs:/opt/traccar/logs
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      JWT_SECRET: "${JWT_SECRET:?set JWT_SECRET}"
+      TRACCAR_FORWARD_TOKEN: "change-me-forward-token"
+      TRACCAR_URL: "http://traccar:8082"
+      TRACCAR_TOKEN: "${TRACCAR_TOKEN:-}"   # API token created in the Traccar admin account
+      GPS_TCP_PORT: "0"    # Traccar receives the trackers now
+      GT06_TCP_PORT: "0"
+    ports:
+      - "3000:3000"
+volumes:
+  traccar-data:
+  traccar-logs:

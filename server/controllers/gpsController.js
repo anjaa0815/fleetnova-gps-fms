@@ -70,3 +70,56 @@ export const receiveOsmand = async (req, res, next) => {
     return next(error);
   }
 };
+
+const tokenFrom = (req) => {
+  const header = req.get('authorization') || '';
+  return req.get('x-traccar-token') || (header.startsWith('Bearer ') ? header.slice(7) : '') || req.query.token || '';
+};
+
+// @desc Positions forwarded by a Traccar server (Traccar decodes the tracker protocols, we keep tenancy, alerts, reports)
+// @route POST /api/gps/traccar   (Traccar: forward.enable=true, forward.json=true, forward.url=<this URL>?token=<secret>)
+// Disabled until TRACCAR_FORWARD_TOKEN is set. Answers 200 for records that are dropped on purpose (no fix, duplicates)
+// so Traccar does not retry them.
+export const receiveTraccar = async (req, res, next) => {
+  try {
+    const expected = process.env.TRACCAR_FORWARD_TOKEN;
+    if (!expected) return res.status(503).json({ success: false, message: 'Traccar forwarding is not enabled' });
+    if (!safeEqual(tokenFrom(req), expected)) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const position = body.position;
+    const uniqueId = body.device?.uniqueId ? String(body.device.uniqueId) : '';
+    if (!position || typeof position !== 'object' || !uniqueId) {
+      return res.status(400).json({ success: false, message: 'position and device.uniqueId are required' });
+    }
+
+    const device = await findActiveDeviceByImei(uniqueId);
+    if (!device || device.protocol !== 'traccar') {
+      return res.status(404).json({ success: false, message: 'Unknown device' });
+    }
+    if (throttled(uniqueId)) return res.status(429).json({ success: false, message: 'Too many requests' });
+
+    if (position.valid === false) return res.status(200).json({ success: true, received: 0 }); // no GPS fix
+
+    const attributes = position.attributes && typeof position.attributes === 'object' ? position.attributes : {};
+    const io = {};
+    if (typeof attributes.ignition === 'boolean') io[239] = attributes.ignition ? 1 : 0;
+    if (Number.isFinite(attributes.totalDistance)) io[16] = Math.round(attributes.totalDistance); // metres, like Teltonika
+
+    const record = {
+      timestamp: parseTimestamp(position.fixTime ?? position.deviceTime),
+      lat: number(position.latitude),
+      lng: number(position.longitude),
+      speed: (number(position.speed) ?? 0) * KNOTS_TO_KMH, // Traccar speed is in knots
+      heading: number(position.course) ?? 0,
+      altitude: number(position.altitude) ?? 0,
+      satellites: Number.isFinite(attributes.sat) ? attributes.sat : 0,
+      io
+    };
+
+    await ingestRecords(device, [record]);
+    return res.status(200).json({ success: true, received: 1 });
+  } catch (error) {
+    return next(error);
+  }
+};
