@@ -13,5 +13,7 @@ RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 COPY server.js ./
 COPY server ./server
+# the server shares the Mongolian dictionary with the frontend
+COPY src/i18n ./src/i18n
 EXPOSE 3000
 CMD ["node", "server.js"]
