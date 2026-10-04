@@ -10,6 +10,16 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // White-label: use the organization's brand color as the app's primary color
+  useEffect(() => {
+    const color = user?.organization?.branding?.primaryColor;
+    if (color && /^#[0-9a-f]{6}$/i.test(color)) {
+      document.documentElement.style.setProperty('--primary', color);
+    } else {
+      document.documentElement.style.removeProperty('--primary');
+    }
+  }, [user?.organization?.branding?.primaryColor]);
+
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('fleetnova_token');
@@ -75,6 +85,11 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Merge a fresh organization object (e.g. after editing its profile) into the session
+  const setOrganization = (organization) => {
+    setUser((prev) => (prev ? { ...prev, organization } : prev));
+  };
+
   const updateProfile = async (profileData) => {
     try {
       const res = await authApi.updateProfile(profileData);
@@ -94,6 +109,8 @@ export const AuthProvider = ({ children }) => {
     error,
     isAuthenticated: !!user,
     role: user?.role,
+    organization: user?.organization || null,
+    setOrganization,
     login,
     register,
     logout,

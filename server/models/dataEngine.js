@@ -8,6 +8,8 @@ import Fuel from './Fuel.js';
 import Maintenance from './Maintenance.js';
 import Expense from './Expense.js';
 import Notification from './Notification.js';
+import Organization from './Organization.js';
+import { getTenantContext } from '../middleware/tenantContext.js';
 
 // Helper to generate MongoDB-style ObjectId string
 export function generateId() {
@@ -18,56 +20,87 @@ export function generateId() {
   return timestamp + random;
 }
 
-// Populate reference fields in in-memory documents
+// Collections whose documents belong to exactly one organization (tenant).
+// Every query on these is scoped to the caller's organization by the data layer.
+export const TENANT_COLLECTIONS = new Set([
+  'users',
+  'vehicles',
+  'drivers',
+  'trips',
+  'fuels',
+  'maintenances',
+  'expenses',
+  'notifications'
+]);
+
+function forbidden(message) {
+  const error = new Error(message);
+  error.statusCode = 403;
+  return error;
+}
+
+// Resolve the extra filter that must be applied for the current request.
+//   no tenant context  -> trusted internal code (login lookup, seeding): unscoped
+//   organization user  -> always { orgId }
+//   platform user      -> users and counts only; tenant data is off limits
+function resolveScope(collectionName, op) {
+  const ctx = getTenantContext();
+  if (!ctx || !TENANT_COLLECTIONS.has(collectionName)) return {};
+  if (ctx.platform) {
+    if (collectionName === 'users' || op === 'count') return {};
+    throw forbidden('Platform accounts cannot access organization data');
+  }
+  return { orgId: ctx.orgId };
+}
+
+const sameOrg = (doc, scope) => !scope.orgId || String(doc.orgId) === String(scope.orgId);
+
+// Restrict Mongoose populate() to documents of the caller's organization
+function scopePopulate(populate, scope) {
+  if (!populate || !scope.orgId) return populate;
+  const wrap = (p) => (typeof p === 'string' ? { path: p, match: { orgId: scope.orgId } } : { ...p, match: { ...(p.match || {}), orgId: scope.orgId } });
+  return Array.isArray(populate) ? populate.map(wrap) : wrap(populate);
+}
+
+// Populate reference fields in in-memory documents (only within the document's own organization)
 function populateDoc(collectionName, doc) {
   if (!doc) return doc;
   const store = getLocalStore();
   const copy = { ...doc };
+  const scope = { orgId: copy.orgId };
+  const lookup = (list, ref, idKey) =>
+    (list || []).find((x) => (x._id === ref || x[idKey] === ref) && sameOrg(x, scope)) || ref;
 
   if (collectionName === 'vehicles') {
     if (copy.assignedDriver && typeof copy.assignedDriver === 'string') {
-      copy.assignedDriver = store.drivers.find(
-        (d) => d._id === copy.assignedDriver || d.driverId === copy.assignedDriver
-      ) || copy.assignedDriver;
+      copy.assignedDriver = lookup(store.drivers, copy.assignedDriver, 'driverId');
     }
   }
 
   if (collectionName === 'drivers') {
     if (copy.assignedVehicle && typeof copy.assignedVehicle === 'string') {
-      copy.assignedVehicle = store.vehicles.find(
-        (v) => v._id === copy.assignedVehicle || v.vehicleId === copy.assignedVehicle
-      ) || copy.assignedVehicle;
+      copy.assignedVehicle = lookup(store.vehicles, copy.assignedVehicle, 'vehicleId');
     }
   }
 
   if (collectionName === 'trips') {
     if (copy.vehicle && typeof copy.vehicle === 'string') {
-      copy.vehicle = store.vehicles.find(
-        (v) => v._id === copy.vehicle || v.vehicleId === copy.vehicle
-      ) || copy.vehicle;
+      copy.vehicle = lookup(store.vehicles, copy.vehicle, 'vehicleId');
     }
     if (copy.driver && typeof copy.driver === 'string') {
-      copy.driver = store.drivers.find(
-        (d) => d._id === copy.driver || d.driverId === copy.driver
-      ) || copy.driver;
+      copy.driver = lookup(store.drivers, copy.driver, 'driverId');
     }
   }
 
   if (collectionName === 'fuels' || collectionName === 'maintenances' || collectionName === 'expenses') {
     if (copy.vehicle && typeof copy.vehicle === 'string') {
-      copy.vehicle = store.vehicles.find(
-        (v) => v._id === copy.vehicle || v.vehicleId === copy.vehicle
-      ) || copy.vehicle;
+      copy.vehicle = lookup(store.vehicles, copy.vehicle, 'vehicleId');
     }
     if (copy.driver && typeof copy.driver === 'string') {
-      copy.driver = store.drivers.find(
-        (d) => d._id === copy.driver || d.driverId === copy.driver
-      ) || copy.driver;
+      copy.driver = lookup(store.drivers, copy.driver, 'driverId');
     }
     if (copy.trip && typeof copy.trip === 'string') {
-      copy.trip = store.trips.find(
-        (t) => t._id === copy.trip || t.tripId === copy.trip
-      ) || copy.trip;
+      copy.trip = lookup(store.trips, copy.trip, 'tripId');
     }
   }
 
@@ -133,6 +166,7 @@ export const DataEngine = {
         case 'maintenances': return Maintenance;
         case 'expenses': return Expense;
         case 'notifications': return Notification;
+        case 'organizations': return Organization;
         default: return null;
       }
     }
@@ -140,14 +174,18 @@ export const DataEngine = {
   },
 
   async find(collectionName, filter = {}, options = {}) {
+    const scope = resolveScope(collectionName, 'read');
+    const scopedFilter = { ...filter, ...scope };
+
     if (isDBConnected()) {
       const Model = await this.getCollection(collectionName);
-      let query = Model.find(filter);
-      if (options.populate) {
-        if (Array.isArray(options.populate)) {
-          options.populate.forEach(p => { query = query.populate(p); });
+      let query = Model.find(scopedFilter);
+      const populate = scopePopulate(options.populate, scope);
+      if (populate) {
+        if (Array.isArray(populate)) {
+          populate.forEach(p => { query = query.populate(p); });
         } else {
-          query = query.populate(options.populate);
+          query = query.populate(populate);
         }
       }
       if (options.sort) query = query.sort(options.sort);
@@ -158,7 +196,7 @@ export const DataEngine = {
 
     const store = getLocalStore();
     const items = store[collectionName] || [];
-    let matched = items.filter((doc) => matchFilter(doc, filter));
+    let matched = items.filter((doc) => matchFilter(doc, scopedFilter));
 
     // Sort
     if (options.sort) {
@@ -173,7 +211,6 @@ export const DataEngine = {
       matched.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     }
 
-    const total = matched.length;
     if (options.skip) {
       matched = matched.slice(options.skip);
     }
@@ -185,38 +222,57 @@ export const DataEngine = {
   },
 
   async findOne(collectionName, filter = {}, options = {}) {
+    const scope = resolveScope(collectionName, 'read');
+    const scopedFilter = { ...filter, ...scope };
+
     if (isDBConnected()) {
       const Model = await this.getCollection(collectionName);
-      let query = Model.findOne(filter);
+      let query = Model.findOne(scopedFilter);
       if (options.select) query = query.select(options.select);
-      if (options.populate) query = query.populate(options.populate);
+      const populate = scopePopulate(options.populate, scope);
+      if (populate) query = query.populate(populate);
       return await query.exec();
     }
 
     const store = getLocalStore();
     const items = store[collectionName] || [];
-    const item = items.find((doc) => matchFilter(doc, filter));
+    const item = items.find((doc) => matchFilter(doc, scopedFilter));
     return item ? populateDoc(collectionName, item) : null;
   },
 
   async findById(collectionName, id, options = {}) {
+    const scope = resolveScope(collectionName, 'read');
+
     if (isDBConnected()) {
       const Model = await this.getCollection(collectionName);
-      let query = Model.findById(id);
-      if (options.populate) query = query.populate(options.populate);
+      let query = Model.findOne({ _id: id, ...scope });
+      const populate = scopePopulate(options.populate, scope);
+      if (populate) query = query.populate(populate);
       return await query.exec();
     }
 
     const store = getLocalStore();
     const items = store[collectionName] || [];
-    const item = items.find((doc) => doc._id === id || doc.id === id);
+    const item = items.find((doc) => (doc._id === id || doc.id === id) && sameOrg(doc, scope));
     return item ? populateDoc(collectionName, item) : null;
   },
 
   async create(collectionName, data) {
+    const ctx = getTenantContext();
+    let payload = { ...data };
+
+    if (TENANT_COLLECTIONS.has(collectionName)) {
+      if (ctx && !ctx.platform) {
+        // Organization users can only ever create documents inside their own organization
+        payload.orgId = ctx.orgId;
+      } else if (!('orgId' in payload)) {
+        throw new Error(`orgId is required to create ${collectionName}`);
+      }
+    }
+
     if (isDBConnected()) {
       const Model = await this.getCollection(collectionName);
-      return await Model.create(data);
+      return await Model.create(payload);
     }
 
     const store = getLocalStore();
@@ -224,7 +280,7 @@ export const DataEngine = {
 
     const newDoc = {
       _id: generateId(),
-      ...data,
+      ...payload,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -235,19 +291,27 @@ export const DataEngine = {
   },
 
   async findByIdAndUpdate(collectionName, id, updateData, options = {}) {
+    const scope = resolveScope(collectionName, 'write');
+    const safeUpdate = { ...updateData };
+    if (getTenantContext()) {
+      // Documents can never be moved to another organization through a request
+      delete safeUpdate.orgId;
+      delete safeUpdate._id;
+    }
+
     if (isDBConnected()) {
       const Model = await this.getCollection(collectionName);
-      return await Model.findByIdAndUpdate(id, updateData, { new: true, ...options });
+      return await Model.findOneAndUpdate({ _id: id, ...scope }, safeUpdate, { new: true, ...options });
     }
 
     const store = getLocalStore();
     const items = store[collectionName] || [];
-    const index = items.findIndex((doc) => doc._id === id || doc.id === id);
+    const index = items.findIndex((doc) => (doc._id === id || doc.id === id) && sameOrg(doc, scope));
     if (index === -1) return null;
 
     items[index] = {
       ...items[index],
-      ...updateData,
+      ...safeUpdate,
       updatedAt: new Date().toISOString()
     };
 
@@ -256,14 +320,16 @@ export const DataEngine = {
   },
 
   async findByIdAndDelete(collectionName, id) {
+    const scope = resolveScope(collectionName, 'write');
+
     if (isDBConnected()) {
       const Model = await this.getCollection(collectionName);
-      return await Model.findByIdAndDelete(id);
+      return await Model.findOneAndDelete({ _id: id, ...scope });
     }
 
     const store = getLocalStore();
     const items = store[collectionName] || [];
-    const index = items.findIndex((doc) => doc._id === id || doc.id === id);
+    const index = items.findIndex((doc) => (doc._id === id || doc.id === id) && sameOrg(doc, scope));
     if (index === -1) return null;
 
     const [removed] = items.splice(index, 1);
@@ -272,13 +338,16 @@ export const DataEngine = {
   },
 
   async countDocuments(collectionName, filter = {}) {
+    const scope = resolveScope(collectionName, 'count');
+    const scopedFilter = { ...filter, ...scope };
+
     if (isDBConnected()) {
       const Model = await this.getCollection(collectionName);
-      return await Model.countDocuments(filter);
+      return await Model.countDocuments(scopedFilter);
     }
 
     const store = getLocalStore();
     const items = store[collectionName] || [];
-    return items.filter((doc) => matchFilter(doc, filter)).length;
+    return items.filter((doc) => matchFilter(doc, scopedFilter)).length;
   }
 };

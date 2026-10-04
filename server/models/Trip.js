@@ -2,10 +2,15 @@ import mongoose from 'mongoose';
 
 const tripSchema = new mongoose.Schema(
   {
+    orgId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true
+    },
     tripId: {
       type: String,
       required: true,
-      unique: true,
       trim: true
     },
     vehicle: {
@@ -70,6 +75,9 @@ const tripSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+// Identifiers are unique per organization, not globally
+tripSchema.index({ orgId: 1, tripId: 1 }, { unique: true });
 
 const Trip = mongoose.models.Trip || mongoose.model('Trip', tripSchema);
 export default Trip;

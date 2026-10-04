@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { findMissingRef } from '../utils/refs.js';
 
 // @desc Get all fuel records with filter & pagination
 // @route GET /api/fuel
@@ -88,6 +89,9 @@ export const createFuelRecord = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Vehicle not found' });
     }
 
+    const missing = await findMissingRef([['drivers', driverId, 'Driver']]);
+    if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
+
     const calculatedCost = Math.round(Number(quantity) * Number(pricePerLiter) * 100) / 100;
     const count = await DataEngine.countDocuments('fuels');
     const fuelRecordId = `FUEL-${1000 + count + 1}`;
@@ -141,6 +145,13 @@ export const createFuelRecord = async (req, res, next) => {
 export const updateFuelRecord = async (req, res, next) => {
   try {
     const updateData = { ...req.body };
+    const missing = await findMissingRef([
+      ['vehicles', updateData.vehicle, 'Vehicle'],
+      ['drivers', updateData.driver, 'Driver'],
+      ['trips', updateData.trip, 'Trip']
+    ]);
+    if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
+
     if (updateData.quantity && updateData.pricePerLiter) {
       updateData.totalCost = Math.round(Number(updateData.quantity) * Number(updateData.pricePerLiter) * 100) / 100;
     }

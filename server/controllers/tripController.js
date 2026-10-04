@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { findMissingRef } from '../utils/refs.js';
 
 // @desc Get all trips with filtering, search, pagination
 // @route GET /api/trips
@@ -344,6 +345,13 @@ export const cancelTrip = async (req, res, next) => {
 // @route PUT /api/trips/:id
 export const updateTrip = async (req, res, next) => {
   try {
+    const missing = await findMissingRef([
+      ['vehicles', req.body.vehicle, 'Vehicle'],
+      ['drivers', req.body.driver, 'Driver'],
+      ['trips', req.body.trip, 'Trip']
+    ]);
+    if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
+
     const updated = await DataEngine.findByIdAndUpdate('trips', req.params.id, req.body);
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Trip not found' });

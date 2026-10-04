@@ -1,22 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Users, Shield, Database, Sparkles, CheckCircle2, AlertTriangle, Key } from 'lucide-react';
+import { Settings as SettingsIcon, Users, Shield, Database, Sparkles, CheckCircle2, AlertTriangle, Key, Building2, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { authApi } from '../services/api.js';
+import { authApi, organizationApi } from '../services/api.js';
 import Loading from '../components/Loading.jsx';
+import Modal from '../components/Modal.jsx';
 import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Settings() {
   const { tr } = useT();
-  const { user, role } = useAuth();
+  const { user, role, setOrganization } = useAuth();
   const isAdmin = role === 'admin';
 
   const [usersList, setUsersList] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Settings State
+  // Organization profile (persisted)
+  const [orgData, setOrgData] = useState(null);
+  const [orgForm, setOrgForm] = useState({ name: '', contactEmail: '', contactPhone: '', address: '', primaryColor: '#2563eb', logoUrl: '' });
+  const [orgMessage, setOrgMessage] = useState(null);
+  const [orgError, setOrgError] = useState(null);
+  const [orgSaving, setOrgSaving] = useState(false);
+
+  // New user (admin)
+  const emptyUser = { name: '', email: '', password: '', role: 'driver', phone: '' };
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [newUser, setNewUser] = useState(emptyUser);
+  const [userError, setUserError] = useState(null);
+  const [userSaving, setUserSaving] = useState(false);
+
+  // Settings State (local preview only)
   const [systemSettings, setSystemSettings] = useState({
-    orgName: 'FLEETNOVA Enterprise Logistics Corp.',
     currency: 'MNT (₮)',
     speedLimit: 80,
     maintenanceAlertDays: 15,
@@ -39,9 +53,71 @@ export default function Settings() {
     }
   };
 
+  const loadOrganization = async () => {
+    try {
+      const res = await organizationApi.get();
+      if (res.success) {
+        setOrgData(res.data);
+        setOrgForm({
+          name: res.data.name,
+          contactEmail: res.data.contactEmail,
+          contactPhone: res.data.contactPhone,
+          address: res.data.address,
+          primaryColor: res.data.branding.primaryColor,
+          logoUrl: res.data.branding.logoUrl
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    loadOrganization();
   }, [isAdmin]);
+
+  const handleSaveOrganization = async (e) => {
+    e.preventDefault();
+    setOrgSaving(true);
+    setOrgError(null);
+    setOrgMessage(null);
+    try {
+      const res = await organizationApi.update({
+        name: orgForm.name,
+        contactEmail: orgForm.contactEmail,
+        contactPhone: orgForm.contactPhone,
+        address: orgForm.address,
+        branding: { primaryColor: orgForm.primaryColor, logoUrl: orgForm.logoUrl }
+      });
+      if (res.success) {
+        setOrgData(res.data);
+        setOrganization(res.data);
+        setOrgMessage(tr('Organization updated successfully'));
+      }
+    } catch (err) {
+      setOrgError(tr(err.message || 'Failed to update organization'));
+    } finally {
+      setOrgSaving(false);
+    }
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setUserError(null);
+    setUserSaving(true);
+    try {
+      await authApi.createUser(newUser);
+      setIsUserModalOpen(false);
+      setNewUser(emptyUser);
+      fetchUsers();
+      loadOrganization();
+    } catch (err) {
+      setUserError(tr(err.message || 'Failed to create user'));
+    } finally {
+      setUserSaving(false);
+    }
+  };
 
   const handleSaveSystemConfig = (e) => {
     e.preventDefault();
@@ -87,6 +163,86 @@ export default function Settings() {
         </div>
       )}
 
+      {/* Organization Profile & Plan */}
+      {isAdmin && orgData && (
+        <div className="card">
+          <h3 className="card-title" style={{ marginBottom: '1.25rem' }}>
+            <Building2 size={18} color="var(--primary)" /> {tr("Organization Profile")}
+          </h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.25rem', fontSize: '0.85rem' }}>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("Plan")}</div>
+              <strong style={{ color: 'var(--accent-cyan)' }}>{tr(orgData.plan)}</strong>
+              {orgData.trialEndsAt && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  {tr("Trial Ends")}: {new Date(orgData.trialEndsAt).toLocaleDateString()}
+                </div>
+              )}
+            </div>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("Vehicles")}</div>
+              <strong>{orgData.usage.vehicles} / {orgData.limits.maxVehicles < 0 ? '∞' : orgData.limits.maxVehicles}</strong>
+            </div>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("Users")}</div>
+              <strong>{orgData.usage.users} / {orgData.limits.maxUsers < 0 ? '∞' : orgData.limits.maxUsers}</strong>
+            </div>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("Login Page")}</div>
+              <a href={`${window.location.origin}/?org=${orgData.slug}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-cyan)', wordBreak: 'break-all' }}>
+                ?org={orgData.slug}
+              </a>
+            </div>
+          </div>
+
+          {orgMessage && (
+            <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
+              {orgMessage}
+            </div>
+          )}
+          {orgError && (
+            <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', backgroundColor: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
+              {orgError}
+            </div>
+          )}
+
+          <form onSubmit={handleSaveOrganization}>
+            <div className="grid-cols-2" style={{ gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">{tr("Organization Name")}</label>
+                <input className="form-control" required maxLength={100} value={orgForm.name} onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{tr("Contact Email")}</label>
+                <input type="email" className="form-control" value={orgForm.contactEmail} onChange={(e) => setOrgForm({ ...orgForm, contactEmail: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{tr("Contact Phone")}</label>
+                <input className="form-control" value={orgForm.contactPhone} onChange={(e) => setOrgForm({ ...orgForm, contactPhone: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{tr("Address")}</label>
+                <input className="form-control" value={orgForm.address} onChange={(e) => setOrgForm({ ...orgForm, address: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{tr("Brand Color")}</label>
+                <input type="color" className="form-control" style={{ height: '42px', padding: '4px' }} value={orgForm.primaryColor} onChange={(e) => setOrgForm({ ...orgForm, primaryColor: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{tr("Logo URL (https)")}</label>
+                <input className="form-control" placeholder="https://" value={orgForm.logoUrl} onChange={(e) => setOrgForm({ ...orgForm, logoUrl: e.target.value })} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button type="submit" className="btn btn-primary" disabled={orgSaving}>
+                {orgSaving ? tr("Saving Changes...") : tr("Save Changes")}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Organization Parameters */}
       <div className="card">
         <h3 className="card-title" style={{ marginBottom: '1.25rem' }}>
@@ -95,16 +251,6 @@ export default function Settings() {
 
         <form onSubmit={handleSaveSystemConfig}>
           <div className="grid-cols-2" style={{ gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">{tr("Operating Enterprise Name")}</label>
-              <input
-                type="text"
-                className="form-control"
-                value={systemSettings.orgName}
-                onChange={(e) => setSystemSettings({ ...systemSettings, orgName: e.target.value })}
-              />
-            </div>
-
             <div className="form-group">
               <label className="form-label">{tr("Financial Accounting Currency")}</label>
               <input
@@ -190,6 +336,9 @@ export default function Settings() {
             <h3 className="card-title">
               <Users size={18} color="var(--primary)" /> {tr("Organization User Management (Admin Only)")}
             </h3>
+            <button className="btn btn-primary btn-sm" onClick={() => setIsUserModalOpen(true)}>
+              <UserPlus size={14} /> {tr("Add User")}
+            </button>
           </div>
 
           {loadingUsers ? (
@@ -222,7 +371,7 @@ export default function Settings() {
                         </span>
                       </td>
                       <td>
-                        {u.role !== 'admin' && (
+                        {String(u._id) !== String(user?._id) && (
                           <button
                             className={`btn btn-sm ${u.status === 'active' ? 'btn-danger' : 'btn-secondary'}`}
                             onClick={() => handleToggleUserStatus(u._id, u.status)}
@@ -239,6 +388,48 @@ export default function Settings() {
           )}
         </div>
       )}
+
+      <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title={tr("Add User")}>
+        <form onSubmit={handleCreateUser}>
+          {userError && (
+            <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', backgroundColor: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
+              {userError}
+            </div>
+          )}
+          <div className="grid-cols-2" style={{ gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">{tr("Full Name *")}</label>
+              <input className="form-control" required value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">{tr("Email Address *")}</label>
+              <input type="email" className="form-control" required value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">{tr("Initial Password * (min 8 characters)")}</label>
+              <input type="password" className="form-control" required minLength={8} value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">{tr("Role")}</label>
+              <select className="form-control" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}>
+                <option value="driver">{tr("driver")}</option>
+                <option value="fleet_manager">{tr("Fleet Manager")}</option>
+                <option value="admin">{tr("admin")}</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">{tr("Phone Number")}</label>
+              <input className="form-control" value={newUser.phone} onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsUserModalOpen(false)}>{tr("Cancel")}</button>
+            <button type="submit" className="btn btn-primary" disabled={userSaving}>
+              {userSaving ? tr("Saving Changes...") : tr("Add User")}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

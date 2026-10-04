@@ -1,33 +1,43 @@
 import bcrypt from 'bcryptjs';
 import { getLocalStore, saveLocalStore } from '../config/db.js';
 import { generateId } from '../models/dataEngine.js';
+import { migrateLegacyData } from './migrateLegacyData.js';
 
 const iso = (value) => new Date(value).toISOString();
 
+// Creates the platform owner (super admin) on an empty production database.
 async function bootstrapAdmin(store) {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
-  if (!email || !password || (store.users && store.users.length > 0)) return;
+  if (!email || !password || (store.users || []).some((u) => u.role === 'super_admin')) return;
   if (password.length < 8) {
-    console.warn('[FLEETNOVA] ADMIN_PASSWORD must be at least 8 characters; admin not created.');
+    console.warn('[FLEETNOVA] ADMIN_PASSWORD must be at least 8 characters; platform admin not created.');
     return;
   }
-  store.users = [{
-    _id: generateId(),
-    name: 'Administrator',
-    email: email.toLowerCase(),
-    password: await bcrypt.hash(password, 10),
-    role: 'admin',
-    phone: '',
-    status: 'active',
-    createdAt: new Date().toISOString()
-  }];
+  store.users = [
+    ...(store.users || []),
+    {
+      _id: generateId(),
+      orgId: null,
+      name: 'Platform Administrator',
+      email: email.toLowerCase(),
+      password: await bcrypt.hash(password, 10),
+      role: 'super_admin',
+      phone: '',
+      status: 'active',
+      createdAt: new Date().toISOString()
+    }
+  ];
   saveLocalStore();
-  console.log('[FLEETNOVA] Initial admin account created from ADMIN_EMAIL / ADMIN_PASSWORD.');
+  console.log('[FLEETNOVA] Platform admin account created from ADMIN_EMAIL / ADMIN_PASSWORD.');
 }
 
 export async function seedFleetData() {
   const store = getLocalStore();
+  if (!store.organizations) store.organizations = [];
+
+  // Existing single-tenant data is moved into a default organization before anything else
+  migrateLegacyData(store);
 
   // Demo data ships with well-known default passwords: never seed it in production unless explicitly requested
   if (process.env.NODE_ENV === 'production' && process.env.SEED_DEMO_DATA !== 'true') {
@@ -36,7 +46,7 @@ export async function seedFleetData() {
   }
 
   // If already seeded with vehicles and users, skip unless forced
-  if (store.users && store.users.length > 0 && store.vehicles && store.vehicles.length >= 10) {
+  if (store.organizations.length > 0 && store.users && store.users.length > 0 && store.vehicles && store.vehicles.length >= 10) {
     console.log('[FLEETNOVA] Database already seeded with realistic fleet data.');
     return;
   }
@@ -1052,10 +1062,137 @@ export async function seedFleetData() {
     }
   ];
 
+  // 9. Organizations (tenants) - every record above belongs to the first demo organization
+  const nowIso = new Date().toISOString();
+  const orgs = [
+    {
+      _id: generateId(),
+      name: 'Монгол Карго ХХК',
+      slug: 'mongol-cargo',
+      status: 'active',
+      plan: 'pro',
+      trialEndsAt: null,
+      contactEmail: 'info@mongolcargo.example',
+      contactPhone: '+976 7700 1122',
+      address: 'Баянгол дүүрэг, Улаанбаатар',
+      branding: { logoUrl: '', primaryColor: '#2563eb' },
+      createdAt: iso('2025-01-10'),
+      updatedAt: nowIso
+    },
+    {
+      _id: generateId(),
+      name: 'Алтан Тээвэр ХХК',
+      slug: 'altan-teever',
+      status: 'active',
+      plan: 'trial',
+      trialEndsAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+      contactEmail: 'altan@fleetnova.com',
+      contactPhone: '+976 9900 5566',
+      address: 'Дархан хот',
+      branding: { logoUrl: '', primaryColor: '#059669' },
+      createdAt: nowIso,
+      updatedAt: nowIso
+    }
+  ];
+  const [cargoOrg, altanOrg] = orgs;
+
+  [users, drivers, vehicles, trips, fuels, maintenances, expenses, notifications].forEach((list) =>
+    list.forEach((doc) => { doc.orgId = cargoOrg._id; })
+  );
+
+  // Second tenant: tiny dataset that demonstrates data isolation between organizations
+  const altanPassword = await bcrypt.hash('altan123', salt);
+  const altanDriver = {
+    _id: generateId(),
+    orgId: altanOrg._id,
+    driverId: 'DRV-1001',
+    name: 'Э.Сүхбаатар',
+    email: 'suhbaatar@altan.example',
+    phone: '+976 9900 7788',
+    licenseNumber: 'ДА-91012345',
+    licenseExpiry: iso('2028-05-01'),
+    dateOfJoining: iso('2024-03-01'),
+    assignedVehicle: null,
+    status: 'Available',
+    emergencyContact: '+976 9900 1100 (Эхнэр)',
+    address: 'Дархан хот',
+    notes: ''
+  };
+  const altanVehicles = [
+    {
+      _id: generateId(),
+      orgId: altanOrg._id,
+      vehicleId: 'VEH-1001',
+      registrationNumber: '3344 ДАА',
+      vehicleType: 'Truck',
+      brand: 'Howo',
+      model: 'T5G',
+      manufacturingYear: 2022,
+      fuelType: 'Diesel',
+      fuelCapacity: 300,
+      currentMileage: 61000,
+      status: 'Available',
+      assignedDriver: altanDriver._id,
+      purchaseDate: iso('2022-06-01'),
+      insuranceExpiry: iso('2027-06-01'),
+      registrationExpiry: iso('2037-06-01'),
+      lastServiceDate: iso('2026-08-01'),
+      nextServiceDate: iso('2026-11-01'),
+      notes: 'Алтан Тээврийн туршилтын ачааны машин.'
+    },
+    {
+      _id: generateId(),
+      orgId: altanOrg._id,
+      vehicleId: 'VEH-1002',
+      registrationNumber: '5566 ДАА',
+      vehicleType: 'Van',
+      brand: 'Toyota',
+      model: 'Hiace',
+      manufacturingYear: 2020,
+      fuelType: 'Diesel',
+      fuelCapacity: 70,
+      currentMileage: 98000,
+      status: 'Available',
+      assignedDriver: null,
+      purchaseDate: iso('2020-09-01'),
+      insuranceExpiry: iso('2027-03-01'),
+      registrationExpiry: iso('2035-09-01'),
+      lastServiceDate: iso('2026-07-01'),
+      nextServiceDate: iso('2026-10-30'),
+      notes: ''
+    }
+  ];
+  altanDriver.assignedVehicle = altanVehicles[0]._id;
+  const altanAdmin = {
+    _id: generateId(),
+    orgId: altanOrg._id,
+    name: 'Э.Алтансүх',
+    email: 'altan@fleetnova.com',
+    password: altanPassword,
+    role: 'admin',
+    phone: '+976 9900 5566',
+    status: 'active',
+    createdAt: nowIso
+  };
+
+  // Platform owner (super admin) - manages organizations, has no fleet data of its own
+  const superAdmin = {
+    _id: generateId(),
+    orgId: null,
+    name: 'Platform Admin',
+    email: 'superadmin@fleetnova.com',
+    password: await bcrypt.hash('super123', salt),
+    role: 'super_admin',
+    phone: '',
+    status: 'active',
+    createdAt: nowIso
+  };
+
   // Write all to store
-  store.users = users;
-  store.drivers = drivers;
-  store.vehicles = vehicles;
+  store.organizations = orgs;
+  store.users = [superAdmin, ...users, altanAdmin];
+  store.drivers = [...drivers, altanDriver];
+  store.vehicles = [...vehicles, ...altanVehicles];
   store.trips = trips;
   store.fuels = fuels;
   store.maintenances = maintenances;
@@ -1064,7 +1201,7 @@ export async function seedFleetData() {
 
   saveLocalStore();
   console.log(
-    `[FLEETNOVA] Successfully seeded: ${users.length} Users, ${drivers.length} Drivers, ${vehicles.length} Vehicles, ` +
+    `[FLEETNOVA] Successfully seeded: ${orgs.length} Organizations, ${users.length + 2} Users, ${drivers.length} Drivers, ${vehicles.length} Vehicles, ` +
     `${trips.length} Trips, ${fuels.length} Fuel logs, ${maintenances.length} Maintenance logs, ` +
     `${expenses.length} Expenses, ${notifications.length} Notifications.`
   );

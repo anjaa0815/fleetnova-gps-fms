@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { findMissingRef } from '../utils/refs.js';
 
 // @desc Get all expenses with filtering, search, pagination, and breakdowns
 // @route GET /api/expenses
@@ -93,6 +94,9 @@ export const createExpense = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Vehicle not found' });
     }
 
+    const missing = await findMissingRef([['drivers', driverId, 'Driver'], ['trips', tripId, 'Trip']]);
+    if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
+
     const count = await DataEngine.countDocuments('expenses');
     const expenseId = `EXP-${1000 + count + 1}`;
 
@@ -122,6 +126,13 @@ export const createExpense = async (req, res, next) => {
 // @route PUT /api/expenses/:id
 export const updateExpense = async (req, res, next) => {
   try {
+    const missing = await findMissingRef([
+      ['vehicles', req.body.vehicle, 'Vehicle'],
+      ['drivers', req.body.driver, 'Driver'],
+      ['trips', req.body.trip, 'Trip']
+    ]);
+    if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
+
     const updated = await DataEngine.findByIdAndUpdate('expenses', req.params.id, req.body);
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Expense not found' });

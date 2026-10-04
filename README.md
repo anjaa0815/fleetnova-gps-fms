@@ -147,15 +147,44 @@
 
 ---
 
+## 🏢 Multi-tenancy (SaaS)
+
+Every customer company is an **organization**. All fleet data (vehicles, drivers, trips, fuel, maintenance,
+expenses, notifications, users) belongs to exactly one organization and is isolated at the data layer:
+the request's tenant context is set by the auth middleware and `DataEngine` scopes every query, create,
+update and delete to it, so one organization can never read or change another one's records.
+
+| Role | Scope |
+|---|---|
+| `super_admin` | Platform owner: manages organizations (create, suspend, change plan). No access to fleet data. |
+| `admin` | Organization administrator: users, organization profile/branding, everything in the organization. |
+| `fleet_manager` / `driver` | Same as before, inside their organization. |
+
+- **Sign-up:** `POST /api/auth/register` creates a new organization (14-day trial) and its first admin.
+  The platform owner can also create customers via `POST /api/platform/organizations`.
+- **Plans:** `trial`, `basic`, `pro`, `enterprise` (`server/config/plans.js`) limit vehicles and users.
+  An expired trial becomes read-only; a suspended organization cannot log in.
+- **Per-organization login page:** `https://yourdomain/?org=<slug>` (or `<slug>.yourdomain`) shows the
+  organization's name/logo, and the organization's brand color is applied after login.
+- **Existing single-tenant data** (local JSON store) is moved into a "Default Organization" on first start.
+  Migration of existing MongoDB data is not implemented yet.
+- **Tests:** `npm test` runs the tenant-isolation integration tests.
+
+---
+
 ## 🔑 Demo Credentials
 
-| Role | Email | Password |
-|---|---|---|
-| **System Admin** | `admin@fleetnova.com` | `admin123` |
-| **Fleet Manager** | `manager@fleetnova.com` | `manager123` |
-| **Commercial Driver** | `driver@fleetnova.com` | `driver123` |
+Only created in development (or with `SEED_DEMO_DATA=true`):
 
-*(One-click demo buttons are provided directly on the Login screen).*
+| Organization | Role | Email | Password |
+|---|---|---|---|
+| Platform | **Super Admin** | `superadmin@fleetnova.com` | `super123` |
+| Монгол Карго ХХК (`mongol-cargo`) | **Admin** | `admin@fleetnova.com` | `admin123` |
+| Монгол Карго ХХК | **Fleet Manager** | `manager@fleetnova.com` | `manager123` |
+| Монгол Карго ХХК | **Driver** | `driver@fleetnova.com` | `driver123` |
+| Алтан Тээвэр ХХК (`altan-teever`) | **Admin** | `altan@fleetnova.com` | `altan123` |
+
+*(One-click demo buttons are shown on the Login screen in development builds only).*
 
 ---
 
@@ -168,6 +197,10 @@ PORT=3000
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/fleetnova
 JWT_SECRET=your_jwt_secret_key_fleetnova_2026
 GEMINI_API_KEY=your_google_gemini_api_key
+
+# Production: creates the platform owner (super admin) on an empty database
+ADMIN_EMAIL=owner@yourcompany.com
+ADMIN_PASSWORD=choose-a-strong-password
 ```
 
 ---

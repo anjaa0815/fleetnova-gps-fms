@@ -2,10 +2,15 @@ import mongoose from 'mongoose';
 
 const maintenanceSchema = new mongoose.Schema(
   {
+    orgId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true
+    },
     maintenanceId: {
       type: String,
       required: true,
-      unique: true,
       trim: true
     },
     vehicle: {
@@ -62,6 +67,9 @@ const maintenanceSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+// Identifiers are unique per organization, not globally
+maintenanceSchema.index({ orgId: 1, maintenanceId: 1 }, { unique: true });
 
 const Maintenance =
   mongoose.models.Maintenance || mongoose.model('Maintenance', maintenanceSchema);

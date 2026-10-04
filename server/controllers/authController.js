@@ -1,68 +1,39 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { JWT_SECRET } from '../config/jwt.js';
-import { DataEngine, generateId } from '../models/dataEngine.js';
+import { DataEngine } from '../models/dataEngine.js';
+import { getPlan, isWithinLimit } from '../config/plans.js';
+import {
+  MIN_PASSWORD_LENGTH,
+  createOrganizationWithAdmin,
+  serializeOrg,
+  serializeUser
+} from '../services/organizationService.js';
 
 
 const generateToken = (id) => {
   return jwt.sign({ id }, JWT_SECRET, { expiresIn: '7d' });
 };
 
-// @desc Register user
+// @desc Register a new organization together with its first administrator (self-service sign-up)
 // @route POST /api/auth/register
 export const registerUser = async (req, res, next) => {
   try {
-    // Public registration never grants elevated roles; admins promote users via PUT /users/:id/status
-    const { name, email, password, phone = '' } = req.body;
-    const role = 'driver';
+    const { organizationName, name, email, password, phone = '' } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name, email and password are required'
-      });
-    }
-
-    if (typeof email !== 'string' || typeof password !== 'string' || password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 8 characters long'
-      });
-    }
-
-    const existingUser = await DataEngine.findOne('users', { email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User with this email already exists'
-      });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = await DataEngine.create('users', {
-      name,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      role,
-      phone,
-      status: 'active'
+    const { org, user } = await createOrganizationWithAdmin({
+      organizationName,
+      plan: 'trial',
+      admin: { name, email, password, phone }
     });
-
-    const token = generateToken(newUser._id);
 
     return res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'Organization registered successfully',
       data: {
-        _id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        phone: newUser.phone,
-        status: newUser.status,
-        token
+        ...serializeUser(user),
+        organization: serializeOrg(org),
+        token: generateToken(user._id)
       }
     });
   } catch (error) {
@@ -83,7 +54,7 @@ export const loginUser = async (req, res, next) => {
       });
     }
 
-    const user = await DataEngine.findOne('users', { email: email.toLowerCase() });
+    const user = await DataEngine.findOne('users', { email: String(email).toLowerCase() }, { select: '+password' });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -106,19 +77,27 @@ export const loginUser = async (req, res, next) => {
       });
     }
 
-    const token = generateToken(user._id);
+    let org = null;
+    if (user.role !== 'super_admin') {
+      org = user.orgId ? await DataEngine.findById('organizations', user.orgId) : null;
+      if (!org) {
+        return res.status(403).json({ success: false, message: 'Your account is not linked to an organization' });
+      }
+      if (org.status === 'suspended') {
+        return res.status(403).json({
+          success: false,
+          message: 'This organization is suspended. Please contact support.'
+        });
+      }
+    }
 
     return res.status(200).json({
       success: true,
       message: 'Login successful',
       data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-        status: user.status,
-        token
+        ...serializeUser(user),
+        organization: serializeOrg(org),
+        token: generateToken(user._id)
       }
     });
   } catch (error) {
@@ -141,12 +120,8 @@ export const getMe = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-        status: user.status
+        ...serializeUser(user),
+        organization: serializeOrg(req.org)
       }
     });
   } catch (error) {
@@ -164,7 +139,7 @@ export const updateProfile = async (req, res, next) => {
     if (phone !== undefined) updateData.phone = phone;
 
     if (password) {
-      if (typeof password !== 'string' || password.length < 8) {
+      if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
         return res.status(400).json({
           success: false,
           message: 'New password must be at least 8 characters'
@@ -212,32 +187,74 @@ export const forgotPassword = async (req, res, next) => {
   }
 };
 
-// @desc Admin get all users
+// @desc Admin get all users of the caller's organization
 // @route GET /api/auth/users
 export const getAllUsers = async (req, res, next) => {
   try {
     const users = await DataEngine.find('users');
-    const sanitized = users.map(u => ({
-      _id: u._id,
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      phone: u.phone,
-      status: u.status,
-      createdAt: u.createdAt
-    }));
+    const sanitized = users.map((u) => ({ ...serializeUser(u), createdAt: u.createdAt }));
     return res.status(200).json({ success: true, data: sanitized });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc Admin update user status
+const ORG_ROLES = ['admin', 'fleet_manager', 'driver'];
+
+// @desc Admin creates a user inside the caller's organization
+// @route POST /api/auth/users
+export const createOrgUser = async (req, res, next) => {
+  try {
+    const { name, email, password, role = 'driver', phone = '' } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Name, email and password are required' });
+    }
+    if (typeof email !== 'string' || typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({
+        success: false,
+        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`
+      });
+    }
+    if (!ORG_ROLES.includes(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid role' });
+    }
+
+    const userCount = await DataEngine.countDocuments('users');
+    if (!isWithinLimit(getPlan(req.org.plan).maxUsers, userCount)) {
+      return res.status(403).json({ success: false, message: 'User limit reached for your plan' });
+    }
+
+    if (await DataEngine.findOne('users', { email: email.toLowerCase().trim() })) {
+      return res.status(400).json({ success: false, message: 'User with this email already exists' });
+    }
+
+    const user = await DataEngine.create('users', {
+      name,
+      email: email.toLowerCase().trim(),
+      password: await bcrypt.hash(password, 10),
+      role,
+      phone,
+      status: 'active'
+    });
+
+    return res.status(201).json({ success: true, message: 'User created successfully', data: serializeUser(user) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc Admin update user status / role (own organization only)
 // @route PUT /api/auth/users/:id/status
 export const updateUserStatus = async (req, res, next) => {
   try {
     const { status, role } = req.body;
     const updateData = {};
+
+    if (String(req.params.id) === String(req.user._id)) {
+      return res.status(400).json({ success: false, message: 'You cannot change your own role or status' });
+    }
+
     if (status !== undefined) {
       if (!['active', 'inactive'].includes(status)) {
         return res.status(400).json({ success: false, message: 'Invalid status' });
@@ -245,27 +262,18 @@ export const updateUserStatus = async (req, res, next) => {
       updateData.status = status;
     }
     if (role !== undefined) {
-      if (!['admin', 'fleet_manager', 'driver'].includes(role)) {
+      if (!ORG_ROLES.includes(role)) {
         return res.status(400).json({ success: false, message: 'Invalid role' });
       }
       updateData.role = role;
     }
 
+    // The data layer only finds users of the caller's organization
     const user = await DataEngine.findByIdAndUpdate('users', req.params.id, updateData);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    return res.status(200).json({
-      success: true,
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-        status: user.status
-      }
-    });
+    return res.status(200).json({ success: true, data: serializeUser(user) });
   } catch (error) {
     next(error);
   }
