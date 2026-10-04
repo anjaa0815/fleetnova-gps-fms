@@ -279,7 +279,12 @@ used; otherwise every visitor looks like the proxy and shares one limit.
 
 The counters live in the server process. With several instances each counts on its own: enforce the limits at the
 reverse proxy as well, or move the counters to a shared store (Redis) behind `server/middleware/rateLimit.js`.
-The password reset itself is still a placeholder (it sends nothing yet); it is rate limited all the same.
+### Password reset
+
+- `POST /api/auth/forgot-password` always answers the same 200 (no account enumeration). For active accounts it emails a single-use link `/?reset=<token>`; only the sha256 hash is stored. The newest link wins; a per-account cooldown limits resends.
+- `POST /api/auth/reset-password` sets the new password (8+ chars, max 72 bytes), consumes the token, signs out **every** existing session (JWT `tv` claim vs `tokenVersion`), confirms the email address, and sends a "password changed" notice. Changing the password from the profile page also ends other sessions and returns a fresh token.
+- Env: `PASSWORD_RESET_TTL_MS` (default 1h), `PASSWORD_RESET_COOLDOWN_MS` (default 60s), `RATE_LIMIT_RESET_MAX` / `RATE_LIMIT_RESET_WINDOW_SEC`.
+- Not verified against a real SMTP provider (tests use a mock SMTP server); rate-limit counters are in memory.
 
 ---
 

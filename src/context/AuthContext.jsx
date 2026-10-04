@@ -98,7 +98,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await authApi.updateProfile(profileData);
       if (res.success && res.data) {
-        setUser((prev) => ({ ...prev, ...res.data }));
+        // changing the password ends the other sessions: continue with the fresh token
+        const { token: freshToken, ...profile } = res.data;
+        if (freshToken) localStorage.setItem('fleetnova_token', freshToken);
+        setUser((prev) => ({ ...prev, ...profile }));
         return { success: true, message: tr("Profile updated") };
       }
       throw new Error(res.message || 'Failed to update profile');

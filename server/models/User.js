@@ -42,6 +42,11 @@ const userSchema = new mongoose.Schema(
     emailVerificationExpires: { type: Date, default: null, select: false },
     emailVerificationSentAt: { type: Date, default: null, select: false },
     language: { type: String, enum: ['mn', 'en'], default: 'mn' },
+    passwordResetTokenHash: { type: String, default: null, select: false },
+    passwordResetExpires: { type: Date, default: null, select: false },
+    passwordResetSentAt: { type: Date, default: null, select: false },
+    // Part of every session token: raising it signs out all sessions issued before (password changes)
+    tokenVersion: { type: Number, default: 0 },
     // Which external channels this user receives alerts on (also requires the organization to enable them)
     alertChannels: {
       email: { type: Boolean, default: false },

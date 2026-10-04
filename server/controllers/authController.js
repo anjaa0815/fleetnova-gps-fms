@@ -4,6 +4,14 @@ import { JWT_SECRET } from '../config/jwt.js';
 import { DataEngine } from '../models/dataEngine.js';
 import { getPlan, isWithinLimit } from '../config/plans.js';
 import {
+  findUserByResetToken,
+  issueResetToken,
+  passwordError,
+  resetCooldownMs,
+  sendPasswordChangedEmail,
+  sendPasswordResetEmail
+} from '../services/passwordReset.js';
+import {
   emailVerificationRequired,
   findUserByToken,
   issueVerificationToken,
@@ -12,15 +20,15 @@ import {
   sendVerificationEmail
 } from '../services/emailVerification.js';
 import {
-  MIN_PASSWORD_LENGTH,
   createOrganizationWithAdmin,
   serializeOrg,
   serializeUser
 } from '../services/organizationService.js';
 
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, JWT_SECRET, { expiresIn: '7d' });
+// `tv` ties the session to the user's tokenVersion: a password change raises it and so ends all older sessions
+const generateToken = (user) => {
+  return jwt.sign({ id: user._id, tv: user.tokenVersion || 0 }, JWT_SECRET, { expiresIn: '7d' });
 };
 
 // Where the links in emails point to: APP_BASE_URL, otherwise the address the request came in on
@@ -68,7 +76,7 @@ export const registerUser = async (req, res, next) => {
       data: {
         ...serializeUser(user),
         organization: serializeOrg(org),
-        token: generateToken(user._id)
+        token: generateToken(user)
       }
     });
   } catch (error) {
@@ -118,7 +126,7 @@ export const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (!email || !password || typeof password !== 'string') {
       return res.status(400).json({
         success: false,
         message: 'Please provide email and password'
@@ -176,7 +184,7 @@ export const loginUser = async (req, res, next) => {
       data: {
         ...serializeUser(user),
         organization: serializeOrg(org),
-        token: generateToken(user._id)
+        token: generateToken(user)
       }
     });
   } catch (error) {
@@ -224,45 +232,103 @@ export const updateProfile = async (req, res, next) => {
     if (name) updateData.name = name;
     if (phone !== undefined) updateData.phone = phone;
 
+    let passwordChanged = false;
     if (password) {
-      if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+      const problem = passwordError(password);
+      if (problem) {
         return res.status(400).json({
           success: false,
-          message: 'New password must be at least 8 characters'
+          message: problem.startsWith('Password must') ? 'New password must be at least 8 characters' : problem
         });
       }
       const salt = await bcrypt.genSalt(10);
       updateData.password = await bcrypt.hash(password, salt);
+      // other devices are signed out; this session continues with a fresh token (returned below)
+      updateData.tokenVersion = ((await DataEngine.findById('users', req.user._id))?.tokenVersion || 0) + 1;
+      passwordChanged = true;
     }
 
     const updatedUser = await DataEngine.findByIdAndUpdate('users', req.user._id, updateData);
 
+    if (passwordChanged) {
+      sendPasswordChangedEmail({ user: updatedUser, lang: updatedUser.language === 'en' ? 'en' : 'mn' }).catch((error) =>
+        console.error(`[Auth] Could not send the password-changed notice: ${error.message}`)
+      );
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      data: serializeUser(updatedUser)
+      data: { ...serializeUser(updatedUser), ...(passwordChanged ? { token: generateToken(updatedUser) } : {}) }
     });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc Forgot password simulation
-// @route POST /api/auth/forgot-password
+// @desc Email a password reset link. The answer is always the same, so it cannot be used to find out which emails exist.
+// @route POST /api/auth/forgot-password   { email, lang? }
 export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (typeof email === 'string') {
-      await DataEngine.findOne('users', { email: email.toLowerCase() });
+      const user = await DataEngine.findOne('users', { email: email.toLowerCase().trim() });
+      if (user && user.status !== 'inactive') {
+        const sentAt = user.passwordResetSentAt ? new Date(user.passwordResetSentAt).getTime() : 0;
+        if (Date.now() - sentAt >= resetCooldownMs()) {
+          const lang = ['mn', 'en'].includes(req.body.lang) ? req.body.lang : user.language === 'en' ? 'en' : 'mn';
+          try {
+            const token = await issueResetToken(user);
+            await sendPasswordResetEmail({ user, token, baseUrl: baseUrlFor(req), lang });
+          } catch (error) {
+            console.error(`[Auth] Could not send the password reset email: ${error.message}`);
+          }
+        }
+      }
     }
 
-    // Same response whether or not the account exists (prevents user enumeration)
     return res.status(200).json({
       success: true,
       message: 'If an account exists for this email, password reset instructions have been sent.'
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// @desc Set a new password with the token from the email. Ends all existing sessions.
+// @route POST /api/auth/reset-password   { token, password }
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+    const problem = passwordError(password);
+    if (problem) return res.status(400).json({ success: false, code: 'WEAK_PASSWORD', message: problem });
+
+    const user = await findUserByResetToken(token);
+    if (!user) {
+      return res.status(400).json({ success: false, code: 'INVALID_TOKEN', message: 'This password reset link is invalid or has expired.' });
+    }
+
+    const update = {
+      password: await bcrypt.hash(password, 10),
+      tokenVersion: (user.tokenVersion || 0) + 1,
+      passwordResetTokenHash: null,
+      passwordResetExpires: null
+    };
+    // following the link proves that the person controls this mailbox
+    if (user.emailVerified === false) {
+      update.emailVerified = true;
+      update.emailVerificationTokenHash = null;
+      update.emailVerificationExpires = null;
+    }
+    await DataEngine.findByIdAndUpdate('users', user._id, update);
+
+    sendPasswordChangedEmail({ user, lang: user.language === 'en' ? 'en' : 'mn' }).catch((error) =>
+      console.error(`[Auth] Could not send the password-changed notice: ${error.message}`)
+    );
+    return res.status(200).json({ success: true, message: 'Password changed. You can sign in with the new password.' });
+  } catch (error) {
+    return next(error);
   }
 };
 
@@ -289,11 +355,8 @@ export const createOrgUser = async (req, res, next) => {
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Name, email and password are required' });
     }
-    if (typeof email !== 'string' || typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
-      return res.status(400).json({
-        success: false,
-        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`
-      });
+    if (typeof email !== 'string' || passwordError(password)) {
+      return res.status(400).json({ success: false, message: passwordError(password) || 'Name, email and password are required' });
     }
     if (!ORG_ROLES.includes(role)) {
       return res.status(400).json({ success: false, message: 'Invalid role' });

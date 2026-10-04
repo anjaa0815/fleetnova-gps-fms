@@ -117,6 +117,9 @@ export const passwordResetLimiter = rateLimit({
   key: (req) => `${req.ip}|${emailKey(req) || ''}`
 });
 
+// Resetting needs the emailed token, so this only bounds token guessing and abuse
+export const resetPasswordLimiter = rateLimit({ name: 'reset', windowMs: 60 * 60 * 1000, max: 30 });
+
 export const verifyIpLimiter = rateLimit({ name: 'verify', windowMs: 60 * 60 * 1000, max: 30 });
 export const resendIpLimiter = rateLimit({ name: 'resend_ip', windowMs: 60 * 60 * 1000, max: 10 });
 export const resendEmailLimiter = rateLimit({

@@ -19,6 +19,8 @@ export const protect = async (req, res, next) => {
 
     user = await DataEngine.findById('users', decoded.id);
     if (!user) return deny(res, 401, 'Not authorized, user no longer exists');
+    // a password change / reset ends every session issued before it
+    if ((decoded.tv || 0) !== (user.tokenVersion || 0)) return deny(res, 401, 'Not authorized, please sign in again');
     if (user.status === 'inactive') {
       return deny(res, 403, 'Account is deactivated. Please contact your Fleet Administrator.');
     }

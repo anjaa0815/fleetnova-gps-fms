@@ -5,7 +5,7 @@ import { describeApiError } from '../utils/apiError.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function ForgotPassword({ onSwitchToLogin }) {
-  const { tr } = useT();
+  const { tr, lang } = useT();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -18,7 +18,7 @@ export default function ForgotPassword({ onSwitchToLogin }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await authApi.forgotPassword(email);
+      const res = await authApi.forgotPassword(email, lang);
       setSubmitted(true);
     } catch (err) {
       setError(describeApiError(err, tr, 'Failed to submit reset request'));

@@ -2,8 +2,9 @@ import bcrypt from 'bcryptjs';
 import { DataEngine } from '../models/dataEngine.js';
 import { PLANS, PLAN_IDS, getPlan } from '../config/plans.js';
 import { slugify, RESERVED_SLUGS } from '../utils/slug.js';
+import { passwordError } from './passwordReset.js';
 
-export const MIN_PASSWORD_LENGTH = 8;
+export { MIN_PASSWORD_LENGTH } from './passwordReset.js';
 
 export class ServiceError extends Error {
   constructor(message, statusCode = 400) {
@@ -84,9 +85,9 @@ export async function createOrganizationWithAdmin({ organizationName, plan = 'tr
   if (!adminName || !email || !password) {
     throw new ServiceError('Name, email and password are required');
   }
-  if (typeof email !== 'string' || typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
-    throw new ServiceError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
-  }
+  if (typeof email !== 'string') throw new ServiceError('Name, email and password are required');
+  const badPassword = passwordError(password);
+  if (badPassword) throw new ServiceError(badPassword);
   const normalizedEmail = email.toLowerCase().trim();
   if (await DataEngine.findOne('users', { email: normalizedEmail })) {
     throw new ServiceError('User with this email already exists');
