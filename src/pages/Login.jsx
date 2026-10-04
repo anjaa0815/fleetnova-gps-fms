@@ -208,7 +208,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
                 type="button"
                 className="btn btn-secondary btn-sm"
                 style={{ fontSize: '0.7rem', padding: '0.4rem 0.2rem' }}
-                onClick={() => handleQuickLogin('rajesh.kumar@fleetnova.com', 'driver123')}
+                onClick={() => handleQuickLogin('driver@fleetnova.com', 'driver123')}
               >
                 {tr("🚚 Driver")}
               </button>

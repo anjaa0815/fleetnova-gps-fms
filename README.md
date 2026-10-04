@@ -153,7 +153,7 @@
 |---|---|---|
 | **System Admin** | `admin@fleetnova.com` | `admin123` |
 | **Fleet Manager** | `manager@fleetnova.com` | `manager123` |
-| **Commercial Driver** | `rajesh.kumar@fleetnova.com` | `driver123` |
+| **Commercial Driver** | `driver@fleetnova.com` | `driver123` |
 
 *(One-click demo buttons are provided directly on the Login screen).*
 
