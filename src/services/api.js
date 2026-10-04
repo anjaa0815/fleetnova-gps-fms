@@ -60,6 +60,13 @@ export const deviceApi = {
   connectionInfo: () => apiRequest('/devices/connection-info')
 };
 
+export const geofenceApi = {
+  getAll: () => apiRequest('/geofences'),
+  create: (data) => apiRequest('/geofences', 'POST', data),
+  update: (id, data) => apiRequest(`/geofences/${id}`, 'PUT', data),
+  delete: (id) => apiRequest(`/geofences/${id}`, 'DELETE')
+};
+
 export const trackingApi = {
   live: () => apiRequest('/tracking/live'),
   history: (params) => apiRequest(`/tracking/history?${params}`)

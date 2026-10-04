@@ -49,7 +49,7 @@ export const updateMyOrganization = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Platform accounts do not belong to an organization' });
     }
 
-    const { name, contactEmail, contactPhone, address, branding } = req.body;
+    const { name, contactEmail, contactPhone, address, branding, settings } = req.body;
     const update = {};
 
     if (name !== undefined) {
@@ -61,6 +61,14 @@ export const updateMyOrganization = async (req, res, next) => {
     if (contactEmail !== undefined) update.contactEmail = String(contactEmail).trim().slice(0, 200);
     if (contactPhone !== undefined) update.contactPhone = String(contactPhone).trim().slice(0, 50);
     if (address !== undefined) update.address = String(address).trim().slice(0, 300);
+
+    if (settings !== undefined && settings.speedLimitKmh !== undefined) {
+      const limit = Number(settings.speedLimitKmh);
+      if (!Number.isInteger(limit) || limit < 0 || limit > 300) {
+        return res.status(400).json({ success: false, message: 'Speed limit must be a whole number between 0 and 300 km/h' });
+      }
+      update.settings = { ...(req.org.settings || {}), speedLimitKmh: limit };
+    }
 
     if (branding !== undefined) {
       const nextBranding = { ...(req.org.branding || {}) };

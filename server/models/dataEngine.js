@@ -11,6 +11,7 @@ import Notification from './Notification.js';
 import Organization from './Organization.js';
 import Device from './Device.js';
 import Position from './Position.js';
+import Geofence from './Geofence.js';
 import { getTenantContext } from '../middleware/tenantContext.js';
 
 // Helper to generate MongoDB-style ObjectId string
@@ -34,7 +35,8 @@ export const TENANT_COLLECTIONS = new Set([
   'expenses',
   'notifications',
   'devices',
-  'positions'
+  'positions',
+  'geofences'
 ]);
 
 function forbidden(message) {
@@ -179,6 +181,7 @@ export const DataEngine = {
         case 'organizations': return Organization;
         case 'devices': return Device;
         case 'positions': return Position;
+        case 'geofences': return Geofence;
         default: return null;
       }
     }
