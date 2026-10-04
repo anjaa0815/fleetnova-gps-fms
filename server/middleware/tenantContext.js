@@ -10,4 +10,8 @@ import { AsyncLocalStorage } from 'async_hooks';
 const storage = new AsyncLocalStorage();
 
 export const runWithTenant = (context, fn) => storage.run(context, fn);
+
+// Escape hatch for narrowly scoped, platform-wide checks (e.g. "is this IMEI registered anywhere?").
+// Never pass user-controlled filters or return tenant documents from inside it.
+export const runAsSystem = (fn) => storage.run(undefined, fn);
 export const getTenantContext = () => storage.getStore() || null;
