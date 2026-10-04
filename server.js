@@ -20,6 +20,7 @@ import dashboardRoutes from './server/routes/dashboardRoutes.js';
 import analyticsRoutes from './server/routes/analyticsRoutes.js';
 import aiRoutes from './server/routes/aiRoutes.js';
 import deviceRoutes from './server/routes/deviceRoutes.js';
+import geofenceRoutes from './server/routes/geofenceRoutes.js';
 import trackingRoutes from './server/routes/trackingRoutes.js';
 import gpsRoutes from './server/routes/gpsRoutes.js';
 import { startGpsServers } from './server/gps/tcpServer.js';
@@ -51,6 +52,7 @@ async function startServer() {
   app.use('/api/gps', gpsRoutes);
   app.use('/api/devices', deviceRoutes);
   app.use('/api/tracking', trackingRoutes);
+  app.use('/api/geofences', geofenceRoutes);
   app.use('/api/vehicles', vehicleRoutes);
   app.use('/api/drivers', driverRoutes);
   app.use('/api/trips', tripRoutes);

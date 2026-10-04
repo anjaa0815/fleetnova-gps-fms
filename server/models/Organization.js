@@ -10,6 +10,10 @@ const organizationSchema = new mongoose.Schema(
     contactEmail: { type: String, default: '', trim: true },
     contactPhone: { type: String, default: '', trim: true },
     address: { type: String, default: '', trim: true },
+    settings: {
+      // 0 = speed alerts off
+      speedLimitKmh: { type: Number, default: 0, min: 0, max: 300 }
+    },
     branding: {
       logoUrl: { type: String, default: '' },
       primaryColor: { type: String, default: '#2563eb' }

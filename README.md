@@ -192,6 +192,17 @@ right organization.
 - The local JSON store keeps the newest `GPS_LOCAL_POSITION_CAP` (default 200000) positions. It is meant for
   development: use MongoDB (or a time-series database) for real fleets.
 
+### Geofences and alerts
+
+- **Geofences** (circle or polygon, optionally limited to some vehicles) are drawn on the **Geofences** page. A
+  vehicle crossing a fence creates an *entered* / *left* alert (each direction can be switched off).
+- **Speed alert:** set the organization's speed limit in *Settings → Organization Profile* (`0` = off). An alert is
+  raised once per speeding episode, after two consecutive over-limit reports (filters single GPS speed spikes).
+- Alerts appear in the notification bell and under *Notifications → GPS Alerts*, in the viewer's language.
+- Only live reports raise alerts: records older than 10 minutes (a tracker uploading its offline backlog) are
+  stored but never alert, and the first position of a tracker only initializes its state. The same alert for the
+  same vehicle/fence is limited to once a minute to avoid flapping at a boundary.
+
 Other tracker brands (GT06/Concox, Queclink, Ruptela, ...) are not implemented yet: add a parser next to
 `server/gps/protocols/teltonika.js` and a listener in `server/gps/tcpServer.js`.
 

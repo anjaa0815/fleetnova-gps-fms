@@ -12,6 +12,12 @@ const deviceSchema = new mongoose.Schema(
     // Shared secret for HTTP (OsmAnd) devices; Teltonika trackers identify with the IMEI only
     secret: { type: String, default: undefined },
     lastSeenAt: { type: Date, default: null },
+    // Alert engine state: geofences the device is currently inside, consecutive over-limit reports
+    alertState: {
+      inside: [String],
+      overLimitCount: { type: Number, default: 0 },
+      speedingAlerted: { type: Boolean, default: false }
+    },
     lastPosition: {
       lat: Number,
       lng: Number,

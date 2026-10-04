@@ -25,6 +25,7 @@ import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
 import Organizations from './pages/Organizations.jsx';
 import Devices from './pages/Devices.jsx';
+import Geofences from './pages/Geofences.jsx';
 import { useT } from './i18n/LanguageContext.jsx';
 import LanguageSwitch from './components/LanguageSwitch.jsx';
 
@@ -82,6 +83,7 @@ function MainApp() {
   const titles = {
     organizations: tr('Platform Organizations'),
     devices: tr('GPS Devices & Tracking'),
+    geofences: tr('Geofences & Zone Alerts'),
     dashboard: tr('Operations Dashboard'),
     vehicles: tr('Vehicles Fleet Registry'),
     'vehicle-details': tr('Vehicle Telematics & History'),
@@ -179,6 +181,12 @@ function MainApp() {
       {currentTab === 'organizations' && (
         <ProtectedRoute allowedRoles={['super_admin']}>
           <Organizations />
+        </ProtectedRoute>
+      )}
+
+      {currentTab === 'geofences' && (
+        <ProtectedRoute allowedRoles={['admin', 'fleet_manager']}>
+          <Geofences />
         </ProtectedRoute>
       )}
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, CheckCheck, AlertTriangle, Info, Calendar, ShieldAlert } from 'lucide-react';
+import { Bell, CheckCheck, AlertTriangle, Info, Calendar, ShieldAlert, MapPin } from 'lucide-react';
 import { notificationApi } from '../services/api.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
@@ -58,6 +58,8 @@ export default function NotificationBell({ onNavigate }) {
   };
 
   const getIcon = (type) => {
+    if (type === 'speeding') return <ShieldAlert size={16} color="#fb7185" />;
+    if (type.startsWith('geofence')) return <MapPin size={16} color="#a78bfa" />;
     if (type.includes('overdue') || type.includes('danger')) return <ShieldAlert size={16} color="#fb7185" />;
     if (type.includes('expiry') || type.includes('due')) return <AlertTriangle size={16} color="#fbbf24" />;
     if (type.includes('trip')) return <Calendar size={16} color="#60a5fa" />;
@@ -162,10 +164,10 @@ export default function NotificationBell({ onNavigate }) {
                   <div style={{ marginTop: '2px' }}>{getIcon(n.type)}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {n.title}
+                      {n.titleKey ? tr(n.titleKey, n.params) : n.title}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: 1.3 }}>
-                      {n.message}
+                      {n.messageKey ? tr(n.messageKey, n.params) : n.message}
                     </div>
                   </div>
                   {!n.isRead && (

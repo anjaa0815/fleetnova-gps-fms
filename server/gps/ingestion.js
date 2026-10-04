@@ -2,6 +2,7 @@ import { DataEngine } from '../models/dataEngine.js';
 import { runWithTenant } from '../middleware/tenantContext.js';
 import { getLocalStore, isDBConnected } from '../config/db.js';
 import { IO } from './protocols/teltonika.js';
+import { evaluateAlerts } from './alerts.js';
 
 const MAX_PAST_MS = 365 * 24 * 60 * 60 * 1000; // buffered offline records can be old
 const MAX_FUTURE_MS = 24 * 60 * 60 * 1000;
@@ -78,6 +79,7 @@ export async function ingestRecords(device, records) {
     const now = Date.now();
 
     const docs = [];
+    const accepted = [];
     let newest = null;
     for (const record of records) {
       if (!validateRecord(record, now)) continue;
@@ -85,6 +87,7 @@ export async function ingestRecords(device, records) {
       if (seen.has(ms)) continue;
       seen.add(ms);
       docs.push(toPosition(fresh, record));
+      accepted.push(record);
       if (!newest || ms > newest.timestamp.getTime()) newest = record;
     }
     // keep the dedupe window bounded
@@ -110,6 +113,16 @@ export async function ingestRecords(device, records) {
         timestamp: position.timestamp
       };
     }
+    // Geofence / speed alerts for the new live records. A failure here must never lose the positions.
+    if (accepted.length) {
+      try {
+        const org = await DataEngine.findById('organizations', fresh.orgId);
+        update.alertState = await evaluateAlerts({ device: fresh, org, records: accepted, previousTimestamp: previous });
+      } catch (error) {
+        console.error(`[GPS] Alert evaluation failed: ${error.message}`);
+      }
+    }
+
     await DataEngine.findByIdAndUpdate('devices', fresh._id, update);
 
     if (!isDBConnected()) pruneLocalPositions();

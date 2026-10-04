@@ -17,7 +17,7 @@ export default function Settings() {
 
   // Organization profile (persisted)
   const [orgData, setOrgData] = useState(null);
-  const [orgForm, setOrgForm] = useState({ name: '', contactEmail: '', contactPhone: '', address: '', primaryColor: '#2563eb', logoUrl: '' });
+  const [orgForm, setOrgForm] = useState({ name: '', contactEmail: '', contactPhone: '', address: '', primaryColor: '#2563eb', logoUrl: '', speedLimitKmh: 0 });
   const [orgMessage, setOrgMessage] = useState(null);
   const [orgError, setOrgError] = useState(null);
   const [orgSaving, setOrgSaving] = useState(false);
@@ -64,7 +64,8 @@ export default function Settings() {
           contactPhone: res.data.contactPhone,
           address: res.data.address,
           primaryColor: res.data.branding.primaryColor,
-          logoUrl: res.data.branding.logoUrl
+          logoUrl: res.data.branding.logoUrl,
+          speedLimitKmh: res.data.settings?.speedLimitKmh || 0
         });
       }
     } catch (err) {
@@ -88,7 +89,8 @@ export default function Settings() {
         contactEmail: orgForm.contactEmail,
         contactPhone: orgForm.contactPhone,
         address: orgForm.address,
-        branding: { primaryColor: orgForm.primaryColor, logoUrl: orgForm.logoUrl }
+        branding: { primaryColor: orgForm.primaryColor, logoUrl: orgForm.logoUrl },
+        settings: { speedLimitKmh: Number(orgForm.speedLimitKmh) || 0 }
       });
       if (res.success) {
         setOrgData(res.data);
@@ -233,6 +235,10 @@ export default function Settings() {
                 <label className="form-label">{tr("Logo URL (https)")}</label>
                 <input className="form-control" placeholder="https://" value={orgForm.logoUrl} onChange={(e) => setOrgForm({ ...orgForm, logoUrl: e.target.value })} />
               </div>
+              <div className="form-group">
+                <label className="form-label">{tr("Speed limit alert (km/h, 0 = off)")}</label>
+                <input type="number" min="0" max="300" step="1" className="form-control" value={orgForm.speedLimitKmh} onChange={(e) => setOrgForm({ ...orgForm, speedLimitKmh: e.target.value })} />
+              </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
               <button type="submit" className="btn btn-primary" disabled={orgSaving}>
@@ -263,16 +269,6 @@ export default function Settings() {
           </div>
 
           <div className="grid-cols-3" style={{ gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">{tr("Highway Speed Governor Limit (km/h)")}</label>
-              <input
-                type="number"
-                className="form-control"
-                value={systemSettings.speedLimit}
-                onChange={(e) => setSystemSettings({ ...systemSettings, speedLimit: parseInt(e.target.value) || 80 })}
-              />
-            </div>
-
             <div className="form-group">
               <label className="form-label">{tr("Maintenance Notice Lead (Days)")}</label>
               <input

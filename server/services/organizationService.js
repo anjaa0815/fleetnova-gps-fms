@@ -24,6 +24,7 @@ export const serializeOrg = (org) =>
     contactEmail: org.contactEmail || '',
     contactPhone: org.contactPhone || '',
     address: org.address || '',
+    settings: { speedLimitKmh: org.settings?.speedLimitKmh || 0 },
     branding: {
       logoUrl: org.branding?.logoUrl || '',
       primaryColor: org.branding?.primaryColor || '#2563eb'
@@ -86,6 +87,7 @@ export async function createOrganizationWithAdmin({ organizationName, plan = 'tr
     contactEmail: normalizedEmail,
     contactPhone: phone,
     address: '',
+    settings: { speedLimitKmh: 0 },
     branding: { logoUrl: '', primaryColor: '#2563eb' }
   });
 
