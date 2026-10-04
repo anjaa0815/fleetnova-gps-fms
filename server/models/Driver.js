@@ -2,10 +2,15 @@ import mongoose from 'mongoose';
 
 const driverSchema = new mongoose.Schema(
   {
+    orgId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true
+    },
     driverId: {
       type: String,
       required: true,
-      unique: true,
       trim: true
     },
     name: {
@@ -27,7 +32,6 @@ const driverSchema = new mongoose.Schema(
     licenseNumber: {
       type: String,
       required: [true, 'License number is required'],
-      unique: true,
       uppercase: true,
       trim: true
     },
@@ -66,6 +70,10 @@ const driverSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+// Identifiers are unique per organization, not globally
+driverSchema.index({ orgId: 1, driverId: 1 }, { unique: true });
+driverSchema.index({ orgId: 1, licenseNumber: 1 }, { unique: true });
 
 const Driver = mongoose.models.Driver || mongoose.model('Driver', driverSchema);
 export default Driver;

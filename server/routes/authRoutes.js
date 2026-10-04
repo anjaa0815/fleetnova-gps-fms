@@ -6,6 +6,7 @@ import {
   updateProfile,
   forgotPassword,
   getAllUsers,
+  createOrgUser,
   updateUserStatus
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
@@ -22,6 +23,7 @@ router.put('/profile', protect, updateProfile);
 
 // Admin-only management
 router.get('/users', protect, authorize('admin'), getAllUsers);
+router.post('/users', protect, authorize('admin'), createOrgUser);
 router.put('/users/:id/status', protect, authorize('admin'), updateUserStatus);
 
 export default router;

@@ -7,6 +7,7 @@ export default function Register({ onSwitchToLogin }) {
   const { tr } = useT();
   const { register } = useAuth();
   const [formData, setFormData] = useState({
+    organizationName: '',
     name: '',
     email: '',
     password: '',
@@ -17,7 +18,7 @@ export default function Register({ onSwitchToLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.organizationName.trim() || !formData.name || !formData.email || !formData.password) {
       setError(tr("Please fill in all required fields"));
       return;
     }
@@ -80,9 +81,9 @@ export default function Register({ onSwitchToLogin }) {
           >
             <Truck size={24} />
           </div>
-          <h2 style={{ fontSize: '1.45rem', fontWeight: 800 }}>{tr("Create FLEETNOVA Account")}</h2>
+          <h2 style={{ fontSize: '1.45rem', fontWeight: 800 }}>{tr("Create Your Organization")}</h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            {tr("Join the smart centralized fleet management platform")}
+            {tr("Start a free trial for your company on the smart fleet management platform")}
           </p>
         </div>
 
@@ -104,6 +105,19 @@ export default function Register({ onSwitchToLogin }) {
           )}
 
           <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">{tr("Organization / Company Name *")}</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder={tr("e.g. Mongol Cargo LLC")}
+                value={formData.organizationName}
+                onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                maxLength={100}
+                required
+              />
+            </div>
+
             <div className="form-group">
               <label className="form-label">{tr("Full Name *")}</label>
               <div style={{ position: 'relative' }}>

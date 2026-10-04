@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard,
+  Building2,
   Truck,
   Users,
   Navigation,
@@ -21,11 +22,12 @@ import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onCloseMobile }) {
   const { tr } = useT();
-  const { user, logout } = useAuth();
+  const { user, logout, organization } = useAuth();
   const role = user?.role || 'driver';
 
   // Role-based Nav Configuration
   const navItems = [
+    { id: 'organizations', label: tr("Organizations"), icon: Building2, roles: ['super_admin'] },
     { id: 'dashboard', label: tr("Dashboard"), icon: LayoutDashboard, roles: ['admin', 'fleet_manager', 'driver'] },
     { id: 'vehicles', label: tr("Vehicles"), icon: Truck, roles: ['admin', 'fleet_manager', 'driver'] },
     { id: 'drivers', label: tr("Drivers"), icon: Users, roles: ['admin', 'fleet_manager'] },
@@ -38,7 +40,7 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
     { id: 'notifications', label: tr("Notifications"), icon: Bell, roles: ['admin', 'fleet_manager', 'driver'] },
     { id: 'fleet-ai', label: tr("FleetAI Assistant"), icon: Sparkles, roles: ['admin', 'fleet_manager'] },
     { id: 'settings', label: tr("Settings"), icon: Settings, roles: ['admin', 'fleet_manager'] },
-    { id: 'profile', label: tr("My Profile"), icon: UserCheck, roles: ['admin', 'fleet_manager', 'driver'] }
+    { id: 'profile', label: tr("My Profile"), icon: UserCheck, roles: ['super_admin', 'admin', 'fleet_manager', 'driver'] }
   ];
 
   const visibleItems = navItems.filter((item) => item.roles.includes(role));
@@ -69,11 +71,17 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
         <div className="sidebar-header">
           <div className="brand-logo-area">
             <div className="brand-icon-box">
-              <Truck size={22} />
+              {organization?.branding?.logoUrl ? (
+                <img src={organization.branding.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                <Truck size={22} />
+              )}
             </div>
-            <div>
-              <div className="brand-text-name">{tr("FLEETNOVA")}</div>
-              <div className="brand-tagline">{tr("SMART FLEET MANAGEMENT")}</div>
+            <div style={{ minWidth: 0 }}>
+              <div className="brand-text-name" style={organization ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' } : undefined}>
+                {organization ? organization.name : tr("FLEETNOVA")}
+              </div>
+              <div className="brand-tagline">{organization ? tr("Powered by FLEETNOVA") : tr("SMART FLEET MANAGEMENT")}</div>
             </div>
           </div>
           {onCloseMobile && (

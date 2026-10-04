@@ -2,10 +2,15 @@ import mongoose from 'mongoose';
 
 const expenseSchema = new mongoose.Schema(
   {
+    orgId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true
+    },
     expenseId: {
       type: String,
       required: true,
-      unique: true,
       trim: true
     },
     vehicle: {
@@ -50,6 +55,9 @@ const expenseSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+// Identifiers are unique per organization, not globally
+expenseSchema.index({ orgId: 1, expenseId: 1 }, { unique: true });
 
 const Expense = mongoose.models.Expense || mongoose.model('Expense', expenseSchema);
 export default Expense;

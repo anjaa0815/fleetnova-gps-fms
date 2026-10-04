@@ -19,6 +19,9 @@ import notificationRoutes from './server/routes/notificationRoutes.js';
 import dashboardRoutes from './server/routes/dashboardRoutes.js';
 import analyticsRoutes from './server/routes/analyticsRoutes.js';
 import aiRoutes from './server/routes/aiRoutes.js';
+import organizationRoutes from './server/routes/organizationRoutes.js';
+import platformRoutes from './server/routes/platformRoutes.js';
+import publicRoutes from './server/routes/publicRoutes.js';
 import { errorHandler, notFound } from './server/middleware/errorMiddleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -38,6 +41,9 @@ async function startServer() {
 
   // REST API Routes
   app.use('/api/auth', authRoutes);
+  app.use('/api/public', publicRoutes);
+  app.use('/api/organization', organizationRoutes);
+  app.use('/api/platform', platformRoutes);
   app.use('/api/vehicles', vehicleRoutes);
   app.use('/api/drivers', driverRoutes);
   app.use('/api/trips', tripRoutes);

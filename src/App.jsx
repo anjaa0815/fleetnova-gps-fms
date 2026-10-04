@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import DashboardLayout from './layouts/DashboardLayout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -23,12 +23,13 @@ import Notifications from './pages/Notifications.jsx';
 import FleetAI from './pages/FleetAI.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
+import Organizations from './pages/Organizations.jsx';
 import { useT } from './i18n/LanguageContext.jsx';
 import LanguageSwitch from './components/LanguageSwitch.jsx';
 
 function MainApp() {
   const { tr } = useT();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, role } = useAuth();
 
   // Auth sub-view when not logged in
   const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'forgot'
@@ -37,6 +38,11 @@ function MainApp() {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
   const [selectedDriverId, setSelectedDriverId] = useState(null);
+
+  // Platform owners have no fleet data: land them on the organizations page
+  useEffect(() => {
+    if (role === 'super_admin') setCurrentTab((tab) => (tab === 'dashboard' ? 'organizations' : tab));
+  }, [role]);
 
   if (loading) {
     return (
@@ -73,6 +79,7 @@ function MainApp() {
 
   // Titles mapping
   const titles = {
+    organizations: tr('Platform Organizations'),
     dashboard: tr('Operations Dashboard'),
     vehicles: tr('Vehicles Fleet Registry'),
     'vehicle-details': tr('Vehicle Telematics & History'),
@@ -164,6 +171,12 @@ function MainApp() {
       {currentTab === 'reports' && (
         <ProtectedRoute allowedRoles={['admin', 'fleet_manager']}>
           <Reports />
+        </ProtectedRoute>
+      )}
+
+      {currentTab === 'organizations' && (
+        <ProtectedRoute allowedRoles={['super_admin']}>
+          <Organizations />
         </ProtectedRoute>
       )}
 

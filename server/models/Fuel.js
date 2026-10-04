@@ -2,10 +2,15 @@ import mongoose from 'mongoose';
 
 const fuelSchema = new mongoose.Schema(
   {
+    orgId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true
+    },
     fuelRecordId: {
       type: String,
       required: true,
-      unique: true,
       trim: true
     },
     vehicle: {
@@ -66,6 +71,9 @@ fuelSchema.pre('validate', function (next) {
   }
   next();
 });
+
+// Identifiers are unique per organization, not globally
+fuelSchema.index({ orgId: 1, fuelRecordId: 1 }, { unique: true });
 
 const Fuel = mongoose.models.Fuel || mongoose.model('Fuel', fuelSchema);
 export default Fuel;
