@@ -48,6 +48,7 @@ export const authApi = {
   forgotPassword: (email) => apiRequest('/auth/forgot-password', 'POST', { email }),
   getAllUsers: () => apiRequest('/auth/users', 'GET'),
   createUser: (userData) => apiRequest('/auth/users', 'POST', userData),
+  updateAlertChannels: (id, channels) => apiRequest(`/auth/users/${id}/alert-channels`, 'PUT', channels),
   updateUserStatus: (id, statusData) => apiRequest(`/auth/users/${id}/status`, 'PUT', statusData)
 };
 
@@ -58,6 +59,13 @@ export const deviceApi = {
   update: (id, data) => apiRequest(`/devices/${id}`, 'PUT', data),
   delete: (id) => apiRequest(`/devices/${id}`, 'DELETE'),
   connectionInfo: () => apiRequest('/devices/connection-info')
+};
+
+// Email / SMS alert delivery (organization admin)
+export const deliveryApi = {
+  config: () => apiRequest('/delivery/config'),
+  log: (limit = 10) => apiRequest(`/delivery/log?limit=${limit}`),
+  test: (channel) => apiRequest('/delivery/test', 'POST', { channel })
 };
 
 export const geofenceApi = {

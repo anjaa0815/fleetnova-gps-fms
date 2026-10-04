@@ -1,6 +1,7 @@
 import { DataEngine } from '../models/dataEngine.js';
 import { isInsideGeofence } from './geometry.js';
 import { getActiveGeofences } from './geofenceCache.js';
+import { enqueueDeliveries } from '../notify/dispatcher.js';
 
 const RECENT_WINDOW_MS = 10 * 60 * 1000; // older (buffered) records never raise live alerts
 const CONFIRM_REPORTS = 2; // consecutive over-limit reports needed (filters single GPS speed spikes)
@@ -72,11 +73,11 @@ export async function evaluateAlerts({ device, org, records, previousTimestamp }
     }
   }
 
-  if (events.length > 0) await notify(device, vehicleId, events);
+  if (events.length > 0) await notify(device, vehicleId, events, org);
   return state;
 }
 
-async function notify(device, vehicleId, events) {
+async function notify(device, vehicleId, events, org) {
   const vehicle = vehicleId ? await DataEngine.findById('vehicles', vehicleId) : null;
   const label = vehicle?.registrationNumber || device.name;
   const relatedEntity = vehicle ? 'Vehicle' : 'Device';
@@ -103,7 +104,7 @@ async function notify(device, vehicleId, events) {
     };
     const fill = (text) => text.replace(/\{(\w+)\}/g, (_, key) => params[key] ?? '');
     // eslint-disable-next-line no-await-in-loop
-    await DataEngine.create('notifications', {
+    const notification = await DataEngine.create('notifications', {
       type: event.type,
       title: fill(titleKey),
       message: fill(messageKey),
@@ -114,5 +115,13 @@ async function notify(device, vehicleId, events) {
       relatedEntityId,
       isRead: false
     });
+
+    // Email / SMS: queued here, sent by the delivery worker. A failure must not lose the in-app alert.
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await enqueueDeliveries({ org, notification });
+    } catch (error) {
+      console.error(`[Delivery] Could not queue deliveries: ${error.message}`);
+    }
   }
 }

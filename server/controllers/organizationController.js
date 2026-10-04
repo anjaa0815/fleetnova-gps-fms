@@ -1,6 +1,7 @@
 import { DataEngine } from '../models/dataEngine.js';
 import { PLAN_IDS, ORG_STATUSES } from '../config/plans.js';
 import {
+  DELIVERY_TYPES,
   ServiceError,
   createOrganizationWithAdmin,
   planLimits,
@@ -62,12 +63,33 @@ export const updateMyOrganization = async (req, res, next) => {
     if (contactPhone !== undefined) update.contactPhone = String(contactPhone).trim().slice(0, 50);
     if (address !== undefined) update.address = String(address).trim().slice(0, 300);
 
+    if (settings !== undefined && settings.delivery !== undefined) {
+      const d = settings.delivery;
+      const current = { ...(req.org.settings?.delivery || {}) };
+      if (d.types !== undefined && (!Array.isArray(d.types) || !d.types.every((t) => DELIVERY_TYPES.includes(t)))) {
+        return res.status(400).json({ success: false, message: 'Invalid alert types' });
+      }
+      if (d.language !== undefined && !['mn', 'en'].includes(d.language)) {
+        return res.status(400).json({ success: false, message: 'Invalid language' });
+      }
+      update.settings = {
+        ...(req.org.settings || {}),
+        ...(update.settings || {}),
+        delivery: {
+          email: d.email !== undefined ? Boolean(d.email) : Boolean(current.email),
+          sms: d.sms !== undefined ? Boolean(d.sms) : Boolean(current.sms),
+          types: d.types !== undefined ? [...new Set(d.types)] : current.types || [...DELIVERY_TYPES],
+          language: d.language !== undefined ? d.language : current.language || 'mn'
+        }
+      };
+    }
+
     if (settings !== undefined && settings.speedLimitKmh !== undefined) {
       const limit = Number(settings.speedLimitKmh);
       if (!Number.isInteger(limit) || limit < 0 || limit > 300) {
         return res.status(400).json({ success: false, message: 'Speed limit must be a whole number between 0 and 300 km/h' });
       }
-      update.settings = { ...(req.org.settings || {}), speedLimitKmh: limit };
+      update.settings = { ...(req.org.settings || {}), ...(update.settings || {}), speedLimitKmh: limit };
     }
 
     if (branding !== undefined) {

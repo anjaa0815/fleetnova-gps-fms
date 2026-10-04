@@ -36,6 +36,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    // Which external channels this user receives alerts on (also requires the organization to enable them)
+    alertChannels: {
+      email: { type: Boolean, default: false },
+      sms: { type: Boolean, default: false }
+    },
     status: {
       type: String,
       enum: ['active', 'inactive'],

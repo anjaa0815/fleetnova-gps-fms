@@ -67,6 +67,7 @@ export async function seedFleetData() {
       password: adminPassword,
       role: 'admin',
       phone: '+976 9911 2233',
+      alertChannels: { email: true, sms: true },
       status: 'active',
       createdAt: iso('2025-01-10')
     },
@@ -77,6 +78,7 @@ export async function seedFleetData() {
       password: managerPassword,
       role: 'fleet_manager',
       phone: '+976 9919 4455',
+      alertChannels: { email: true, sms: false },
       status: 'active',
       createdAt: iso('2025-01-15')
     },
@@ -1075,6 +1077,10 @@ export async function seedFleetData() {
       contactEmail: 'info@mongolcargo.example',
       contactPhone: '+976 7700 1122',
       address: 'Баянгол дүүрэг, Улаанбаатар',
+      settings: {
+        speedLimitKmh: 90,
+        delivery: { email: true, sms: true, types: ['speeding', 'geofence_enter', 'geofence_exit'], language: 'mn' }
+      },
       branding: { logoUrl: '', primaryColor: '#2563eb' },
       createdAt: iso('2025-01-10'),
       updatedAt: nowIso
@@ -1089,6 +1095,7 @@ export async function seedFleetData() {
       contactEmail: 'altan@fleetnova.com',
       contactPhone: '+976 9900 5566',
       address: 'Дархан хот',
+      settings: { speedLimitKmh: 0, delivery: { email: false, sms: false, types: ['speeding', 'geofence_enter', 'geofence_exit'], language: 'mn' } },
       branding: { logoUrl: '', primaryColor: '#059669' },
       createdAt: nowIso,
       updatedAt: nowIso
