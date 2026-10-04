@@ -224,6 +224,20 @@ Alerts (speeding, geofence enter/exit) can also be sent by email and SMS:
    as HTTP 4xx are not retried). Each organization has a daily limit per channel according to its plan, every
    delivery is logged (addresses masked) and messages are never sent for suspended organizations.
 
+### GPS reports
+
+*GPS Reports* summarizes what the trackers recorded over a period (up to 31 days) for the whole fleet or one vehicle:
+distance, trips, driving time, stops and idling (engine on), max/average speed, speeding and geofence alerts, and
+fuel purchased with km per litre. Click a vehicle for its trip and stop lists; every table exports to CSV
+(`GET /api/reports/gps`, `GET /api/reports/gps.csv?type=vehicles|trips|stops`).
+
+How the numbers are derived (`server/reports/gpsAnalysis.js`): a vehicle is *moving* at 3 km/h or more; a pause of
+5 minutes or more is a *stop* (and ends the trip), shorter pauses such as traffic lights stay inside the trip;
+reports more than 30 minutes apart are a *data gap* (nothing is assumed about it, no distance is added);
+impossible jumps (over 250 km/h) and GPS drift while parked are ignored; trips under 100 m are dropped. Days are
+split in the `ALERT_TIME_ZONE` time zone (default Asia/Ulaanbaatar). km per litre divides GPS distance by the fuel
+logged in the same period, so it is only meaningful over periods that cover whole refuelling cycles.
+
 Other tracker brands (GT06/Concox, Queclink, Ruptela, ...) are not implemented yet: add a parser next to
 `server/gps/protocols/teltonika.js` and a listener in `server/gps/tcpServer.js`.
 
