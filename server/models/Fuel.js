@@ -65,11 +65,11 @@ const fuelSchema = new mongoose.Schema(
   }
 );
 
-fuelSchema.pre('validate', function (next) {
+// Mongoose 9: synchronous hooks take no `next` callback
+fuelSchema.pre('validate', function () {
   if (this.quantity && this.pricePerLiter) {
     this.totalCost = Math.round(this.quantity * this.pricePerLiter * 100) / 100;
   }
-  next();
 });
 
 // Identifiers are unique per organization, not globally

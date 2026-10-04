@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { encodeAvlPacket, encodeLogin } from '../gps/protocols/teltonika.js';
 import { isInsideGeofence, haversineMeters } from '../gps/geometry.js';
+import { dbEnv } from './dbEnv.js';
 
 const HTTP_PORT = 3700 + Math.floor(Math.random() * 90);
 const TCP_PORT = 5600 + Math.floor(Math.random() * 300);
@@ -92,7 +93,7 @@ before(async () => {
   server = spawn(process.execPath, ['server.js'], {
     env: {
       ...process.env, NODE_ENV: 'production', PORT: String(HTTP_PORT), HOST: '127.0.0.1',
-      GPS_TCP_PORT: String(TCP_PORT), GT06_TCP_PORT: '0', GPS_TCP_HOST: '127.0.0.1', JWT_SECRET: 'test-secret', RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false', FLEETNOVA_DATA_FILE: DATA_FILE
+      GPS_TCP_PORT: String(TCP_PORT), GT06_TCP_PORT: '0', GPS_TCP_HOST: '127.0.0.1', JWT_SECRET: 'test-secret', RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false', FLEETNOVA_DATA_FILE: DATA_FILE, ...dbEnv()
     },
     stdio: 'ignore'
   });

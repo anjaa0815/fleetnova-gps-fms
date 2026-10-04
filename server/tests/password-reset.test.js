@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import { dbEnv } from './dbEnv.js';
 
 const HTTP_PORT = 3200 + Math.floor(Math.random() * 90);
 const SMTP_PORT = 6800 + Math.floor(Math.random() * 90);
@@ -86,7 +87,7 @@ before(async () => {
   server = spawn(process.execPath, ['server.js'], {
     env: {
       ...process.env, NODE_ENV: 'production', PORT: String(HTTP_PORT), HOST: '127.0.0.1',
-      GPS_TCP_PORT: '0', GT06_TCP_PORT: '0', JWT_SECRET: 'test-secret', FLEETNOVA_DATA_FILE: DATA_FILE,
+      GPS_TCP_PORT: '0', GT06_TCP_PORT: '0', JWT_SECRET: 'test-secret', FLEETNOVA_DATA_FILE: DATA_FILE, ...dbEnv(),
       ADMIN_EMAIL: SUPER.email, ADMIN_PASSWORD: SUPER.password,
       SMTP_HOST: '127.0.0.1', SMTP_PORT: String(SMTP_PORT), EMAIL_FROM: 'FLEETNOVA <no-reply@test.example>',
       APP_BASE_URL: 'https://fleet.example.com',
