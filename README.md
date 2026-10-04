@@ -172,6 +172,31 @@ update and delete to it, so one organization can never read or change another on
 
 ---
 
+## 📡 GPS tracking
+
+Trackers are registered per organization on the **GPS Devices** page and linked to a vehicle. A tracker is
+identified by its IMEI, which is unique across the whole platform, so incoming data is always stored in the
+right organization.
+
+| Protocol | How it connects | Authentication |
+|---|---|---|
+| **Teltonika** (Codec 8 / 8E) | TCP, default port `5027` (`GPS_TCP_PORT`, `0` disables it) | IMEI handshake (device must be registered) |
+| **OsmAnd / Traccar Client** | `GET/POST /api/gps/osmand?id=&key=&lat=&lon=&timestamp=&speed=<knots>&bearing=&altitude=` | device id + per-device secret key |
+
+- Invalid data is dropped (no fix, impossible coordinates, timestamps from the future), retransmissions are
+  de-duplicated, and a suspended organization or removed device is disconnected.
+- `GET /api/tracking/live` returns the last position of every tracker (the Vehicles map refreshes it every 10 s);
+  `GET /api/tracking/history?vehicleId=|deviceId=&from=&to=` returns a route with its distance (route playback in the UI).
+- Try it without hardware: register a Teltonika device with a 15-digit IMEI, link it to a vehicle and run
+  `npm run simulate -- --imei <IMEI>` (drives a fake truck from Ulaanbaatar towards Darkhan).
+- The local JSON store keeps the newest `GPS_LOCAL_POSITION_CAP` (default 200000) positions. It is meant for
+  development: use MongoDB (or a time-series database) for real fleets.
+
+Other tracker brands (GT06/Concox, Queclink, Ruptela, ...) are not implemented yet: add a parser next to
+`server/gps/protocols/teltonika.js` and a listener in `server/gps/tcpServer.js`.
+
+---
+
 ## 🔑 Demo Credentials
 
 Only created in development (or with `SEED_DEMO_DATA=true`):
@@ -197,6 +222,9 @@ PORT=3000
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/fleetnova
 JWT_SECRET=your_jwt_secret_key_fleetnova_2026
 GEMINI_API_KEY=your_google_gemini_api_key
+
+# GPS tracker listener (0 = disabled)
+GPS_TCP_PORT=5027
 
 # Production: creates the platform owner (super admin) on an empty database
 ADMIN_EMAIL=owner@yourcompany.com

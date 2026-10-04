@@ -9,6 +9,8 @@ import Maintenance from './Maintenance.js';
 import Expense from './Expense.js';
 import Notification from './Notification.js';
 import Organization from './Organization.js';
+import Device from './Device.js';
+import Position from './Position.js';
 import { getTenantContext } from '../middleware/tenantContext.js';
 
 // Helper to generate MongoDB-style ObjectId string
@@ -30,7 +32,9 @@ export const TENANT_COLLECTIONS = new Set([
   'fuels',
   'maintenances',
   'expenses',
-  'notifications'
+  'notifications',
+  'devices',
+  'positions'
 ]);
 
 function forbidden(message) {
@@ -70,6 +74,12 @@ function populateDoc(collectionName, doc) {
   const scope = { orgId: copy.orgId };
   const lookup = (list, ref, idKey) =>
     (list || []).find((x) => (x._id === ref || x[idKey] === ref) && sameOrg(x, scope)) || ref;
+
+  if (collectionName === 'devices') {
+    if (copy.vehicle && typeof copy.vehicle === 'string') {
+      copy.vehicle = lookup(store.vehicles, copy.vehicle, 'vehicleId');
+    }
+  }
 
   if (collectionName === 'vehicles') {
     if (copy.assignedDriver && typeof copy.assignedDriver === 'string') {
@@ -167,6 +177,8 @@ export const DataEngine = {
         case 'expenses': return Expense;
         case 'notifications': return Notification;
         case 'organizations': return Organization;
+        case 'devices': return Device;
+        case 'positions': return Position;
         default: return null;
       }
     }
@@ -288,6 +300,36 @@ export const DataEngine = {
     store[collectionName].unshift(newDoc);
     saveLocalStore();
     return populateDoc(collectionName, newDoc);
+  },
+
+  // Bulk insert for high-volume data (GPS positions). Same tenant rules as create().
+  async createMany(collectionName, docs) {
+    if (!docs.length) return [];
+    const ctx = getTenantContext();
+    const payloads = docs.map((data) => {
+      const payload = { ...data };
+      if (TENANT_COLLECTIONS.has(collectionName)) {
+        if (ctx && !ctx.platform) {
+          payload.orgId = ctx.orgId;
+        } else if (!('orgId' in payload)) {
+          throw new Error(`orgId is required to create ${collectionName}`);
+        }
+      }
+      return payload;
+    });
+
+    if (isDBConnected()) {
+      const Model = await this.getCollection(collectionName);
+      return await Model.insertMany(payloads);
+    }
+
+    const store = getLocalStore();
+    if (!store[collectionName]) store[collectionName] = [];
+    const now = new Date().toISOString();
+    const created = payloads.map((payload) => ({ _id: generateId(), ...payload, createdAt: now, updatedAt: now }));
+    store[collectionName].push(...created);
+    saveLocalStore();
+    return created;
   },
 
   async findByIdAndUpdate(collectionName, id, updateData, options = {}) {
