@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-// Teltonika tracker simulator: drives a fake vehicle along a route and sends Codec 8 packets over TCP.
+// Tracker simulator: drives a fake vehicle along a route and sends positions over TCP.
 //
-//   node scripts/simulate-device.js --imei 356307042441013 [--host 127.0.0.1] [--port 5027]
-//        [--interval 5] [--speed 60] [--extended]
+//   node scripts/simulate-device.js --imei 356307042441013 [--protocol teltonika|gt06] [--host 127.0.0.1]
+//        [--port 5027 (teltonika) | 5023 (gt06)] [--interval 5] [--speed 60] [--extended]
 //
-// Register the IMEI first in the app (GPS Devices page) and link it to a vehicle.
+// Register the IMEI first in the app (GPS Devices page, same protocol) and link it to a vehicle.
 import net from 'net';
 import { encodeAvlPacket, encodeLogin } from '../server/gps/protocols/teltonika.js';
+import { encodeHeartbeat, encodeLocation, encodeLogin as encodeGt06Login } from '../server/gps/protocols/gt06.js';
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, arg, i, all) => {
@@ -17,11 +18,16 @@ const args = Object.fromEntries(
 
 const imei = String(args.imei || '');
 if (!/^\d{15}$/.test(imei)) {
-  console.error('Usage: node scripts/simulate-device.js --imei <15 digits> [--host H] [--port P] [--interval sec] [--speed km/h] [--extended]');
+  console.error('Usage: node scripts/simulate-device.js --imei <15 digits> [--protocol teltonika|gt06] [--host H] [--port P] [--interval sec] [--speed km/h] [--extended]');
+  process.exit(1);
+}
+const protocol = String(args.protocol || 'teltonika');
+if (!['teltonika', 'gt06'].includes(protocol)) {
+  console.error('Protocol must be teltonika or gt06');
   process.exit(1);
 }
 const host = args.host || '127.0.0.1';
-const port = Number(args.port || 5027);
+const port = Number(args.port || (protocol === 'gt06' ? 5023 : 5027));
 const intervalSec = Number(args.interval || 5);
 const speedKmh = Number(args.speed || 60);
 const extended = Boolean(args.extended);
@@ -80,27 +86,43 @@ function step() {
 }
 
 const socket = net.connect(port, host, () => {
-  console.log(`Connected to ${host}:${port}, logging in as ${imei}`);
-  socket.write(encodeLogin(imei));
+  console.log(`Connected to ${host}:${port} (${protocol}), logging in as ${imei}`);
+  socket.write(protocol === 'gt06' ? encodeGt06Login(imei, 1) : encodeLogin(imei));
 });
 
 let loggedIn = false;
-socket.on('data', (data) => {
-  if (!loggedIn) {
-    if (data[0] !== 1) {
-      console.error('Server rejected the IMEI (register the device first).');
-      process.exit(2);
-    }
-    loggedIn = true;
-    console.log('Login accepted, sending positions...');
-    const send = () => {
-      const record = step();
+let serial = 1;
+
+function startSending() {
+  loggedIn = true;
+  console.log('Login accepted, sending positions...');
+  const send = () => {
+    const record = step();
+    if (protocol === 'gt06') {
+      serial += 1;
+      socket.write(encodeLocation({ ...record, ignition: true }, { protocol: 0x22, serial }));
+    } else {
       socket.write(encodeAvlPacket([record], { extended }));
-      console.log(`-> ${record.lat.toFixed(5)}, ${record.lng.toFixed(5)} @ ${record.speed} km/h`);
-    };
-    send();
-    setInterval(send, intervalSec * 1000);
+    }
+    console.log(`-> ${record.lat.toFixed(5)}, ${record.lng.toFixed(5)} @ ${record.speed} km/h`);
+  };
+  if (protocol === 'gt06') {
+    // GT06 trackers send a heartbeat every few minutes to stay connected
+    setInterval(() => { serial += 1; socket.write(encodeHeartbeat({ ignition: true }, serial)); }, 60 * 1000);
   }
+  send();
+  setInterval(send, intervalSec * 1000);
+}
+
+socket.on('data', (data) => {
+  if (loggedIn) return; // acknowledgements of later packets are not needed by the simulator
+  // Teltonika: single byte 0x01 = accepted; GT06: acknowledgement frame 78 78 05 01 ...
+  const accepted = protocol === 'gt06' ? data.length >= 10 && data[0] === 0x78 && data[3] === 0x01 : data[0] === 1;
+  if (!accepted) {
+    console.error('Server rejected the IMEI (register the device first, with the same protocol).');
+    process.exit(2);
+  }
+  startSending();
 });
 socket.on('close', () => {
   console.log('Connection closed');
