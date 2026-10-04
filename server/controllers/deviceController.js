@@ -41,12 +41,14 @@ export const serializeDevice = (device) => ({
 // @desc Where trackers should send their data
 // @route GET /api/devices/connection-info
 export const getConnectionInfo = (req, res) => {
-  const raw = process.env.GPS_TCP_PORT;
-  const tcpPort = raw === undefined || raw === '' ? 5027 : Number(raw);
+  const portFrom = (value, fallback) => (value === undefined || value === '' ? fallback : Number(value));
+  const tcpPort = portFrom(process.env.GPS_TCP_PORT, 5027);
+  const gt06Port = portFrom(process.env.GT06_TCP_PORT, 5023);
   res.status(200).json({
     success: true,
     data: {
       teltonika: { enabled: tcpPort > 0, port: tcpPort > 0 ? tcpPort : null, codecs: ['8', '8E'] },
+      gt06: { enabled: gt06Port > 0, port: gt06Port > 0 ? gt06Port : null },
       osmand: { path: '/api/gps/osmand', parameters: 'id, key, lat, lon, timestamp, speed (knots), bearing, altitude' }
     }
   });
@@ -70,12 +72,15 @@ export const createDevice = async (req, res, next) => {
     if (!name || typeof name !== 'string' || !imei) {
       return res.status(400).json({ success: false, message: 'Device name and IMEI are required' });
     }
-    if (!['teltonika', 'osmand'].includes(protocol)) {
+    if (!['teltonika', 'osmand', 'gt06'].includes(protocol)) {
       return res.status(400).json({ success: false, message: 'Invalid protocol' });
     }
     const id = String(imei).trim();
     if (protocol === 'teltonika' && !TELTONIKA_IMEI.test(id)) {
       return res.status(400).json({ success: false, message: 'A Teltonika IMEI has exactly 15 digits' });
+    }
+    if (protocol === 'gt06' && !TELTONIKA_IMEI.test(id)) {
+      return res.status(400).json({ success: false, message: 'A GT06 IMEI has exactly 15 digits' });
     }
     if (protocol === 'osmand' && !OSMAND_ID.test(id)) {
       return res.status(400).json({ success: false, message: 'Device id must be 6-32 letters, digits, - or _' });
