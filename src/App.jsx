@@ -25,6 +25,7 @@ import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
 import Organizations from './pages/Organizations.jsx';
 import Devices from './pages/Devices.jsx';
+import VerifyEmail from './pages/VerifyEmail.jsx';
 import Geofences from './pages/Geofences.jsx';
 import GpsReports from './pages/GpsReports.jsx';
 import { useT } from './i18n/LanguageContext.jsx';
@@ -33,6 +34,14 @@ import LanguageSwitch from './components/LanguageSwitch.jsx';
 function MainApp() {
   const { tr } = useT();
   const { isAuthenticated, loading, role } = useAuth();
+
+  // Link from the confirmation email: /?verify=<token>
+  const [verifyToken, setVerifyToken] = useState(() => new URLSearchParams(window.location.search).get('verify'));
+  const finishVerification = () => {
+    window.history.replaceState({}, '', window.location.pathname);
+    setVerifyToken(null);
+    setAuthView('login');
+  };
 
   // Auth sub-view when not logged in
   const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'forgot'
@@ -57,6 +66,8 @@ function MainApp() {
 
   // Unauthenticated screen
   if (!isAuthenticated) {
+    if (verifyToken) return <VerifyEmail token={verifyToken} onDone={finishVerification} />;
+
     let authScreen;
     if (authView === 'register') {
       authScreen = <Register onSwitchToLogin={() => setAuthView('login')} />;

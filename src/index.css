@@ -760,6 +760,11 @@ button, input, select, textarea {
   to { transform: rotate(360deg); }
 }
 
+/* Rotating icon (loading) */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

@@ -92,7 +92,7 @@ before(async () => {
       HOST: '127.0.0.1',
       GPS_TCP_PORT: String(TCP_PORT), GT06_TCP_PORT: '0',
       GPS_TCP_HOST: '127.0.0.1',
-      JWT_SECRET: 'test-secret',
+      JWT_SECRET: 'test-secret', RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false',
       FLEETNOVA_DATA_FILE: DATA_FILE,
       ADMIN_EMAIL: SUPER.email,
       ADMIN_PASSWORD: SUPER.password

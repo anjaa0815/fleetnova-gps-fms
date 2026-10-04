@@ -52,6 +52,7 @@ export const serializeUser = (u) => ({
   phone: u.phone,
   status: u.status,
   orgId: u.orgId || null,
+  emailVerified: u.emailVerified !== false,
   alertChannels: { email: Boolean(u.alertChannels?.email), sms: Boolean(u.alertChannels?.sms) }
 });
 
@@ -72,7 +73,7 @@ export function trialEndDate(from = new Date()) {
 }
 
 // Creates a new tenant together with its first administrator.
-export async function createOrganizationWithAdmin({ organizationName, plan = 'trial', admin }) {
+export async function createOrganizationWithAdmin({ organizationName, plan = 'trial', admin, emailVerified = true, language = 'mn' }) {
   const name = typeof organizationName === 'string' ? organizationName.trim() : '';
   if (name.length < 2 || name.length > 100) {
     throw new ServiceError('Organization name must be between 2 and 100 characters');
@@ -111,7 +112,9 @@ export async function createOrganizationWithAdmin({ organizationName, plan = 'tr
     password: await bcrypt.hash(password, 10),
     role: 'admin',
     phone,
-    status: 'active'
+    status: 'active',
+    emailVerified,
+    language
   });
 
   return { org, user };

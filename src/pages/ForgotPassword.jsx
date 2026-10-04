@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Truck, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { authApi } from '../services/api.js';
+import { describeApiError } from '../utils/apiError.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function ForgotPassword({ onSwitchToLogin }) {
@@ -20,7 +21,7 @@ export default function ForgotPassword({ onSwitchToLogin }) {
       const res = await authApi.forgotPassword(email);
       setSubmitted(true);
     } catch (err) {
-      setError(tr(err.message || 'Failed to submit reset request'));
+      setError(describeApiError(err, tr, 'Failed to submit reset request'));
     } finally {
       setLoading(false);
     }

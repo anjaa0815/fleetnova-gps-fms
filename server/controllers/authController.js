@@ -4,6 +4,14 @@ import { JWT_SECRET } from '../config/jwt.js';
 import { DataEngine } from '../models/dataEngine.js';
 import { getPlan, isWithinLimit } from '../config/plans.js';
 import {
+  emailVerificationRequired,
+  findUserByToken,
+  issueVerificationToken,
+  markVerified,
+  resendCooldownMs,
+  sendVerificationEmail
+} from '../services/emailVerification.js';
+import {
   MIN_PASSWORD_LENGTH,
   createOrganizationWithAdmin,
   serializeOrg,
@@ -15,17 +23,44 @@ const generateToken = (id) => {
   return jwt.sign({ id }, JWT_SECRET, { expiresIn: '7d' });
 };
 
+// Where the links in emails point to: APP_BASE_URL, otherwise the address the request came in on
+const baseUrlFor = (req) => process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+// Sends the confirmation link; a failure is logged and never blocks the caller (the user can ask for a new link)
+async function sendVerification(req, user) {
+  try {
+    const token = await issueVerificationToken(user);
+    await sendVerificationEmail({ user, token, baseUrl: baseUrlFor(req) });
+  } catch (error) {
+    console.error(`[Auth] Could not send the verification email: ${error.message}`);
+  }
+}
+
 // @desc Register a new organization together with its first administrator (self-service sign-up)
 // @route POST /api/auth/register
 export const registerUser = async (req, res, next) => {
   try {
     const { organizationName, name, email, password, phone = '' } = req.body;
+    const language = req.body.lang === 'en' ? 'en' : 'mn';
+    const mustVerify = emailVerificationRequired();
 
     const { org, user } = await createOrganizationWithAdmin({
       organizationName,
       plan: 'trial',
-      admin: { name, email, password, phone }
+      admin: { name, email, password, phone },
+      emailVerified: !mustVerify,
+      language
     });
+
+    if (mustVerify) {
+      await sendVerification(req, user);
+      // No session yet: the account is usable once the email address is confirmed
+      return res.status(201).json({
+        success: true,
+        message: 'Organization registered. Please confirm your email address.',
+        data: { ...serializeUser(user), organization: serializeOrg(org), verificationRequired: true }
+      });
+    }
 
     return res.status(201).json({
       success: true,
@@ -38,6 +73,42 @@ export const registerUser = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// @desc Confirm an email address with the token from the link
+// @route POST /api/auth/verify-email   { token }
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const user = await findUserByToken(req.body.token);
+    if (!user) {
+      return res.status(400).json({ success: false, code: 'INVALID_TOKEN', message: 'This confirmation link is invalid or has expired.' });
+    }
+    await markVerified(user);
+    return res.status(200).json({ success: true, message: 'Email address confirmed. You can sign in now.' });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// @desc Send a new confirmation link. Always answers the same way, so it cannot be used to find out which emails exist.
+// @route POST /api/auth/resend-verification   { email }
+export const resendVerification = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (typeof email === 'string' && emailVerificationRequired()) {
+      const user = await DataEngine.findOne('users', { email: email.toLowerCase().trim() });
+      if (user && user.emailVerified === false) {
+        const sentAt = user.emailVerificationSentAt ? new Date(user.emailVerificationSentAt).getTime() : 0;
+        if (Date.now() - sentAt >= resendCooldownMs()) await sendVerification(req, user);
+      }
+    }
+    return res.status(200).json({
+      success: true,
+      message: 'If this address is waiting for confirmation, a new link has been sent.'
+    });
+  } catch (error) {
+    return next(error);
   }
 };
 
@@ -74,6 +145,14 @@ export const loginUser = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         message: 'Account is deactivated. Contact Administrator.'
+      });
+    }
+
+    if (user.emailVerified === false && emailVerificationRequired()) {
+      return res.status(403).json({
+        success: false,
+        code: 'EMAIL_NOT_VERIFIED',
+        message: 'Please confirm your email address before signing in.'
       });
     }
 
