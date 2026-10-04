@@ -131,21 +131,21 @@ export default function Dashboard({ onNavigate }) {
       <div className="grid-cols-4">
         <StatCard
           title={tr("Gross Expenses")}
-          value={`₹${cards.totalExpenses.toLocaleString()}`}
+          value={`₮${cards.totalExpenses.toLocaleString()}`}
           subtext={tr("Comprehensive operating costs")}
           icon={Receipt}
           color="#8b5cf6"
         />
         <StatCard
           title={tr("Fuel Expenditure")}
-          value={`₹${cards.totalFuelCost.toLocaleString()}`}
+          value={`₮${cards.totalFuelCost.toLocaleString()}`}
           subtext={tr('{a} Liters consumed', { a: cards.totalFuelConsumed })}
           icon={Fuel}
           color="#06b6d4"
         />
         <StatCard
           title={tr("Maintenance Cost")}
-          value={`₹${cards.totalMaintenanceCost.toLocaleString()}`}
+          value={`₮${cards.totalMaintenanceCost.toLocaleString()}`}
           subtext={tr("Scheduled services & parts")}
           icon={Wrench}
           color="#fb7185"
@@ -396,7 +396,7 @@ export default function Dashboard({ onNavigate }) {
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      ₹{m.cost?.toLocaleString()}
+                      ₮{m.cost?.toLocaleString()}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                       {m.serviceDate ? new Date(m.serviceDate).toLocaleDateString() : tr("Pending")}
@@ -482,7 +482,7 @@ export default function Dashboard({ onNavigate }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
                     <span style={{ fontWeight: 600 }}>{tr(cat)}</span>
                     <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
-                      ₹{amount.toLocaleString()} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>({percentage}%)</span>
+                      ₮{amount.toLocaleString()} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>({percentage}%)</span>
                     </span>
                   </div>
                   <div style={{ height: '7px', backgroundColor: 'var(--bg-secondary)', borderRadius: '9999px', overflow: 'hidden' }}>
@@ -511,7 +511,7 @@ export default function Dashboard({ onNavigate }) {
           >
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>{tr("Gross Fleet Operating Expenditure:")}</span>
             <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-              ₹{cards.totalExpenses.toLocaleString()}
+              ₮{cards.totalExpenses.toLocaleString()}
             </span>
           </div>
         </div>

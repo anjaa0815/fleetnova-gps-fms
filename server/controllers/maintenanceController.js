@@ -148,7 +148,7 @@ export const createMaintenanceRecord = async (req, res, next) => {
     await DataEngine.create('notifications', {
       type: 'maintenance_due',
       title: 'Vehicle Service Scheduled',
-      message: `${maintenanceType} booked for ${vehicle.registrationNumber} at ${serviceCenter} (₹${cost})`,
+      message: `${maintenanceType} booked for ${vehicle.registrationNumber} at ${serviceCenter} (₮${cost})`,
       relatedEntity: 'Maintenance',
       relatedEntityId: newRecord._id
     });

@@ -17,7 +17,7 @@ export default function Settings() {
   // Settings State
   const [systemSettings, setSystemSettings] = useState({
     orgName: 'FLEETNOVA Enterprise Logistics Corp.',
-    currency: 'INR (₹)',
+    currency: 'MNT (₮)',
     speedLimit: 80,
     maintenanceAlertDays: 15,
     documentExpiryDays: 30,

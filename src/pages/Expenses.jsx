@@ -176,7 +176,7 @@ export default function Expenses() {
       header: tr("Amount"),
       render: (e) => (
         <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-          ₹{e.amount?.toLocaleString()}
+          ₮{e.amount?.toLocaleString()}
         </strong>
       )
     },
@@ -206,21 +206,21 @@ export default function Expenses() {
       <div className="grid-cols-4">
         <StatCard
           title={tr("Gross Operating Expenses")}
-          value={`₹${summary.totalAmount.toLocaleString()}`}
+          value={`₮${summary.totalAmount.toLocaleString()}`}
           subtext={tr("Fuel, tolls, insurance, parts")}
           icon={DollarSign}
           color="#8b5cf6"
         />
         <StatCard
           title={tr("Fuel Share")}
-          value={`₹${(summary.categoryTotals?.Fuel || 0).toLocaleString()}`}
+          value={`₮${(summary.categoryTotals?.Fuel || 0).toLocaleString()}`}
           subtext={tr("Pump dispense transactions")}
           icon={Receipt}
           color="#06b6d4"
         />
         <StatCard
           title={tr("Maintenance Share")}
-          value={`₹${((summary.categoryTotals?.Maintenance || 0) + (summary.categoryTotals?.Repair || 0)).toLocaleString()}`}
+          value={`₮${((summary.categoryTotals?.Maintenance || 0) + (summary.categoryTotals?.Repair || 0)).toLocaleString()}`}
           subtext={tr("Workshop & spare parts")}
           icon={CreditCard}
           color="#f59e0b"
@@ -378,7 +378,7 @@ export default function Expenses() {
 
           <div className="grid-cols-3" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">{tr("Amount (₹) *")}</label>
+              <label className="form-label">{tr("Amount (₮) *")}</label>
               <input
                 type="number"
                 step="0.01"

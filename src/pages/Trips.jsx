@@ -476,7 +476,7 @@ export default function Trips() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">{tr("Advance Trip Allowance (₹)")}</label>
+              <label className="form-label">{tr("Advance Trip Allowance (₮)")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -548,7 +548,7 @@ export default function Trips() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">{tr("Trip Incidental Expenses (₹)")}</label>
+              <label className="form-label">{tr("Trip Incidental Expenses (₮)")}</label>
               <input
                 type="number"
                 className="form-control"

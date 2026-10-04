@@ -73,9 +73,9 @@ function generateAlgorithmicFleetResponse(query, context) {
 - **Total Fleet Size:** ${summary.totalVehicles} vehicles (${summary.activeVehicles} on active trips, ${summary.availableVehicles} available, ${summary.maintenanceVehicles} under service)
 - **Active Trips:** ${summary.activeTrips} ongoing trips | **Completed Trips:** ${summary.completedTrips}
 - **Financials:**
-  - **Total Expenses:** ₹${summary.totalExpenses.toLocaleString()}
-  - **Fuel Expenditure:** ₹${summary.totalFuelCost.toLocaleString()}
-  - **Maintenance Costs:** ₹${summary.totalMaintenanceCost.toLocaleString()}
+  - **Total Expenses:** ₮${summary.totalExpenses.toLocaleString()}
+  - **Fuel Expenditure:** ₮${summary.totalFuelCost.toLocaleString()}
+  - **Maintenance Costs:** ₮${summary.totalMaintenanceCost.toLocaleString()}
 - **Staff:** ${summary.totalDrivers} registered drivers.`;
   }
 
@@ -85,7 +85,7 @@ function generateAlgorithmicFleetResponse(query, context) {
       return `### 🛠️ Maintenance Status
 All scheduled services are up to date! Currently, zero vehicles are flagged with critical overdue repairs.`;
     }
-    const details = activeMaint.map(m => `- **${m.vehicle || 'Vehicle'}**: ${m.type} (${m.description}) - Status: **${m.status}**, Cost: ₹${m.cost?.toLocaleString() || 0}`).join('\n');
+    const details = activeMaint.map(m => `- **${m.vehicle || 'Vehicle'}**: ${m.type} (${m.description}) - Status: **${m.status}**, Cost: ₮${m.cost?.toLocaleString() || 0}`).join('\n');
     return `### 🛠️ Vehicles Requiring or Under Maintenance
 Found **${activeMaint.length}** vehicles needing attention:
 ${details}
@@ -95,7 +95,7 @@ ${details}
   if (q.includes('fuel') || q.includes('efficiency') || q.includes('consumption')) {
     return `### ⛽ Fuel Analytics & Consumption
 - **Total Fuel Consumed:** ${summary.totalFuelConsumed || 0} Liters
-- **Total Fuel Cost:** ₹${(summary.totalFuelCost || 0).toLocaleString()}
+- **Total Fuel Cost:** ₮${(summary.totalFuelCost || 0).toLocaleString()}
 - **Average Fleet Mileage:** ${summary.avgFuelEfficiency || '12.4'} km/L
 - **Top Advice:** Monitor sudden fuel drops on older diesel trucks and utilize EV/CNG vans for city corridors to reduce operational overhead by up to 18%.`;
   }
@@ -111,9 +111,9 @@ ${availableDrivers.slice(0, 3).map(d => `- ${d.name} (${d.phone}) - Available`).
 
   if (q.includes('expense') || q.includes('cost') || q.includes('spend')) {
     return `### 💰 Expense Breakdown
-- **Gross Expenses Recorded:** ₹${(summary.totalExpenses || 0).toLocaleString()}
-- **Fuel Share:** ₹${(summary.totalFuelCost || 0).toLocaleString()}
-- **Maintenance Share:** ₹${(summary.totalMaintenanceCost || 0).toLocaleString()}
+- **Gross Expenses Recorded:** ₮${(summary.totalExpenses || 0).toLocaleString()}
+- **Fuel Share:** ₮${(summary.totalFuelCost || 0).toLocaleString()}
+- **Maintenance Share:** ₮${(summary.totalMaintenanceCost || 0).toLocaleString()}
 - **Optimization Tip:** Scheduling preventive maintenance reduces emergency road breakdowns by 34%, protecting your monthly budget.`;
   }
 
@@ -140,7 +140,7 @@ function generateAlgorithmicFleetResponseMn(query, context) {
   const q = query.toLowerCase();
   const { summary, vehicles = [], drivers = [], maintenances = [] } = context;
   const has = (...words) => words.some((w) => q.includes(w));
-  const money = (n) => `₹${(n || 0).toLocaleString()}`;
+  const money = (n) => `₮${(n || 0).toLocaleString()}`;
 
   if (has('summary', 'overview', 'today', 'хураангуй', 'тойм', 'өнөөдөр')) {
     return `### 🚚 FLEETNOVA бодит цагийн үйл ажиллагааны хураангуй

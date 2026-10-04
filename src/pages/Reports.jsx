@@ -146,7 +146,7 @@ export default function Reports() {
       return [
         { label: tr("Fuel Logs"), val: records.length },
         { label: tr("Total Liters Dispensed"), val: `${totalLiters.toLocaleString()} L` },
-        { label: tr("Gross Fuel Expenditure"), val: `₹${totalCost.toLocaleString()}` }
+        { label: tr("Gross Fuel Expenditure"), val: `₮${totalCost.toLocaleString()}` }
       ];
     }
     if (reportType === 'maintenance') {
@@ -155,14 +155,14 @@ export default function Reports() {
       return [
         { label: tr("Maintenance Records"), val: records.length },
         { label: tr("Completed Services"), val: completedJobs },
-        { label: tr("Total Workshop Cost"), val: `₹${totalMaintCost.toLocaleString()}` }
+        { label: tr("Total Workshop Cost"), val: `₮${totalMaintCost.toLocaleString()}` }
       ];
     }
     if (reportType === 'expense') {
       const totalExp = records.reduce((acc, e) => acc + (e.amount || 0), 0);
       return [
         { label: tr("Expense Vouchers"), val: records.length },
-        { label: tr("Total Operating Spend"), val: `₹${totalExp.toLocaleString()}` }
+        { label: tr("Total Operating Spend"), val: `₮${totalExp.toLocaleString()}` }
       ];
     }
     return [
@@ -373,8 +373,8 @@ export default function Reports() {
                         <td>{new Date(r.date).toLocaleDateString()}</td>
                         <td>{tr(r.fuelType)}</td>
                         <td>{r.quantity} L</td>
-                        <td>₹{r.pricePerLiter}</td>
-                        <td><strong>₹{r.totalCost?.toLocaleString()}</strong></td>
+                        <td>₮{r.pricePerLiter}</td>
+                        <td><strong>₮{r.totalCost?.toLocaleString()}</strong></td>
                         <td>{r.fuelStation}</td>
                       </>
                     )}
@@ -386,7 +386,7 @@ export default function Reports() {
                         <td>{r.description}</td>
                         <td>{new Date(r.serviceDate).toLocaleDateString()}</td>
                         <td>{r.serviceCenter}</td>
-                        <td><strong>₹{r.cost?.toLocaleString()}</strong></td>
+                        <td><strong>₮{r.cost?.toLocaleString()}</strong></td>
                         <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{tr(r.status)}</span></td>
                       </>
                     )}
@@ -397,7 +397,7 @@ export default function Reports() {
                         <td><span className="badge badge-ontrip">{tr(r.category)}</span></td>
                         <td>{r.description}</td>
                         <td>{new Date(r.date).toLocaleDateString()}</td>
-                        <td><strong>₹{r.amount?.toLocaleString()}</strong></td>
+                        <td><strong>₮{r.amount?.toLocaleString()}</strong></td>
                         <td>{tr(r.paymentMethod)}</td>
                       </>
                     )}

@@ -127,20 +127,20 @@ export default function VehicleDetails({ vehicleId, onBack }) {
         <StatCard
           title={tr("Fuel Consumed")}
           value={`${analytics?.totalFuelUsed || 0} L`}
-          subtext={tr('₹{a} spent', { a: analytics?.totalFuelCost?.toLocaleString() || 0 })}
+          subtext={tr('₮{a} spent', { a: analytics?.totalFuelCost?.toLocaleString() || 0 })}
           icon={Fuel}
           color="#06b6d4"
         />
         <StatCard
           title={tr("Maintenance Cost")}
-          value={`₹${analytics?.totalMaintenanceCost?.toLocaleString() || 0}`}
+          value={`₮${analytics?.totalMaintenanceCost?.toLocaleString() || 0}`}
           subtext={tr('{a} service logs', { a: maintenance.length })}
           icon={Wrench}
           color="#f59e0b"
         />
         <StatCard
           title={tr("Total Operating Cost")}
-          value={`₹${analytics?.totalExpenses?.toLocaleString() || 0}`}
+          value={`₮${analytics?.totalExpenses?.toLocaleString() || 0}`}
           subtext={tr("Fuel + Repair + Tolls")}
           icon={Receipt}
           color="#8b5cf6"
@@ -330,8 +330,8 @@ export default function VehicleDetails({ vehicleId, onBack }) {
                       <td><strong>{f.fuelRecordId}</strong></td>
                       <td>{new Date(f.date).toLocaleDateString()}</td>
                       <td>{f.quantity} L</td>
-                      <td>₹{f.pricePerLiter}</td>
-                      <td><strong>₹{f.totalCost?.toLocaleString()}</strong></td>
+                      <td>₮{f.pricePerLiter}</td>
+                      <td><strong>₮{f.totalCost?.toLocaleString()}</strong></td>
                       <td>{f.odometerReading?.toLocaleString()} {tr("km")}</td>
                     </tr>
                   ))}
@@ -368,7 +368,7 @@ export default function VehicleDetails({ vehicleId, onBack }) {
                       <td>{tr(m.maintenanceType)}</td>
                       <td>{m.description}</td>
                       <td>{new Date(m.serviceDate).toLocaleDateString()}</td>
-                      <td><strong>₹{m.cost?.toLocaleString()}</strong></td>
+                      <td><strong>₮{m.cost?.toLocaleString()}</strong></td>
                       <td><span className={`badge badge-${m.status.toLowerCase().replace(' ', '-')}`}>{tr(m.status)}</span></td>
                     </tr>
                   ))}
@@ -405,7 +405,7 @@ export default function VehicleDetails({ vehicleId, onBack }) {
                       <td><span className="badge badge-ontrip">{tr(e.category)}</span></td>
                       <td>{e.description}</td>
                       <td>{new Date(e.date).toLocaleDateString()}</td>
-                      <td><strong>₹{e.amount?.toLocaleString()}</strong></td>
+                      <td><strong>₮{e.amount?.toLocaleString()}</strong></td>
                       <td>{tr(e.paymentMethod)}</td>
                     </tr>
                   ))}

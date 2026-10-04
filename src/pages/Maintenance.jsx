@@ -213,7 +213,7 @@ export default function Maintenance() {
       header: tr("Cost"),
       render: (m) => (
         <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
-          ₹{m.cost?.toLocaleString()}
+          ₮{m.cost?.toLocaleString()}
         </strong>
       )
     },
@@ -259,7 +259,7 @@ export default function Maintenance() {
       <div className="grid-cols-4">
         <StatCard
           title={tr("Total Maintenance Cost")}
-          value={`₹${summary.totalCost.toLocaleString()}`}
+          value={`₮${summary.totalCost.toLocaleString()}`}
           subtext={tr("Parts and labor expenditure")}
           icon={DollarSign}
           color="#f59e0b"
@@ -448,7 +448,7 @@ export default function Maintenance() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">{tr("Service Cost (₹) *")}</label>
+              <label className="form-label">{tr("Service Cost (₮) *")}</label>
               <input
                 type="number"
                 className="form-control"

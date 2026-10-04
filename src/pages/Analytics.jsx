@@ -76,7 +76,7 @@ export default function Analytics() {
         />
         <StatCard
           title={tr("Gross Operating Cost")}
-          value={`₹${cards.totalExpenses.toLocaleString()}`}
+          value={`₮${cards.totalExpenses.toLocaleString()}`}
           subtext={tr("Financial year to date")}
           icon={Receipt}
           color="#8b5cf6"
@@ -202,7 +202,7 @@ export default function Analytics() {
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("LIFETIME FUEL COST")}</div>
                 <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
-                  ₹{cards.totalFuelCost.toLocaleString()}
+                  ₮{cards.totalFuelCost.toLocaleString()}
                 </div>
               </div>
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
@@ -249,7 +249,7 @@ export default function Analytics() {
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("TOTAL MAINTENANCE SPEND")}</div>
                 <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-amber)' }}>
-                  ₹{cards.totalMaintenanceCost.toLocaleString()}
+                  ₮{cards.totalMaintenanceCost.toLocaleString()}
                 </div>
               </div>
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
@@ -289,7 +289,7 @@ export default function Analytics() {
             return (
               <div key={m.month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  ₹{m.totalExpense > 0 ? `${Math.round(m.totalExpense / 1000)}k` : '0'}
+                  ₮{m.totalExpense > 0 ? `${Math.round(m.totalExpense / 1000)}k` : '0'}
                 </div>
                 <div style={{ width: '42px', height: '140px', display: 'flex', alignItems: 'flex-end', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 'var(--radius-sm)', padding: '2px' }}>
                   <div
@@ -300,7 +300,7 @@ export default function Analytics() {
                       borderRadius: 'var(--radius-sm)',
                       transition: 'height 0.4s ease'
                     }}
-                    title={tr('{m}: Total ₹{t} (Fuel: ₹{f}, Maint: ₹{x})', { m: m.month, t: m.totalExpense.toLocaleString(), f: m.fuelExpense.toLocaleString(), x: m.maintenanceExpense.toLocaleString() })}
+                    title={tr('{m}: Total ₮{t} (Fuel: ₮{f}, Maint: ₮{x})', { m: m.month, t: m.totalExpense.toLocaleString(), f: m.fuelExpense.toLocaleString(), x: m.maintenanceExpense.toLocaleString() })}
                   />
                 </div>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>

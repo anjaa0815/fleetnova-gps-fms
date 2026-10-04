@@ -161,7 +161,7 @@ export default function Fuel() {
             ({tr(r.fuelType)})
           </span>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            ₹{r.pricePerLiter} / L
+            ₮{r.pricePerLiter} / L
           </div>
         </div>
       )
@@ -171,7 +171,7 @@ export default function Fuel() {
       render: (r) => (
         <div>
           <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-            ₹{r.totalCost?.toLocaleString()}
+            ₮{r.totalCost?.toLocaleString()}
           </strong>
         </div>
       )
@@ -220,14 +220,14 @@ export default function Fuel() {
         />
         <StatCard
           title={tr("Gross Fuel Cost")}
-          value={`₹${summary.totalCost.toLocaleString()}`}
+          value={`₮${summary.totalCost.toLocaleString()}`}
           subtext={tr("Total fueling expenditures")}
           icon={DollarSign}
           color="#3b82f6"
         />
         <StatCard
           title={tr("Avg Fuel Price")}
-          value={`₹${summary.avgPricePerLiter} / L`}
+          value={`₮${summary.avgPricePerLiter} / L`}
           subtext={tr("Blended average rate")}
           icon={TrendingUp}
           color="#10b981"
@@ -402,7 +402,7 @@ export default function Fuel() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">{tr("Price per Liter (₹) *")}</label>
+              <label className="form-label">{tr("Price per Liter (₮) *")}</label>
               <input
                 type="number"
                 step="0.01"
@@ -431,7 +431,7 @@ export default function Fuel() {
               {tr("Automatically Calculated Total Cost:")}
             </span>
             <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
-              ₹{(Math.round((formData.quantity || 0) * (formData.pricePerLiter || 0) * 100) / 100).toLocaleString()}
+              ₮{(Math.round((formData.quantity || 0) * (formData.pricePerLiter || 0) * 100) / 100).toLocaleString()}
             </span>
           </div>
 
