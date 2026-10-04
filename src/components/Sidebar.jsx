@@ -17,26 +17,28 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onCloseMobile }) {
+  const { tr } = useT();
   const { user, logout } = useAuth();
   const role = user?.role || 'driver';
 
   // Role-based Nav Configuration
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'fleet_manager', 'driver'] },
-    { id: 'vehicles', label: 'Vehicles', icon: Truck, roles: ['admin', 'fleet_manager', 'driver'] },
-    { id: 'drivers', label: 'Drivers', icon: Users, roles: ['admin', 'fleet_manager'] },
-    { id: 'trips', label: 'Trips', icon: Navigation, roles: ['admin', 'fleet_manager', 'driver'] },
-    { id: 'fuel', label: 'Fuel Management', icon: Fuel, roles: ['admin', 'fleet_manager'] },
-    { id: 'maintenance', label: 'Maintenance', icon: Wrench, roles: ['admin', 'fleet_manager', 'driver'] },
-    { id: 'expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'fleet_manager'] },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3, roles: ['admin', 'fleet_manager'] },
-    { id: 'reports', label: 'Reports', icon: FileText, roles: ['admin', 'fleet_manager'] },
-    { id: 'notifications', label: 'Notifications', icon: Bell, roles: ['admin', 'fleet_manager', 'driver'] },
-    { id: 'fleet-ai', label: 'FleetAI Assistant', icon: Sparkles, roles: ['admin', 'fleet_manager'] },
-    { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'fleet_manager'] },
-    { id: 'profile', label: 'My Profile', icon: UserCheck, roles: ['admin', 'fleet_manager', 'driver'] }
+    { id: 'dashboard', label: tr("Dashboard"), icon: LayoutDashboard, roles: ['admin', 'fleet_manager', 'driver'] },
+    { id: 'vehicles', label: tr("Vehicles"), icon: Truck, roles: ['admin', 'fleet_manager', 'driver'] },
+    { id: 'drivers', label: tr("Drivers"), icon: Users, roles: ['admin', 'fleet_manager'] },
+    { id: 'trips', label: tr("Trips"), icon: Navigation, roles: ['admin', 'fleet_manager', 'driver'] },
+    { id: 'fuel', label: tr("Fuel Management"), icon: Fuel, roles: ['admin', 'fleet_manager'] },
+    { id: 'maintenance', label: tr("Maintenance"), icon: Wrench, roles: ['admin', 'fleet_manager', 'driver'] },
+    { id: 'expenses', label: tr("Expenses"), icon: Receipt, roles: ['admin', 'fleet_manager'] },
+    { id: 'analytics', label: tr("Analytics"), icon: BarChart3, roles: ['admin', 'fleet_manager'] },
+    { id: 'reports', label: tr("Reports"), icon: FileText, roles: ['admin', 'fleet_manager'] },
+    { id: 'notifications', label: tr("Notifications"), icon: Bell, roles: ['admin', 'fleet_manager', 'driver'] },
+    { id: 'fleet-ai', label: tr("FleetAI Assistant"), icon: Sparkles, roles: ['admin', 'fleet_manager'] },
+    { id: 'settings', label: tr("Settings"), icon: Settings, roles: ['admin', 'fleet_manager'] },
+    { id: 'profile', label: tr("My Profile"), icon: UserCheck, roles: ['admin', 'fleet_manager', 'driver'] }
   ];
 
   const visibleItems = navItems.filter((item) => item.roles.includes(role));
@@ -70,8 +72,8 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
               <Truck size={22} />
             </div>
             <div>
-              <div className="brand-text-name">FLEETNOVA</div>
-              <div className="brand-tagline">SMART FLEET MANAGEMENT</div>
+              <div className="brand-text-name">{tr("FLEETNOVA")}</div>
+              <div className="brand-tagline">{tr("SMART FLEET MANAGEMENT")}</div>
             </div>
           </div>
           {onCloseMobile && (
@@ -93,7 +95,7 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
 
         {/* Navigation List */}
         <div className="sidebar-nav">
-          <div className="nav-section-title">Operations Menu</div>
+          <div className="nav-section-title">{tr("Operations Menu")}</div>
           {visibleItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
@@ -126,7 +128,7 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
                   textOverflow: 'ellipsis'
                 }}
               >
-                {user?.name || 'Authorized User'}
+                {user?.name || tr("Authorized User")}
               </div>
               <div
                 style={{
@@ -136,12 +138,12 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
                   fontWeight: 600
                 }}
               >
-                {role === 'fleet_manager' ? 'Fleet Manager' : role}
+                {role === "fleet_manager" ? tr("Fleet Manager") : tr(role)}
               </div>
             </div>
             <button
               onClick={logout}
-              title="Logout"
+              title={tr("Logout")}
               style={{
                 background: 'transparent',
                 border: 'none',

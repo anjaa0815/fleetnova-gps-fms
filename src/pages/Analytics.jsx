@@ -15,8 +15,10 @@ import {
 import StatCard from '../components/StatCard.jsx';
 import Loading from '../components/Loading.jsx';
 import { dashboardApi } from '../services/api.js';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Analytics() {
+  const { tr } = useT();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +40,7 @@ export default function Analytics() {
   }, []);
 
   if (loading) {
-    return <Loading message="Computing deep fleet operational analytics and cost models..." />;
+    return <Loading message={tr("Computing deep fleet operational analytics and cost models...")} />;
   }
 
   if (!data) return null;
@@ -50,39 +52,39 @@ export default function Analytics() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
       {/* Header */}
       <div>
-        <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>Fleet Operational Analytics</h2>
+        <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>{tr("Fleet Operational Analytics")}</h2>
         <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
-          Enterprise business intelligence, utilization indices, fuel economics, and maintenance forecasts
+          {tr("Enterprise business intelligence, utilization indices, fuel economics, and maintenance forecasts")}
         </p>
       </div>
 
       {/* Top 4 Section KPI Summary */}
       <div className="grid-cols-4">
         <StatCard
-          title="Vehicle Fleet Utilization"
+          title={tr("Vehicle Fleet Utilization")}
           value={`${utilizationRate}%`}
-          subtext={`${cards.activeVehicles} active of ${cards.totalVehicles} rigs`}
+          subtext={tr('{a} active of {b} vehicles', { a: cards.activeVehicles, b: cards.totalVehicles })}
           icon={Activity}
           color="#3b82f6"
         />
         <StatCard
-          title="Avg Fuel Efficiency"
+          title={tr("Avg Fuel Efficiency")}
           value={`${cards.avgFuelEfficiency} km/L`}
-          subtext="Calculated across all dispatches"
+          subtext={tr("Calculated across all dispatches")}
           icon={Fuel}
           color="#06b6d4"
         />
         <StatCard
-          title="Gross Operating Cost"
+          title={tr("Gross Operating Cost")}
           value={`₹${cards.totalExpenses.toLocaleString()}`}
-          subtext="Financial year to date"
+          subtext={tr("Financial year to date")}
           icon={Receipt}
           color="#8b5cf6"
         />
         <StatCard
-          title="Workshop Maintenance Ratio"
+          title={tr("Workshop Maintenance Ratio")}
           value={`${cards.totalVehicles ? Math.round((cards.maintenanceVehicles / cards.totalVehicles) * 100) : 0}%`}
-          subtext={`${cards.maintenanceVehicles} under scheduled repair`}
+          subtext={tr('{a} under scheduled repair', { a: cards.maintenanceVehicles })}
           icon={Wrench}
           color="#f59e0b"
         />
@@ -94,37 +96,37 @@ export default function Analytics() {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
-              <Truck size={18} color="var(--primary)" /> Vehicle Analytics & Fleet Health
+              <Truck size={18} color="var(--primary)" /> {tr("Vehicle Analytics & Fleet Health")}
             </h3>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>OPERATIONAL READINESS</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("OPERATIONAL READINESS")}</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-emerald)' }}>
                   {cards.totalVehicles ? Math.round(((cards.availableVehicles + cards.activeVehicles) / cards.totalVehicles) * 100) : 0}%
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Available + Active Deliveries</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{tr("Available + Active Deliveries")}</div>
               </div>
 
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>DOWNTIME RATIO</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("DOWNTIME RATIO")}</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fb7185' }}>
                   {cards.totalVehicles ? Math.round((cards.maintenanceVehicles / cards.totalVehicles) * 100) : 0}%
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Off-road for workshop service</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{tr("Off-road for workshop service")}</div>
               </div>
             </div>
 
             {/* Status Breakdown Bar chart */}
             <div>
               <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                STATUS ALLOCATION BREAKDOWN
+                {tr("STATUS ALLOCATION BREAKDOWN")}
               </div>
               {vehicleStatusBreakdown.map((item) => (
                 <div key={item.status} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', fontSize: '0.8rem' }}>
-                  <span style={{ width: '100px', color: 'var(--text-primary)' }}>{item.status}</span>
+                  <span style={{ width: '100px', color: 'var(--text-primary)' }}>{tr(item.status)}</span>
                   <div style={{ flex: 1, height: '8px', backgroundColor: 'var(--bg-secondary)', borderRadius: '9999px', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${item.percentage}%`, backgroundColor: item.color }} />
                   </div>
@@ -139,34 +141,34 @@ export default function Analytics() {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
-              <Users size={18} color="var(--accent-emerald)" /> Commercial Driver Roster Analytics
+              <Users size={18} color="var(--accent-emerald)" /> {tr("Commercial Driver Roster Analytics")}
             </h3>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>ROSTER SIZE</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("ROSTER SIZE")}</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{cards.totalDrivers}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Certified Drivers</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{tr("Certified Drivers")}</div>
               </div>
 
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>ON HIGHWAY</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("ON HIGHWAY")}</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#3b82f6' }}>{cards.activeTrips}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Active Dispatches</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{tr("Active Dispatches")}</div>
               </div>
 
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>STANDBY POOL</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("STANDBY POOL")}</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>{cards.availableDrivers}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Ready for routes</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{tr("Ready for routes")}</div>
               </div>
             </div>
 
             <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Driver Deployment Ratio</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{tr("Driver Deployment Ratio")}</span>
                 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>
                   {cards.totalDrivers ? Math.round((cards.activeTrips / cards.totalDrivers) * 100) : 0}%
                 </span>
@@ -191,20 +193,20 @@ export default function Analytics() {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
-              <Fuel size={18} color="var(--accent-cyan)" /> Fuel Consumption & Efficiency Indices
+              <Fuel size={18} color="var(--accent-cyan)" /> {tr("Fuel Consumption & Efficiency Indices")}
             </h3>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>LIFETIME FUEL COST</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("LIFETIME FUEL COST")}</div>
                 <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
                   ₹{cards.totalFuelCost.toLocaleString()}
                 </div>
               </div>
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>TOTAL DISPENSED</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("TOTAL DISPENSED")}</div>
                 <div style={{ fontSize: '1.35rem', fontWeight: 800 }}>
                   {cards.totalFuelConsumed.toLocaleString()} L
                 </div>
@@ -213,7 +215,7 @@ export default function Analytics() {
 
             <div>
               <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                TOP FUEL CONSUMING COMMERCIAL RIGS
+                {tr("TOP FUEL CONSUMING COMMERCIAL RIGS")}
               </div>
               {charts?.fuelByVehicleData?.map((item) => (
                 <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', fontSize: '0.8rem' }}>
@@ -238,22 +240,22 @@ export default function Analytics() {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
-              <Wrench size={18} color="var(--accent-amber)" /> Maintenance & Workshop Expenditure
+              <Wrench size={18} color="var(--accent-amber)" /> {tr("Maintenance & Workshop Expenditure")}
             </h3>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>TOTAL MAINTENANCE SPEND</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("TOTAL MAINTENANCE SPEND")}</div>
                 <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-amber)' }}>
                   ₹{cards.totalMaintenanceCost.toLocaleString()}
                 </div>
               </div>
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>SERVICE TICKETS</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("SERVICE TICKETS")}</div>
                 <div style={{ fontSize: '1.35rem', fontWeight: 800 }}>
-                  {cards.maintenanceVehicles} Active
+                  {cards.maintenanceVehicles} {tr("Active")}
                 </div>
               </div>
             </div>
@@ -261,10 +263,10 @@ export default function Analytics() {
             <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', fontSize: '0.85rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <ShieldCheck size={18} color="var(--accent-emerald)" />
-                <strong>Preventive Maintenance Strategy</strong>
+                <strong>{tr("Preventive Maintenance Strategy")}</strong>
               </div>
               <p style={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                Automated scheduling ensures transmission fluid checks, tire rotational alignments, and oil flushes are conducted within OEM parameters, minimizing road breakdown risk.
+                {tr("Automated scheduling ensures transmission fluid checks, tire rotational alignments, and oil flushes are conducted within OEM parameters, minimizing road breakdown risk.")}
               </p>
             </div>
           </div>
@@ -275,7 +277,7 @@ export default function Analytics() {
       <div className="card">
         <div className="card-header">
           <h3 className="card-title">
-            <TrendingUp size={18} color="var(--accent-purple)" /> Monthly Expenditure Trends (Last 6 Months)
+            <TrendingUp size={18} color="var(--accent-purple)" /> {tr("Monthly Expenditure Trends (Last 6 Months)")}
           </h3>
         </div>
 
@@ -298,7 +300,7 @@ export default function Analytics() {
                       borderRadius: 'var(--radius-sm)',
                       transition: 'height 0.4s ease'
                     }}
-                    title={`${m.month}: Total ₹${m.totalExpense.toLocaleString()} (Fuel: ₹${m.fuelExpense.toLocaleString()}, Maint: ₹${m.maintenanceExpense.toLocaleString()})`}
+                    title={tr('{m}: Total ₹{t} (Fuel: ₹{f}, Maint: ₹{x})', { m: m.month, t: m.totalExpense.toLocaleString(), f: m.fuelExpense.toLocaleString(), x: m.maintenanceExpense.toLocaleString() })}
                   />
                 </div>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>

@@ -23,8 +23,11 @@ import Notifications from './pages/Notifications.jsx';
 import FleetAI from './pages/FleetAI.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
+import { useT } from './i18n/LanguageContext.jsx';
+import LanguageSwitch from './components/LanguageSwitch.jsx';
 
 function MainApp() {
+  const { tr } = useT();
   const { isAuthenticated, loading } = useAuth();
 
   // Auth sub-view when not logged in
@@ -38,44 +41,53 @@ function MainApp() {
   if (loading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0a0d14' }}>
-        <Loading message="Initializing FLEETNOVA Telematics Engine..." />
+        <Loading message={tr("Initializing FLEETNOVA Telematics Engine...")} />
       </div>
     );
   }
 
   // Unauthenticated screen
   if (!isAuthenticated) {
+    let authScreen;
     if (authView === 'register') {
-      return <Register onSwitchToLogin={() => setAuthView('login')} />;
-    }
-    if (authView === 'forgot') {
-      return <ForgotPassword onSwitchToLogin={() => setAuthView('login')} />;
+      authScreen = <Register onSwitchToLogin={() => setAuthView('login')} />;
+    } else if (authView === 'forgot') {
+      authScreen = <ForgotPassword onSwitchToLogin={() => setAuthView('login')} />;
+    } else {
+      authScreen = (
+        <Login
+          onSwitchToRegister={() => setAuthView('register')}
+          onSwitchToForgot={() => setAuthView('forgot')}
+        />
+      );
     }
     return (
-      <Login
-        onSwitchToRegister={() => setAuthView('register')}
-        onSwitchToForgot={() => setAuthView('forgot')}
-      />
+      <>
+        <div style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 50 }}>
+          <LanguageSwitch />
+        </div>
+        {authScreen}
+      </>
     );
   }
 
   // Titles mapping
   const titles = {
-    dashboard: 'Operations Dashboard',
-    vehicles: 'Vehicles Fleet Registry',
-    'vehicle-details': 'Vehicle Telematics & History',
-    drivers: 'Commercial Drivers',
-    'driver-details': 'Driver Service Record',
-    trips: 'Trip Logistics & Dispatch',
-    fuel: 'Fuel Consumption & Costs',
-    maintenance: 'Preventive Maintenance',
-    expenses: 'Operating Expenses',
-    analytics: 'Fleet Analytics & Insights',
-    reports: 'Audit & Compliance Reports',
-    notifications: 'Notifications & Alerts',
-    'fleet-ai': 'FleetAI Operations Co-Pilot',
-    settings: 'System & Organization Settings',
-    profile: 'User Profile Settings'
+    dashboard: tr('Operations Dashboard'),
+    vehicles: tr('Vehicles Fleet Registry'),
+    'vehicle-details': tr('Vehicle Telematics & History'),
+    drivers: tr('Commercial Drivers'),
+    'driver-details': tr('Driver Service Record'),
+    trips: tr('Trip Logistics & Dispatch'),
+    fuel: tr('Fuel Consumption & Costs'),
+    maintenance: tr('Preventive Maintenance'),
+    expenses: tr('Operating Expenses'),
+    analytics: tr('Fleet Analytics & Insights'),
+    reports: tr('Audit & Compliance Reports'),
+    notifications: tr('Notifications & Alerts'),
+    'fleet-ai': tr('FleetAI Operations Co-Pilot'),
+    settings: tr('System & Organization Settings'),
+    profile: tr('User Profile Settings')
   };
 
   const navigateTo = (tab) => {

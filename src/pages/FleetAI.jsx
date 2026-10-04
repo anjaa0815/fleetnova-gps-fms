@@ -1,8 +1,10 @@
 import React from 'react';
 import FleetAIChat from '../components/FleetAIChat.jsx';
 import { Sparkles, Bot, ShieldCheck, Database, Zap } from 'lucide-react';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function FleetAI() {
+  const { tr } = useT();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', height: 'calc(100vh - 120px)' }}>
       {/* Informational Sub-header */}
@@ -36,20 +38,20 @@ export default function FleetAI() {
           </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-              FleetAI Intelligent Fleet Assistant — Google Gemini 3.8
+              {tr("FleetAI Intelligent Fleet Assistant — Google Gemini 3.8")}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              Live read-only analysis directly grounded in your MongoDB fleet database.
+              {tr("Live read-only analysis directly grounded in your MongoDB fleet database.")}
             </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <Database size={13} color="var(--accent-cyan)" /> Live DB Telemetry
+            <Database size={13} color="var(--accent-cyan)" /> {tr("Live DB Telemetry")}
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <ShieldCheck size={13} color="var(--accent-emerald)" /> Zero Key Exposure
+            <ShieldCheck size={13} color="var(--accent-emerald)" /> {tr("Zero Key Exposure")}
           </span>
         </div>
       </div>

@@ -12,8 +12,10 @@ import {
 import Loading from '../components/Loading.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { notificationApi } from '../services/api.js';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Notifications() {
+  const { tr } = useT();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, unread, maintenance, expiry, trip
@@ -76,15 +78,15 @@ export default function Notifications() {
       {/* Header Card */}
       <div className="card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>Notification & Alert Center</h2>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>{tr("Notification & Alert Center")}</h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            System-generated compliance alerts, document expiration countdowns, and dispatch updates
+            {tr("System-generated compliance alerts, document expiration countdowns, and dispatch updates")}
           </p>
         </div>
 
         {unreadCount > 0 && (
           <button className="btn btn-secondary btn-sm" onClick={handleMarkAllRead}>
-            <CheckCheck size={16} /> Mark All as Read ({unreadCount})
+            <CheckCheck size={16} /> {tr("Mark All as Read (")}{unreadCount})
           </button>
         )}
       </div>
@@ -92,11 +94,11 @@ export default function Notifications() {
       {/* Filter Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         {[
-          { id: 'all', label: `All (${notifications.length})` },
-          { id: 'unread', label: `Unread (${unreadCount})` },
-          { id: 'expiry', label: 'Document Expiries' },
-          { id: 'maintenance', label: 'Maintenance Due' },
-          { id: 'trip', label: 'Trips & Dispatch' }
+          { id: 'all', label: tr('All ({n})', { n: notifications.length }) },
+          { id: 'unread', label: tr('Unread ({n})', { n: unreadCount }) },
+          { id: 'expiry', label: tr("Document Expiries") },
+          { id: 'maintenance', label: tr("Maintenance Due") },
+          { id: 'trip', label: tr("Trips & Dispatch") }
         ].map((t) => (
           <button
             key={t.id}
@@ -111,11 +113,11 @@ export default function Notifications() {
       {/* Notifications List */}
       <div className="card" style={{ padding: '0.5rem' }}>
         {loading ? (
-          <Loading message="Syncing alerts..." />
+          <Loading message={tr("Syncing alerts...")} />
         ) : filteredNotifs.length === 0 ? (
           <EmptyState
-            title="No Notifications Found"
-            description="All fleet compliance notices and dispatches have been reviewed."
+            title={tr("No Notifications Found")}
+            description={tr("All fleet compliance notices and dispatches have been reviewed.")}
             icon={CheckCircle2}
           />
         ) : (
@@ -155,10 +157,10 @@ export default function Notifications() {
                   <button
                     className="btn btn-secondary btn-sm"
                     onClick={() => handleMarkAsRead(n._id)}
-                    title="Mark as read"
+                    title={tr("Mark as read")}
                     style={{ flexShrink: 0 }}
                   >
-                    <CheckCheck size={14} /> Mark Read
+                    <CheckCheck size={14} /> {tr("Mark Read")}
                   </button>
                 )}
               </div>

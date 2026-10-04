@@ -18,8 +18,10 @@ import Modal from '../components/Modal.jsx';
 import LiveMap from '../components/LiveMap.jsx';
 import { vehicleApi, driverApi } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Vehicles({ onSelectVehicle }) {
+  const { tr } = useT();
   const { role } = useAuth();
   const canManage = role === 'admin' || role === 'fleet_manager';
 
@@ -166,14 +168,14 @@ export default function Vehicles({ onSelectVehicle }) {
       setDeleteId(null);
       fetchVehicles();
     } catch (err) {
-      alert(err.message || 'Failed to delete vehicle');
+      alert(tr(err.message || 'Failed to delete vehicle'));
     }
   };
 
   // Table Columns
   const columns = [
     {
-      header: 'Vehicle ID & Reg',
+      header: tr("Vehicle ID & Reg"),
       render: (v) => (
         <div>
           <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
@@ -184,31 +186,31 @@ export default function Vehicles({ onSelectVehicle }) {
       )
     },
     {
-      header: 'Make & Model',
+      header: tr("Make & Model"),
       render: (v) => (
         <div>
           <div style={{ fontWeight: 600 }}>{v.brand} {v.model}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            {v.vehicleType} • {v.manufacturingYear}
+            {tr(v.vehicleType)} • {v.manufacturingYear}
           </div>
         </div>
       )
     },
     {
-      header: 'Fuel & Odometer',
+      header: tr("Fuel & Odometer"),
       render: (v) => (
         <div>
           <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-cyan)' }}>
-            {v.fuelType}
+            {tr(v.fuelType)}
           </span>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {v.currentMileage?.toLocaleString()} km
+            {v.currentMileage?.toLocaleString()} {tr("km")}
           </div>
         </div>
       )
     },
     {
-      header: 'Assigned Driver',
+      header: tr("Assigned Driver"),
       render: (v) => (
         <div>
           {v.assignedDriver?.name ? (
@@ -217,37 +219,37 @@ export default function Vehicles({ onSelectVehicle }) {
             </span>
           ) : (
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-              Unassigned
+              {tr("Unassigned")}
             </span>
           )}
         </div>
       )
     },
     {
-      header: 'Status',
+      header: tr("Status"),
       render: (v) => {
         const statusClass = `badge-${v.status.toLowerCase().replace(' ', '-')}`;
-        return <span className={`badge ${statusClass}`}>{v.status}</span>;
+        return <span className={`badge ${statusClass}`}>{tr(v.status)}</span>;
       }
     },
     {
-      header: 'Actions',
+      header: tr("Actions"),
       width: '160px',
       render: (v) => (
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => onSelectVehicle(v._id)}
-            title="View Details"
+            title={tr("View Details")}
           >
-            <Eye size={14} /> View
+            <Eye size={14} /> {tr("View")}
           </button>
           {canManage && (
             <>
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => openEditModal(v)}
-                title="Edit Vehicle"
+                title={tr("Edit Vehicle")}
               >
                 <Edit size={14} />
               </button>
@@ -283,15 +285,15 @@ export default function Vehicles({ onSelectVehicle }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Fleet Vehicle Inventory</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{tr("Fleet Vehicle Inventory")}</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Manage commercial trucks, vans, buses, and fuel configurations
+              {tr("Manage commercial trucks, vans, buses, and fuel configurations")}
             </p>
           </div>
 
           {canManage && (
             <button className="btn btn-primary" onClick={openAddModal}>
-              <Plus size={16} /> Register New Vehicle
+              <Plus size={16} /> {tr("Register New Vehicle")}
             </button>
           )}
         </div>
@@ -304,7 +306,7 @@ export default function Vehicles({ onSelectVehicle }) {
               type="text"
               className="form-control"
               style={{ paddingLeft: '36px' }}
-              placeholder="Search registration, brand, model..."
+              placeholder={tr("Search registration, brand, model...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -319,11 +321,11 @@ export default function Vehicles({ onSelectVehicle }) {
               setPage(1);
             }}
           >
-            <option value="All">All Statuses</option>
-            <option value="Available">Available</option>
-            <option value="On Trip">On Trip</option>
-            <option value="Maintenance">Maintenance</option>
-            <option value="Inactive">Inactive</option>
+            <option value="All">{tr("All Statuses")}</option>
+            <option value="Available">{tr("Available")}</option>
+            <option value="On Trip">{tr("On Trip")}</option>
+            <option value="Maintenance">{tr("Maintenance")}</option>
+            <option value="Inactive">{tr("Inactive")}</option>
           </select>
 
           <select
@@ -335,12 +337,12 @@ export default function Vehicles({ onSelectVehicle }) {
               setPage(1);
             }}
           >
-            <option value="All">All Fuels</option>
-            <option value="Diesel">Diesel</option>
-            <option value="Electric">Electric</option>
-            <option value="CNG">CNG</option>
-            <option value="Petrol">Petrol</option>
-            <option value="Hybrid">Hybrid</option>
+            <option value="All">{tr("All Fuels")}</option>
+            <option value="Diesel">{tr("Diesel")}</option>
+            <option value="Electric">{tr("Electric")}</option>
+            <option value="CNG">{tr("CNG")}</option>
+            <option value="Petrol">{tr("Petrol")}</option>
+            <option value="Hybrid">{tr("Hybrid")}</option>
           </select>
 
           <select
@@ -352,13 +354,13 @@ export default function Vehicles({ onSelectVehicle }) {
               setPage(1);
             }}
           >
-            <option value="All">All Types</option>
-            <option value="Truck">Truck</option>
-            <option value="Van">Van</option>
-            <option value="Bus">Bus</option>
-            <option value="Sedan">Sedan</option>
-            <option value="SUV">SUV</option>
-            <option value="Pickup">Pickup</option>
+            <option value="All">{tr("All Types")}</option>
+            <option value="Truck">{tr("Truck")}</option>
+            <option value="Van">{tr("Van")}</option>
+            <option value="Bus">{tr("Bus")}</option>
+            <option value="Sedan">{tr("Sedan")}</option>
+            <option value="SUV">{tr("SUV")}</option>
+            <option value="Pickup">{tr("Pickup")}</option>
           </select>
         </div>
       </div>
@@ -371,7 +373,7 @@ export default function Vehicles({ onSelectVehicle }) {
         columns={columns}
         data={vehicles}
         loading={loading}
-        emptyMessage="No vehicles match your search or filter"
+        emptyMessage={tr("No vehicles match your search or filter")}
         emptySubtext="Try adjusting the filters or register a new commercial vehicle."
         page={page}
         totalPages={totalPages}
@@ -404,58 +406,58 @@ export default function Vehicles({ onSelectVehicle }) {
         <form onSubmit={handleFormSubmit}>
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Registration Number *</label>
+              <label className="form-label">{tr("Registration Number *")}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. DL-01-AX-9920"
+                placeholder={tr("e.g. DL-01-AX-9920")}
                 value={formData.registrationNumber}
                 onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Vehicle Type *</label>
+              <label className="form-label">{tr("Vehicle Type *")}</label>
               <select
                 className="form-control"
                 value={formData.vehicleType}
                 onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
               >
-                <option value="Truck">Truck</option>
-                <option value="Van">Van</option>
-                <option value="Bus">Bus</option>
-                <option value="Sedan">Sedan</option>
-                <option value="SUV">SUV</option>
-                <option value="Pickup">Pickup</option>
+                <option value="Truck">{tr("Truck")}</option>
+                <option value="Van">{tr("Van")}</option>
+                <option value="Bus">{tr("Bus")}</option>
+                <option value="Sedan">{tr("Sedan")}</option>
+                <option value="SUV">{tr("SUV")}</option>
+                <option value="Pickup">{tr("Pickup")}</option>
               </select>
             </div>
           </div>
 
           <div className="grid-cols-3" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Brand / Manufacturer *</label>
+              <label className="form-label">{tr("Brand / Manufacturer *")}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. Tata Motors"
+                placeholder={tr("e.g. Tata Motors")}
                 value={formData.brand}
                 onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Model *</label>
+              <label className="form-label">{tr("Model *")}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. Prima 5530.S"
+                placeholder={tr("e.g. Prima 5530.S")}
                 value={formData.model}
                 onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Year</label>
+              <label className="form-label">{tr("Year")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -467,21 +469,21 @@ export default function Vehicles({ onSelectVehicle }) {
 
           <div className="grid-cols-3" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Fuel Type *</label>
+              <label className="form-label">{tr("Fuel Type *")}</label>
               <select
                 className="form-control"
                 value={formData.fuelType}
                 onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })}
               >
-                <option value="Diesel">Diesel</option>
-                <option value="Petrol">Petrol</option>
-                <option value="Electric">Electric</option>
-                <option value="CNG">CNG</option>
-                <option value="Hybrid">Hybrid</option>
+                <option value="Diesel">{tr("Diesel")}</option>
+                <option value="Petrol">{tr("Petrol")}</option>
+                <option value="Electric">{tr("Electric")}</option>
+                <option value="CNG">{tr("CNG")}</option>
+                <option value="Hybrid">{tr("Hybrid")}</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Fuel/Battery Tank (L/kWh)</label>
+              <label className="form-label">{tr("Fuel/Battery Tank (L/kWh)")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -490,7 +492,7 @@ export default function Vehicles({ onSelectVehicle }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Current Odometer (km)</label>
+              <label className="form-label">{tr("Current Odometer (km)")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -502,29 +504,29 @@ export default function Vehicles({ onSelectVehicle }) {
 
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Operational Status</label>
+              <label className="form-label">{tr("Operational Status")}</label>
               <select
                 className="form-control"
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               >
-                <option value="Available">Available</option>
-                <option value="On Trip">On Trip</option>
-                <option value="Maintenance">Maintenance</option>
-                <option value="Inactive">Inactive</option>
+                <option value="Available">{tr("Available")}</option>
+                <option value="On Trip">{tr("On Trip")}</option>
+                <option value="Maintenance">{tr("Maintenance")}</option>
+                <option value="Inactive">{tr("Inactive")}</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Assigned Driver</label>
+              <label className="form-label">{tr("Assigned Driver")}</label>
               <select
                 className="form-control"
                 value={formData.assignedDriver}
                 onChange={(e) => setFormData({ ...formData, assignedDriver: e.target.value })}
               >
-                <option value="">No Driver Assigned</option>
+                <option value="">{tr("No Driver Assigned")}</option>
                 {drivers.map((d) => (
                   <option key={d._id} value={d._id}>
-                    {d.name} ({d.driverId})
+                    {tr(d.name)} ({tr(d.driverId)})
                   </option>
                 ))}
               </select>
@@ -533,7 +535,7 @@ export default function Vehicles({ onSelectVehicle }) {
 
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Insurance Expiry Date *</label>
+              <label className="form-label">{tr("Insurance Expiry Date *")}</label>
               <input
                 type="date"
                 className="form-control"
@@ -543,7 +545,7 @@ export default function Vehicles({ onSelectVehicle }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Registration Expiry Date *</label>
+              <label className="form-label">{tr("Registration Expiry Date *")}</label>
               <input
                 type="date"
                 className="form-control"
@@ -555,11 +557,11 @@ export default function Vehicles({ onSelectVehicle }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Operational Notes</label>
+            <label className="form-label">{tr("Operational Notes")}</label>
             <textarea
               className="form-control"
               rows={2}
-              placeholder="e.g. Telematics unit installed, speed governor tested..."
+              placeholder={tr("e.g. Telematics unit installed, speed governor tested...")}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
@@ -567,10 +569,10 @@ export default function Vehicles({ onSelectVehicle }) {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button type="submit" className="btn btn-primary">
-              {editingVehicle ? 'Update Vehicle' : 'Register Vehicle'}
+              {editingVehicle ? tr("Update Vehicle") : tr("Register Vehicle")}
             </button>
           </div>
         </form>
@@ -580,20 +582,20 @@ export default function Vehicles({ onSelectVehicle }) {
       <Modal
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
-        title="Confirm Vehicle Deletion"
+        title={tr("Confirm Vehicle Deletion")}
         maxWidth="440px"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'center' }}>
           <AlertTriangle size={48} color="#fb7185" style={{ margin: '0 auto' }} />
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Are you sure you want to permanently delete this vehicle from the fleet registry? All associated telemetry and historical records will be archived.
+            {tr("Are you sure you want to permanently delete this vehicle from the fleet registry? All associated telemetry and historical records will be archived.")}
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
             <button className="btn btn-secondary" onClick={() => setDeleteConfirmOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button className="btn btn-danger" onClick={confirmDelete}>
-              Yes, Delete Vehicle
+              {tr("Yes, Delete Vehicle")}
             </button>
           </div>
         </div>

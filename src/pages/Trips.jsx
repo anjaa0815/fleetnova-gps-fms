@@ -18,8 +18,10 @@ import DataTable from '../components/DataTable.jsx';
 import Modal from '../components/Modal.jsx';
 import { tripApi, vehicleApi, driverApi } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Trips() {
+  const { tr } = useT();
   const { user, role } = useAuth();
   const canManage = role === 'admin' || role === 'fleet_manager';
 
@@ -123,7 +125,7 @@ export default function Trips() {
       fetchTrips();
       fetchAvailableRigs();
     } catch (err) {
-      alert(err.message || 'Cannot start trip');
+      alert(tr(err.message || 'Cannot start trip'));
     }
   };
 
@@ -153,13 +155,13 @@ export default function Trips() {
   };
 
   const handleCancelTrip = async (id) => {
-    if (!confirm('Are you sure you want to cancel this trip? Assigned vehicle and driver will be freed.')) return;
+    if (!confirm(tr("Are you sure you want to cancel this trip? Assigned vehicle and driver will be freed."))) return;
     try {
       await tripApi.cancel(id);
       fetchTrips();
       fetchAvailableRigs();
     } catch (err) {
-      alert(err.message || 'Failed to cancel trip');
+      alert(tr(err.message || 'Failed to cancel trip'));
     }
   };
 
@@ -168,16 +170,16 @@ export default function Trips() {
 
   const columns = [
     {
-      header: 'Trip ID',
+      header: tr("Trip ID"),
       render: (t) => (
         <div>
           <strong style={{ color: 'var(--text-primary)' }}>{t.tripId}</strong>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.purpose}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tr(t.purpose)}</div>
         </div>
       )
     },
     {
-      header: 'Route & Distance',
+      header: tr("Route & Distance"),
       render: (t) => (
         <div>
           <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -186,51 +188,51 @@ export default function Trips() {
             <span>{t.destination}</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)' }}>
-            {t.distance} km
+            {t.distance} {tr("km")}
           </div>
         </div>
       )
     },
     {
-      header: 'Vehicle & Driver',
+      header: tr("Vehicle & Driver"),
       render: (t) => (
         <div>
           <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-            {t.vehicle?.registrationNumber || 'Vehicle'}
+            {t.vehicle?.registrationNumber || tr("Vehicle")}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            {t.driver?.name || 'Driver'}
+            {t.driver?.name || tr("Driver")}
           </div>
         </div>
       )
     },
     {
-      header: 'Schedule',
+      header: tr("Schedule"),
       render: (t) => (
         <div style={{ fontSize: '0.8rem' }}>
-          <div>Start: {new Date(t.startDate).toLocaleDateString()}</div>
+          <div>{tr("Start:")} {new Date(t.startDate).toLocaleDateString()}</div>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-            Exp: {new Date(t.expectedEndDate).toLocaleDateString()}
+            {tr("Exp:")} {new Date(t.expectedEndDate).toLocaleDateString()}
           </div>
         </div>
       )
     },
     {
-      header: 'Status',
+      header: tr("Status"),
       render: (t) => {
         const statusClass = `badge-${t.status.toLowerCase().replace(' ', '-')}`;
-        return <span className={`badge ${statusClass}`}>{t.status}</span>;
+        return <span className={`badge ${statusClass}`}>{tr(t.status)}</span>;
       }
     },
     {
-      header: 'Actions',
+      header: tr("Actions"),
       width: '180px',
       render: (t) => (
         <div style={{ display: 'flex', gap: '0.35rem' }}>
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => setSelectedTripDetails(t)}
-            title="View Details"
+            title={tr("View Details")}
           >
             <Eye size={13} />
           </button>
@@ -241,9 +243,9 @@ export default function Trips() {
               className="btn btn-sm"
               onClick={() => handleStartTrip(t._id)}
               style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.4)' }}
-              title="Start Trip (Transitions vehicle to On Trip)"
+              title={tr("Start Trip (Transitions vehicle to On Trip)")}
             >
-              <Play size={13} /> Start
+              <Play size={13} /> {tr("Start")}
             </button>
           )}
 
@@ -252,9 +254,9 @@ export default function Trips() {
               className="btn btn-sm"
               onClick={() => openCompleteModal(t)}
               style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.4)' }}
-              title="Complete Delivery (Returns rig to Available)"
+              title={tr("Complete Delivery (Returns rig to Available)")}
             >
-              <CheckCircle size={13} /> Finish
+              <CheckCircle size={13} /> {tr("Finish")}
             </button>
           )}
 
@@ -262,7 +264,7 @@ export default function Trips() {
             <button
               className="btn btn-danger btn-sm"
               onClick={() => handleCancelTrip(t._id)}
-              title="Cancel Delivery"
+              title={tr("Cancel Delivery")}
             >
               <XCircle size={13} />
             </button>
@@ -278,15 +280,15 @@ export default function Trips() {
       <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Dispatch & Trip Management</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{tr("Dispatch & Trip Management")}</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Schedule transit corridors, assign qualified drivers, and monitor delivery progress
+              {tr("Schedule transit corridors, assign qualified drivers, and monitor delivery progress")}
             </p>
           </div>
 
           {canManage && (
             <button className="btn btn-primary" onClick={() => setCreateModalOpen(true)}>
-              <Plus size={16} /> Schedule New Trip
+              <Plus size={16} /> {tr("Schedule New Trip")}
             </button>
           )}
         </div>
@@ -298,7 +300,7 @@ export default function Trips() {
               type="text"
               className="form-control"
               style={{ paddingLeft: '36px' }}
-              placeholder="Search by trip ID, source, destination, rig..."
+              placeholder={tr("Search by trip ID, source, destination, rig...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -313,11 +315,11 @@ export default function Trips() {
               setPage(1);
             }}
           >
-            <option value="All">All Statuses</option>
-            <option value="Scheduled">Scheduled</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-            <option value="Cancelled">Cancelled</option>
+            <option value="All">{tr("All Statuses")}</option>
+            <option value="Scheduled">{tr("Scheduled")}</option>
+            <option value="In Progress">{tr("In Progress")}</option>
+            <option value="Completed">{tr("Completed")}</option>
+            <option value="Cancelled">{tr("Cancelled")}</option>
           </select>
         </div>
       </div>
@@ -327,7 +329,7 @@ export default function Trips() {
         columns={columns}
         data={trips}
         loading={loading}
-        emptyMessage="No trips found"
+        emptyMessage={tr("No trips found")}
         emptySubtext="Create a new trip schedule or modify your active filters."
         page={page}
         totalPages={totalPages}
@@ -339,7 +341,7 @@ export default function Trips() {
       <Modal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        title="Schedule Commercial Trip Dispatch"
+        title={tr("Schedule Commercial Trip Dispatch")}
       >
         {actionError && (
           <div
@@ -360,45 +362,45 @@ export default function Trips() {
         <form onSubmit={handleCreateSubmit}>
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Select Available Vehicle *</label>
+              <label className="form-label">{tr("Select Available Vehicle *")}</label>
               <select
                 className="form-control"
                 value={formData.vehicleId}
                 onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
                 required
               >
-                <option value="">-- Choose Available Rig --</option>
+                <option value="">{tr("-- Choose Available Rig --")}</option>
                 {availableVehicles.map((v) => (
                   <option key={v._id} value={v._id}>
-                    {v.registrationNumber} ({v.brand} {v.model}) - {v.vehicleType}
+                    {tr(v.registrationNumber)} ({tr(v.brand)} {tr(v.model)}) - {tr(v.vehicleType)}
                   </option>
                 ))}
               </select>
               {availableVehicles.length === 0 && (
                 <span style={{ fontSize: '0.7rem', color: '#fbbf24' }}>
-                  ⚠️ No vehicles currently marked 'Available'.
+                  {tr("⚠️ No vehicles currently marked 'Available'.")}
                 </span>
               )}
             </div>
 
             <div className="form-group">
-              <label className="form-label">Select Available Driver *</label>
+              <label className="form-label">{tr("Select Available Driver *")}</label>
               <select
                 className="form-control"
                 value={formData.driverId}
                 onChange={(e) => setFormData({ ...formData, driverId: e.target.value })}
                 required
               >
-                <option value="">-- Choose Available Operator --</option>
+                <option value="">{tr("-- Choose Available Operator --")}</option>
                 {availableDrivers.map((d) => (
                   <option key={d._id} value={d._id}>
-                    {d.name} ({d.driverId})
+                    {tr(d.name)} ({tr(d.driverId)})
                   </option>
                 ))}
               </select>
               {availableDrivers.length === 0 && (
                 <span style={{ fontSize: '0.7rem', color: '#fbbf24' }}>
-                  ⚠️ No drivers currently marked 'Available'.
+                  {tr("⚠️ No drivers currently marked 'Available'.")}
                 </span>
               )}
             </div>
@@ -406,22 +408,22 @@ export default function Trips() {
 
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Origin / Source Hub *</label>
+              <label className="form-label">{tr("Origin / Source Hub *")}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. New Delhi ICD"
+                placeholder={tr("e.g. New Delhi ICD")}
                 value={formData.source}
                 onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Destination Facility *</label>
+              <label className="form-label">{tr("Destination Facility *")}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. Mundra Port, Gujarat"
+                placeholder={tr("e.g. Mundra Port, Gujarat")}
                 value={formData.destination}
                 onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
                 required
@@ -431,7 +433,7 @@ export default function Trips() {
 
           <div className="grid-cols-3" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Estimated Distance (km) *</label>
+              <label className="form-label">{tr("Estimated Distance (km) *")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -441,7 +443,7 @@ export default function Trips() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Start Date & Time *</label>
+              <label className="form-label">{tr("Start Date & Time *")}</label>
               <input
                 type="datetime-local"
                 className="form-control"
@@ -451,7 +453,7 @@ export default function Trips() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Expected Arrival Date *</label>
+              <label className="form-label">{tr("Expected Arrival Date *")}</label>
               <input
                 type="datetime-local"
                 className="form-control"
@@ -464,17 +466,17 @@ export default function Trips() {
 
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Trip Cargo Purpose</label>
+              <label className="form-label">{tr("Trip Cargo Purpose")}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. High-tech Electronics Consignment"
+                placeholder={tr("e.g. High-tech Electronics Consignment")}
                 value={formData.purpose}
                 onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Advance Trip Allowance (₹)</label>
+              <label className="form-label">{tr("Advance Trip Allowance (₹)")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -485,11 +487,11 @@ export default function Trips() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Transit Instructions</label>
+            <label className="form-label">{tr("Transit Instructions")}</label>
             <textarea
               className="form-control"
               rows={2}
-              placeholder="e.g. Mandatory temperature check every 6 hours, avoid NH-8 bypass..."
+              placeholder={tr("e.g. Mandatory temperature check every 6 hours, avoid NH-8 bypass...")}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
@@ -497,10 +499,10 @@ export default function Trips() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setCreateModalOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button type="submit" className="btn btn-primary" disabled={availableVehicles.length === 0 || availableDrivers.length === 0}>
-              Confirm Dispatch Schedule
+              {tr("Confirm Dispatch Schedule")}
             </button>
           </div>
         </form>
@@ -521,11 +523,11 @@ export default function Trips() {
 
         <form onSubmit={handleCompleteSubmit}>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-            Completing this trip will record final odometer distance, release the vehicle ({activeTripToComplete?.vehicle?.registrationNumber}) and return the driver ({activeTripToComplete?.driver?.name}) to <strong>AVAILABLE</strong> status.
+            {tr("Completing this trip will record final odometer distance, release the vehicle ({v}) and return the driver ({d}) to AVAILABLE status.", { v: activeTripToComplete?.vehicle?.registrationNumber, d: activeTripToComplete?.driver?.name })}
           </p>
 
           <div className="form-group">
-            <label className="form-label">Actual Arrival Date & Time</label>
+            <label className="form-label">{tr("Actual Arrival Date & Time")}</label>
             <input
               type="datetime-local"
               className="form-control"
@@ -537,7 +539,7 @@ export default function Trips() {
 
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Total Fuel Used (Liters)</label>
+              <label className="form-label">{tr("Total Fuel Used (Liters)")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -546,7 +548,7 @@ export default function Trips() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Trip Incidental Expenses (₹)</label>
+              <label className="form-label">{tr("Trip Incidental Expenses (₹)")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -558,10 +560,10 @@ export default function Trips() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setCompleteModalOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button type="submit" className="btn btn-primary" style={{ backgroundColor: '#10b981' }}>
-              Confirm Trip Completion
+              {tr("Confirm Trip Completion")}
             </button>
           </div>
         </form>
@@ -578,7 +580,7 @@ export default function Trips() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
               <div>
                 <span className={`badge badge-${selectedTripDetails.status.toLowerCase().replace(' ', '-')}`}>
-                  {selectedTripDetails.status}
+                  {tr(selectedTripDetails.status)}
                 </span>
                 <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '0.35rem' }}>
                   {selectedTripDetails.source} ➔ {selectedTripDetails.destination}
@@ -586,51 +588,51 @@ export default function Trips() {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
-                  {selectedTripDetails.distance} km
+                  {selectedTripDetails.distance} {tr("km")}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Corridor Length</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tr("Corridor Length")}</div>
               </div>
             </div>
 
             <div className="grid-cols-2" style={{ gap: '1rem' }}>
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>ASSIGNED RIG</div>
-                <strong>{selectedTripDetails.vehicle?.registrationNumber || 'Vehicle'}</strong>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("ASSIGNED RIG")}</div>
+                <strong>{selectedTripDetails.vehicle?.registrationNumber || tr("Vehicle")}</strong>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   {selectedTripDetails.vehicle?.brand} {selectedTripDetails.vehicle?.model}
                 </div>
               </div>
 
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>COMMERCIAL DRIVER</div>
-                <strong>{selectedTripDetails.driver?.name || 'Driver'}</strong>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("COMMERCIAL DRIVER")}</div>
+                <strong>{selectedTripDetails.driver?.name || tr("Driver")}</strong>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  Phone: {selectedTripDetails.driver?.phone || 'N/A'}
+                  {tr("Phone:")} {selectedTripDetails.driver?.phone || 'N/A'}
                 </div>
               </div>
             </div>
 
             <div className="grid-cols-2" style={{ gap: '1rem' }}>
               <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>DEPARTURE DATE</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("DEPARTURE DATE")}</div>
                 <div>{new Date(selectedTripDetails.startDate).toLocaleString()}</div>
               </div>
               <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>EXPECTED ARRIVAL</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("EXPECTED ARRIVAL")}</div>
                 <div>{new Date(selectedTripDetails.expectedEndDate).toLocaleString()}</div>
               </div>
             </div>
 
             {selectedTripDetails.notes && (
               <div style={{ padding: '0.75rem', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '2px' }}>TRIP NOTES</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '2px' }}>{tr("TRIP NOTES")}</div>
                 <p>{selectedTripDetails.notes}</p>
               </div>
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
               <button className="btn btn-secondary" onClick={() => setSelectedTripDetails(null)}>
-                Close
+                {tr("Close")}
               </button>
             </div>
           </div>

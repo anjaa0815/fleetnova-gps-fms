@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useT } from '../i18n/LanguageContext.jsx';
 import L from 'leaflet';
 
 // Leaflet-ийн үндсэн маркер дүрсийг тохируулах
@@ -21,6 +22,7 @@ const vehicleIcon = new L.DivIcon({
 });
 
 export default function LiveMap({ vehicles = [] }) {
+  const { tr } = useT();
   // Улаанбаатар хотын төв координат (эхлэлийн төв)
   const defaultPosition = [47.9188, 106.9176];
 
@@ -47,8 +49,8 @@ export default function LiveMap({ vehicles = [] }) {
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg p-4 mb-6">
       <div className="flex justify-between items-center mb-3">
         <div>
-          <h2 className="text-lg font-semibold text-white">Бодит цагийн GPS газрын зураг (Live Tracking)</h2>
-          <p className="text-xs text-slate-400">Идэвхтэй замын хөдөлгөөнд оролцож буй тээврийн хэрэгслүүд</p>
+          <h2 className="text-lg font-semibold text-white">{tr('Live GPS tracking map')}</h2>
+          <p className="text-xs text-slate-400">{tr('Vehicles currently active in road traffic')}</p>
         </div>
         <div className="flex items-center space-x-2">
           <span className="flex h-3 w-3 relative">
@@ -56,7 +58,7 @@ export default function LiveMap({ vehicles = [] }) {
             <span className={`relative inline-flex rounded-full h-3 w-3 ${isLive ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
           </span>
           <span className={`text-xs font-medium ${isLive ? 'text-emerald-400' : 'text-amber-400'}`}>
-            {isLive ? 'Шууд холбогдсон' : 'Демо байршил (GPS төхөөрөмж холбогдоогүй)'}
+            {isLive ? tr('Live connected') : tr('Demo position (no GPS device connected)')}
           </span>
         </div>
       </div>
@@ -82,11 +84,11 @@ export default function LiveMap({ vehicles = [] }) {
             >
               <Popup>
                 <div className="text-slate-900 text-xs">
-                  <p className="font-bold text-sm mb-1">{vehicle.registrationNumber || vehicle.plateNumber || vehicle.name || 'Тээврийн хэрэгсэл'}</p>
-                  <p><b>Загвар:</b> {[vehicle.brand, vehicle.model].filter(Boolean).join(' ') || vehicle.vehicleType || 'Тодорхойгүй'}</p>
-                  <p><b>Жолооч:</b> {vehicle.assignedDriver?.name || 'Оноогоогүй'}</p>
-                  <p><b>Хурд:</b> {vehicle.speed ?? '—'} км/цаг</p>
-                  <p><b>Төлөв:</b> <span className="text-emerald-600 font-semibold">{vehicle.status || 'Идэвхтэй'}</span></p>
+                  <p className="font-bold text-sm mb-1">{vehicle.registrationNumber || vehicle.plateNumber || vehicle.name || tr('Vehicle')}</p>
+                  <p><b>{tr('Model:')}</b> {[vehicle.brand, vehicle.model].filter(Boolean).join(' ') || vehicle.vehicleType || tr('Unknown')}</p>
+                  <p><b>{tr('Driver:')}</b> {vehicle.assignedDriver?.name || tr('Unassigned')}</p>
+                  <p><b>{tr('Speed:')}</b> {vehicle.speed ?? '—'} {tr('km/h')}</p>
+                  <p><b>{tr('Status:')}</b> <span className="text-emerald-600 font-semibold">{tr(vehicle.status || 'Active')}</span></p>
                 </div>
               </Popup>
             </Marker>

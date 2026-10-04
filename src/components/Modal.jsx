@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Modal({ isOpen, onClose, title, children, maxWidth = '650px' }) {
+  const { tr } = useT();
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && isOpen) {
@@ -34,7 +36,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '65
               padding: '0.25rem',
               borderRadius: 'var(--radius-sm)'
             }}
-            aria-label="Close modal"
+            aria-label={tr("Close modal")}
           >
             <X size={20} />
           </button>

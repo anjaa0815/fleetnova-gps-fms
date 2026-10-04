@@ -16,8 +16,10 @@ import Modal from '../components/Modal.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { fuelApi, vehicleApi, driverApi } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Fuel() {
+  const { tr } = useT();
   const { role } = useAuth();
   const canManage = role === 'admin' || role === 'fleet_manager';
 
@@ -123,13 +125,13 @@ export default function Fuel() {
       setDeleteId(null);
       fetchFuel();
     } catch (err) {
-      alert(err.message || 'Failed to delete fuel record');
+      alert(tr(err.message || 'Failed to delete fuel record'));
     }
   };
 
   const columns = [
     {
-      header: 'Record ID & Date',
+      header: tr("Record ID & Date"),
       render: (r) => (
         <div>
           <strong style={{ color: 'var(--text-primary)' }}>{r.fuelRecordId}</strong>
@@ -140,23 +142,23 @@ export default function Fuel() {
       )
     },
     {
-      header: 'Rig & Operator',
+      header: tr("Rig & Operator"),
       render: (r) => (
         <div>
-          <div style={{ fontWeight: 600 }}>{r.vehicle?.registrationNumber || 'Vehicle'}</div>
+          <div style={{ fontWeight: 600 }}>{r.vehicle?.registrationNumber || tr("Vehicle")}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            {r.driver?.name || 'Driver Not Specified'}
+            {r.driver?.name || tr("Driver Not Specified")}
           </div>
         </div>
       )
     },
     {
-      header: 'Fuel Dispensed',
+      header: tr("Fuel Dispensed"),
       render: (r) => (
         <div>
           <span style={{ fontWeight: 700, color: 'var(--accent-cyan)' }}>{r.quantity} L</span>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '4px' }}>
-            ({r.fuelType})
+            ({tr(r.fuelType)})
           </span>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             ₹{r.pricePerLiter} / L
@@ -165,7 +167,7 @@ export default function Fuel() {
       )
     },
     {
-      header: 'Gross Total',
+      header: tr("Gross Total"),
       render: (r) => (
         <div>
           <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>
@@ -175,18 +177,18 @@ export default function Fuel() {
       )
     },
     {
-      header: 'Station & Odometer',
+      header: tr("Station & Odometer"),
       render: (r) => (
         <div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{r.fuelStation}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {r.odometerReading?.toLocaleString()} km
+            {r.odometerReading?.toLocaleString()} {tr("km")}
           </div>
         </div>
       )
     },
     {
-      header: 'Actions',
+      header: tr("Actions"),
       width: '80px',
       render: (r) => (
         canManage && (
@@ -196,7 +198,7 @@ export default function Fuel() {
               setDeleteId(r._id);
               setDeleteConfirmOpen(true);
             }}
-            title="Delete Record"
+            title={tr("Delete Record")}
           >
             <Trash2 size={14} />
           </button>
@@ -210,30 +212,30 @@ export default function Fuel() {
       {/* KPI Cards */}
       <div className="grid-cols-4">
         <StatCard
-          title="Total Fuel Consumed"
+          title={tr("Total Fuel Consumed")}
           value={`${summary.totalConsumed.toLocaleString()} L`}
-          subtext="Recorded across all rigs"
+          subtext={tr("Recorded across all rigs")}
           icon={FuelIcon}
           color="#06b6d4"
         />
         <StatCard
-          title="Gross Fuel Cost"
+          title={tr("Gross Fuel Cost")}
           value={`₹${summary.totalCost.toLocaleString()}`}
-          subtext="Total fueling expenditures"
+          subtext={tr("Total fueling expenditures")}
           icon={DollarSign}
           color="#3b82f6"
         />
         <StatCard
-          title="Avg Fuel Price"
+          title={tr("Avg Fuel Price")}
           value={`₹${summary.avgPricePerLiter} / L`}
-          subtext="Blended average rate"
+          subtext={tr("Blended average rate")}
           icon={TrendingUp}
           color="#10b981"
         />
         <StatCard
-          title="Dispense Logs"
+          title={tr("Dispense Logs")}
           value={summary.recordCount}
-          subtext="Verified pump transactions"
+          subtext={tr("Verified pump transactions")}
           icon={Receipt}
           color="#8b5cf6"
         />
@@ -243,15 +245,15 @@ export default function Fuel() {
       <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Fuel Management & Telemetry</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{tr("Fuel Management & Telemetry")}</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Track station refills, consumption efficiency, and auto-sync with company expenses
+              {tr("Track station refills, consumption efficiency, and auto-sync with company expenses")}
             </p>
           </div>
 
           {canManage && (
             <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-              <Plus size={16} /> Log Fuel Refill
+              <Plus size={16} /> {tr("Log Fuel Refill")}
             </button>
           )}
         </div>
@@ -263,7 +265,7 @@ export default function Fuel() {
               type="text"
               className="form-control"
               style={{ paddingLeft: '36px' }}
-              placeholder="Search station, rig, record ID..."
+              placeholder={tr("Search station, rig, record ID...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -278,10 +280,10 @@ export default function Fuel() {
               setPage(1);
             }}
           >
-            <option value="All">All Vehicles</option>
+            <option value="All">{tr("All Vehicles")}</option>
             {vehicles.map((v) => (
               <option key={v._id} value={v._id}>
-                {v.registrationNumber}
+                {tr(v.registrationNumber)}
               </option>
             ))}
           </select>
@@ -295,11 +297,11 @@ export default function Fuel() {
               setPage(1);
             }}
           >
-            <option value="All">All Fuel Types</option>
-            <option value="Diesel">Diesel</option>
-            <option value="Petrol">Petrol</option>
-            <option value="CNG">CNG</option>
-            <option value="Electric">Electric</option>
+            <option value="All">{tr("All Fuel Types")}</option>
+            <option value="Diesel">{tr("Diesel")}</option>
+            <option value="Petrol">{tr("Petrol")}</option>
+            <option value="CNG">{tr("CNG")}</option>
+            <option value="Electric">{tr("Electric")}</option>
           </select>
         </div>
       </div>
@@ -309,7 +311,7 @@ export default function Fuel() {
         columns={columns}
         data={records}
         loading={loading}
-        emptyMessage="No fuel transactions found"
+        emptyMessage={tr("No fuel transactions found")}
         emptySubtext="Record a fuel refill to start monitoring fleet consumption metrics."
         page={page}
         totalPages={totalPages}
@@ -321,7 +323,7 @@ export default function Fuel() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Record Commercial Fuel Refill"
+        title={tr("Record Commercial Fuel Refill")}
       >
         {actionError && (
           <div style={{ padding: '0.75rem', backgroundColor: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', marginBottom: '1rem', borderRadius: 'var(--radius-md)' }}>
@@ -332,7 +334,7 @@ export default function Fuel() {
         <form onSubmit={handleFormSubmit}>
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Vehicle Rig *</label>
+              <label className="form-label">{tr("Vehicle Rig *")}</label>
               <select
                 className="form-control"
                 value={formData.vehicleId}
@@ -347,26 +349,26 @@ export default function Fuel() {
                 }}
                 required
               >
-                <option value="">-- Choose Rig --</option>
+                <option value="">{tr("-- Choose Rig --")}</option>
                 {vehicles.map((v) => (
                   <option key={v._id} value={v._id}>
-                    {v.registrationNumber} ({v.brand} {v.model})
+                    {tr(v.registrationNumber)} ({tr(v.brand)} {tr(v.model)})
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Commercial Operator</label>
+              <label className="form-label">{tr("Commercial Operator")}</label>
               <select
                 className="form-control"
                 value={formData.driverId}
                 onChange={(e) => setFormData({ ...formData, driverId: e.target.value })}
               >
-                <option value="">-- Select Driver (Optional) --</option>
+                <option value="">{tr("-- Select Driver (Optional) --")}</option>
                 {drivers.map((d) => (
                   <option key={d._id} value={d._id}>
-                    {d.name}
+                    {tr(d.name)}
                   </option>
                 ))}
               </select>
@@ -375,21 +377,21 @@ export default function Fuel() {
 
           <div className="grid-cols-3" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Fuel Type *</label>
+              <label className="form-label">{tr("Fuel Type *")}</label>
               <select
                 className="form-control"
                 value={formData.fuelType}
                 onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })}
               >
-                <option value="Diesel">Diesel</option>
-                <option value="Petrol">Petrol</option>
-                <option value="CNG">CNG</option>
-                <option value="Electric">Electric</option>
-                <option value="Hybrid">Hybrid</option>
+                <option value="Diesel">{tr("Diesel")}</option>
+                <option value="Petrol">{tr("Petrol")}</option>
+                <option value="CNG">{tr("CNG")}</option>
+                <option value="Electric">{tr("Electric")}</option>
+                <option value="Hybrid">{tr("Hybrid")}</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Quantity (L/Units) *</label>
+              <label className="form-label">{tr("Quantity (L/Units) *")}</label>
               <input
                 type="number"
                 step="0.1"
@@ -400,7 +402,7 @@ export default function Fuel() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Price per Liter (₹) *</label>
+              <label className="form-label">{tr("Price per Liter (₹) *")}</label>
               <input
                 type="number"
                 step="0.01"
@@ -426,7 +428,7 @@ export default function Fuel() {
             }}
           >
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              Automatically Calculated Total Cost:
+              {tr("Automatically Calculated Total Cost:")}
             </span>
             <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
               ₹{(Math.round((formData.quantity || 0) * (formData.pricePerLiter || 0) * 100) / 100).toLocaleString()}
@@ -435,7 +437,7 @@ export default function Fuel() {
 
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Odometer Reading at Pump (km) *</label>
+              <label className="form-label">{tr("Odometer Reading at Pump (km) *")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -445,7 +447,7 @@ export default function Fuel() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Transaction Date *</label>
+              <label className="form-label">{tr("Transaction Date *")}</label>
               <input
                 type="date"
                 className="form-control"
@@ -457,22 +459,22 @@ export default function Fuel() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Fuel Station / Vendor Name</label>
+            <label className="form-label">{tr("Fuel Station / Vendor Name")}</label>
             <input
               type="text"
               className="form-control"
-              placeholder="e.g. Indian Oil Highway Care, Behror NH-48"
+              placeholder={tr("e.g. Indian Oil Highway Care, Behror NH-48")}
               value={formData.fuelStation}
               onChange={(e) => setFormData({ ...formData, fuelStation: e.target.value })}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Notes / Receipt Reference</label>
+            <label className="form-label">{tr("Notes / Receipt Reference")}</label>
             <textarea
               className="form-control"
               rows={2}
-              placeholder="e.g. Fuel card txn ID, DEF fluid added..."
+              placeholder={tr("e.g. Fuel card txn ID, DEF fluid added...")}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
@@ -480,10 +482,10 @@ export default function Fuel() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button type="submit" className="btn btn-primary">
-              Log Fuel Refill
+              {tr("Log Fuel Refill")}
             </button>
           </div>
         </form>
@@ -493,19 +495,19 @@ export default function Fuel() {
       <Modal
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
-        title="Delete Fuel Record"
+        title={tr("Delete Fuel Record")}
         maxWidth="440px"
       >
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Are you sure you want to delete this fuel record? This will also remove the corresponding transaction in the expense ledger.
+            {tr("Are you sure you want to delete this fuel record? This will also remove the corresponding transaction in the expense ledger.")}
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
             <button className="btn btn-secondary" onClick={() => setDeleteConfirmOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button className="btn btn-danger" onClick={confirmDelete}>
-              Yes, Delete
+              {tr("Yes, Delete")}
             </button>
           </div>
         </div>

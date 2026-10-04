@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Truck, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { authApi } from '../services/api.js';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function ForgotPassword({ onSwitchToLogin }) {
+  const { tr } = useT();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -18,7 +20,7 @@ export default function ForgotPassword({ onSwitchToLogin }) {
       const res = await authApi.forgotPassword(email);
       setSubmitted(true);
     } catch (err) {
-      setError(err.message || 'Failed to submit reset request');
+      setError(tr(err.message || 'Failed to submit reset request'));
     } finally {
       setLoading(false);
     }
@@ -63,21 +65,21 @@ export default function ForgotPassword({ onSwitchToLogin }) {
             >
               <Truck size={24} />
             </div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>Reset Password</h2>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>{tr("Reset Password")}</h2>
             <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-              Enter your corporate email to receive password recovery instructions
+              {tr("Enter your corporate email to receive password recovery instructions")}
             </p>
           </div>
 
           {submitted ? (
             <div style={{ textAlign: 'center', padding: '1rem 0' }}>
               <CheckCircle2 size={48} color="#10b981" style={{ margin: '0 auto 1rem auto' }} />
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Reset Link Dispatched</h3>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>{tr("Reset Link Dispatched")}</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                If an account exists for <strong>{email}</strong>, you will receive password reset instructions.
+                {tr("If an account exists for {email}, you will receive password reset instructions.", { email })}
               </p>
               <button className="btn btn-primary" onClick={onSwitchToLogin} style={{ width: '100%' }}>
-                Return to Login
+                {tr("Return to Login")}
               </button>
             </div>
           ) : (
@@ -99,7 +101,7 @@ export default function ForgotPassword({ onSwitchToLogin }) {
               )}
 
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label className="form-label">Account Email Address</label>
+                <label className="form-label">{tr("Account Email Address")}</label>
                 <div style={{ position: 'relative' }}>
                   <Mail
                     size={16}
@@ -115,7 +117,7 @@ export default function ForgotPassword({ onSwitchToLogin }) {
                     type="email"
                     className="form-control"
                     style={{ paddingLeft: '38px' }}
-                    placeholder="name@fleetcompany.com"
+                    placeholder={tr("name@fleetcompany.com")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -129,7 +131,7 @@ export default function ForgotPassword({ onSwitchToLogin }) {
                 disabled={loading}
                 style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem' }}
               >
-                {loading ? 'Submitting Request...' : 'Send Recovery Instructions'}
+                {loading ? tr("Submitting Request...") : tr("Send Recovery Instructions")}
               </button>
 
               <button
@@ -138,7 +140,7 @@ export default function ForgotPassword({ onSwitchToLogin }) {
                 onClick={onSwitchToLogin}
                 style={{ width: '100%' }}
               >
-                <ArrowLeft size={16} /> Back to Sign In
+                <ArrowLeft size={16} /> {tr("Back to Sign In")}
               </button>
             </form>
           )}

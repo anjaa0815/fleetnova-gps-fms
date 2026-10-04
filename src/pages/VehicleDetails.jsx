@@ -16,8 +16,10 @@ import {
 import Loading from '../components/Loading.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { vehicleApi } from '../services/api.js';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function VehicleDetails({ vehicleId, onBack }) {
+  const { tr } = useT();
   const [vehicle, setVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,7 +34,7 @@ export default function VehicleDetails({ vehicleId, onBack }) {
           setVehicle(res.data);
         }
       } catch (err) {
-        setError(err.message || 'Failed to load vehicle profile');
+        setError(tr(err.message || 'Failed to load vehicle profile'));
       } finally {
         setLoading(false);
       }
@@ -41,17 +43,17 @@ export default function VehicleDetails({ vehicleId, onBack }) {
   }, [vehicleId]);
 
   if (loading) {
-    return <Loading message="Loading detailed vehicle telematics and service dossier..." />;
+    return <Loading message={tr("Loading detailed vehicle telematics and service dossier...")} />;
   }
 
   if (error || !vehicle) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
         <AlertTriangle size={40} color="#fb7185" style={{ margin: '0 auto 1rem auto' }} />
-        <h3>Vehicle Record Not Found</h3>
+        <h3>{tr("Vehicle Record Not Found")}</h3>
         <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 1.5rem 0' }}>{error}</p>
         <button className="btn btn-secondary" onClick={onBack}>
-          <ArrowLeft size={16} /> Back to Vehicles
+          <ArrowLeft size={16} /> {tr("Back to Vehicles")}
         </button>
       </div>
     );
@@ -65,24 +67,24 @@ export default function VehicleDetails({ vehicleId, onBack }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button className="btn btn-secondary" onClick={onBack}>
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16} /> {tr("Back")}
           </button>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>{vehicle.registrationNumber}</h2>
               <span className={`badge badge-${vehicle.status?.toLowerCase().replace(' ', '-')}`}>
-                {vehicle.status}
+                {tr(vehicle.status)}
               </span>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              {vehicle.brand} {vehicle.model} • {vehicle.vehicleType} • {vehicle.fuelType} • {vehicle.vehicleId}
+              {vehicle.brand} {vehicle.model} • {tr(vehicle.vehicleType)} • {tr(vehicle.fuelType)} • {vehicle.vehicleId}
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <Clock size={15} /> Last Service: {vehicle.lastServiceDate ? new Date(vehicle.lastServiceDate).toLocaleDateString() : 'N/A'}
+            <Clock size={15} /> {tr("Last Service:")} {vehicle.lastServiceDate ? new Date(vehicle.lastServiceDate).toLocaleDateString() : 'N/A'}
           </span>
         </div>
       </div>
@@ -116,30 +118,30 @@ export default function VehicleDetails({ vehicleId, onBack }) {
       {/* Key Metric KPI Cards */}
       <div className="grid-cols-4">
         <StatCard
-          title="Total Trips Run"
+          title={tr("Total Trips Run")}
           value={analytics?.totalTrips || 0}
-          subtext={`${analytics?.totalDistance?.toLocaleString() || 0} km logged`}
+          subtext={tr('{a} km logged', { a: analytics?.totalDistance?.toLocaleString() || 0 })}
           icon={Navigation}
           color="#3b82f6"
         />
         <StatCard
-          title="Fuel Consumed"
+          title={tr("Fuel Consumed")}
           value={`${analytics?.totalFuelUsed || 0} L`}
-          subtext={`₹${analytics?.totalFuelCost?.toLocaleString() || 0} spent`}
+          subtext={tr('₹{a} spent', { a: analytics?.totalFuelCost?.toLocaleString() || 0 })}
           icon={Fuel}
           color="#06b6d4"
         />
         <StatCard
-          title="Maintenance Cost"
+          title={tr("Maintenance Cost")}
           value={`₹${analytics?.totalMaintenanceCost?.toLocaleString() || 0}`}
-          subtext={`${maintenance.length} service logs`}
+          subtext={tr('{a} service logs', { a: maintenance.length })}
           icon={Wrench}
           color="#f59e0b"
         />
         <StatCard
-          title="Total Operating Cost"
+          title={tr("Total Operating Cost")}
           value={`₹${analytics?.totalExpenses?.toLocaleString() || 0}`}
-          subtext="Fuel + Repair + Tolls"
+          subtext={tr("Fuel + Repair + Tolls")}
           icon={Receipt}
           color="#8b5cf6"
         />
@@ -161,7 +163,7 @@ export default function VehicleDetails({ vehicleId, onBack }) {
             style={{ textTransform: 'capitalize' }}
             onClick={() => setActiveTab(tab)}
           >
-            {tab} History
+            {tr(`${tab} History`)}
           </button>
         ))}
       </div>
@@ -172,47 +174,47 @@ export default function VehicleDetails({ vehicleId, onBack }) {
           {/* Technical Specifications */}
           <div className="card">
             <h3 className="card-title" style={{ marginBottom: '1rem' }}>
-              <Truck size={18} color="var(--primary)" /> Technical & Registration Details
+              <Truck size={18} color="var(--primary)" /> {tr("Technical & Registration Details")}
             </h3>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', fontSize: '0.85rem' }}>
               <div>
-                <div style={{ color: 'var(--text-muted)' }}>REGISTRATION NUMBER</div>
+                <div style={{ color: 'var(--text-muted)' }}>{tr("REGISTRATION NUMBER")}</div>
                 <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{vehicle.registrationNumber}</div>
               </div>
               <div>
-                <div style={{ color: 'var(--text-muted)' }}>VEHICLE ID</div>
+                <div style={{ color: 'var(--text-muted)' }}>{tr("VEHICLE ID")}</div>
                 <div style={{ fontWeight: 600 }}>{vehicle.vehicleId}</div>
               </div>
               <div>
-                <div style={{ color: 'var(--text-muted)' }}>BRAND & MODEL</div>
+                <div style={{ color: 'var(--text-muted)' }}>{tr("BRAND & MODEL")}</div>
                 <div style={{ fontWeight: 600 }}>{vehicle.brand} {vehicle.model}</div>
               </div>
               <div>
-                <div style={{ color: 'var(--text-muted)' }}>MANUFACTURING YEAR</div>
+                <div style={{ color: 'var(--text-muted)' }}>{tr("MANUFACTURING YEAR")}</div>
                 <div style={{ fontWeight: 600 }}>{vehicle.manufacturingYear}</div>
               </div>
               <div>
-                <div style={{ color: 'var(--text-muted)' }}>FUEL TYPE</div>
-                <div style={{ fontWeight: 600, color: 'var(--accent-cyan)' }}>{vehicle.fuelType}</div>
+                <div style={{ color: 'var(--text-muted)' }}>{tr("FUEL TYPE")}</div>
+                <div style={{ fontWeight: 600, color: 'var(--accent-cyan)' }}>{tr(vehicle.fuelType)}</div>
               </div>
               <div>
-                <div style={{ color: 'var(--text-muted)' }}>TANK / BATTERY CAPACITY</div>
-                <div style={{ fontWeight: 600 }}>{vehicle.fuelCapacity} L / Units</div>
+                <div style={{ color: 'var(--text-muted)' }}>{tr("TANK / BATTERY CAPACITY")}</div>
+                <div style={{ fontWeight: 600 }}>{vehicle.fuelCapacity} {tr("L / Units")}</div>
               </div>
               <div>
-                <div style={{ color: 'var(--text-muted)' }}>CURRENT ODOMETER</div>
-                <div style={{ fontWeight: 600 }}>{vehicle.currentMileage?.toLocaleString()} km</div>
+                <div style={{ color: 'var(--text-muted)' }}>{tr("CURRENT ODOMETER")}</div>
+                <div style={{ fontWeight: 600 }}>{vehicle.currentMileage?.toLocaleString()} {tr("km")}</div>
               </div>
               <div>
-                <div style={{ color: 'var(--text-muted)' }}>ACQUISITION DATE</div>
+                <div style={{ color: 'var(--text-muted)' }}>{tr("ACQUISITION DATE")}</div>
                 <div style={{ fontWeight: 600 }}>{vehicle.purchaseDate ? new Date(vehicle.purchaseDate).toLocaleDateString() : 'N/A'}</div>
               </div>
             </div>
 
             {vehicle.notes && (
               <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)', fontSize: '0.825rem' }}>
-                <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>OPERATIONAL NOTES</div>
+                <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{tr("OPERATIONAL NOTES")}</div>
                 <p style={{ color: 'var(--text-secondary)' }}>{vehicle.notes}</p>
               </div>
             )}
@@ -223,7 +225,7 @@ export default function VehicleDetails({ vehicleId, onBack }) {
             {/* Driver Assignment Card */}
             <div className="card">
               <h3 className="card-title" style={{ marginBottom: '0.75rem' }}>
-                <User size={18} color="var(--accent-emerald)" /> Assigned Commercial Driver
+                <User size={18} color="var(--accent-emerald)" /> {tr("Assigned Commercial Driver")}
               </h3>
               {vehicle.assignedDriver ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
@@ -233,13 +235,13 @@ export default function VehicleDetails({ vehicleId, onBack }) {
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{vehicle.assignedDriver.name}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      Phone: {vehicle.assignedDriver.phone} • License: {vehicle.assignedDriver.licenseNumber}
+                      {tr("Phone:")} {vehicle.assignedDriver.phone} {tr("• License:")} {vehicle.assignedDriver.licenseNumber}
                     </div>
                   </div>
                 </div>
               ) : (
                 <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                  No driver currently assigned to this vehicle
+                  {tr("No driver currently assigned to this vehicle")}
                 </div>
               )}
             </div>
@@ -247,19 +249,19 @@ export default function VehicleDetails({ vehicleId, onBack }) {
             {/* Document Compliance Card */}
             <div className="card">
               <h3 className="card-title" style={{ marginBottom: '0.75rem' }}>
-                <ShieldCheck size={18} color="var(--primary)" /> Regulatory Document Expiry
+                <ShieldCheck size={18} color="var(--primary)" /> {tr("Regulatory Document Expiry")}
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Comprehensive Insurance:</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{tr("Comprehensive Insurance:")}</span>
                   <strong>{vehicle.insuranceExpiry ? new Date(vehicle.insuranceExpiry).toLocaleDateString() : 'N/A'}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Registration Certificate (RC):</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{tr("Registration Certificate (RC):")}</span>
                   <strong>{vehicle.registrationExpiry ? new Date(vehicle.registrationExpiry).toLocaleDateString() : 'N/A'}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Next Scheduled Service:</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{tr("Next Scheduled Service:")}</span>
                   <strong>{vehicle.nextServiceDate ? new Date(vehicle.nextServiceDate).toLocaleDateString() : 'N/A'}</strong>
                 </div>
               </div>
@@ -271,19 +273,19 @@ export default function VehicleDetails({ vehicleId, onBack }) {
       {/* Tab 2: Trips */}
       {activeTab === 'trips' && (
         <div className="card">
-          <h3 className="card-title" style={{ marginBottom: '1rem' }}>Dispatched Deliveries</h3>
+          <h3 className="card-title" style={{ marginBottom: '1rem' }}>{tr("Dispatched Deliveries")}</h3>
           {trips.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)' }}>No trip records associated with this vehicle.</p>
+            <p style={{ color: 'var(--text-muted)' }}>{tr("No trip records associated with this vehicle.")}</p>
           ) : (
             <div className="table-responsive">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Trip ID</th>
-                    <th>Route</th>
-                    <th>Distance</th>
-                    <th>Start Date</th>
-                    <th>Status</th>
+                    <th>{tr("Trip ID")}</th>
+                    <th>{tr("Route")}</th>
+                    <th>{tr("Distance")}</th>
+                    <th>{tr("Start Date")}</th>
+                    <th>{tr("Status")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -291,9 +293,9 @@ export default function VehicleDetails({ vehicleId, onBack }) {
                     <tr key={t._id}>
                       <td><strong>{t.tripId}</strong></td>
                       <td>{t.source} ➔ {t.destination}</td>
-                      <td>{t.distance} km</td>
+                      <td>{t.distance} {tr("km")}</td>
                       <td>{new Date(t.startDate).toLocaleDateString()}</td>
-                      <td><span className={`badge badge-${t.status.toLowerCase().replace(' ', '-')}`}>{t.status}</span></td>
+                      <td><span className={`badge badge-${t.status.toLowerCase().replace(' ', '-')}`}>{tr(t.status)}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -306,20 +308,20 @@ export default function VehicleDetails({ vehicleId, onBack }) {
       {/* Tab 3: Fuel */}
       {activeTab === 'fuel' && (
         <div className="card">
-          <h3 className="card-title" style={{ marginBottom: '1rem' }}>Fueling History</h3>
+          <h3 className="card-title" style={{ marginBottom: '1rem' }}>{tr("Fueling History")}</h3>
           {fuels.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)' }}>No fuel records logged for this vehicle.</p>
+            <p style={{ color: 'var(--text-muted)' }}>{tr("No fuel records logged for this vehicle.")}</p>
           ) : (
             <div className="table-responsive">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Record ID</th>
-                    <th>Date</th>
-                    <th>Quantity</th>
-                    <th>Rate</th>
-                    <th>Total Cost</th>
-                    <th>Odometer</th>
+                    <th>{tr("Record ID")}</th>
+                    <th>{tr("Date")}</th>
+                    <th>{tr("Quantity")}</th>
+                    <th>{tr("Rate")}</th>
+                    <th>{tr("Total Cost")}</th>
+                    <th>{tr("Odometer")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -330,7 +332,7 @@ export default function VehicleDetails({ vehicleId, onBack }) {
                       <td>{f.quantity} L</td>
                       <td>₹{f.pricePerLiter}</td>
                       <td><strong>₹{f.totalCost?.toLocaleString()}</strong></td>
-                      <td>{f.odometerReading?.toLocaleString()} km</td>
+                      <td>{f.odometerReading?.toLocaleString()} {tr("km")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -343,31 +345,31 @@ export default function VehicleDetails({ vehicleId, onBack }) {
       {/* Tab 4: Maintenance */}
       {activeTab === 'maintenance' && (
         <div className="card">
-          <h3 className="card-title" style={{ marginBottom: '1rem' }}>Service & Workshop History</h3>
+          <h3 className="card-title" style={{ marginBottom: '1rem' }}>{tr("Service & Workshop History")}</h3>
           {maintenance.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)' }}>No maintenance jobs recorded.</p>
+            <p style={{ color: 'var(--text-muted)' }}>{tr("No maintenance jobs recorded.")}</p>
           ) : (
             <div className="table-responsive">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Job ID</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                    <th>Service Date</th>
-                    <th>Cost</th>
-                    <th>Status</th>
+                    <th>{tr("Job ID")}</th>
+                    <th>{tr("Type")}</th>
+                    <th>{tr("Description")}</th>
+                    <th>{tr("Service Date")}</th>
+                    <th>{tr("Cost")}</th>
+                    <th>{tr("Status")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {maintenance.map((m) => (
                     <tr key={m._id}>
                       <td><strong>{m.maintenanceId}</strong></td>
-                      <td>{m.maintenanceType}</td>
+                      <td>{tr(m.maintenanceType)}</td>
                       <td>{m.description}</td>
                       <td>{new Date(m.serviceDate).toLocaleDateString()}</td>
                       <td><strong>₹{m.cost?.toLocaleString()}</strong></td>
-                      <td><span className={`badge badge-${m.status.toLowerCase().replace(' ', '-')}`}>{m.status}</span></td>
+                      <td><span className={`badge badge-${m.status.toLowerCase().replace(' ', '-')}`}>{tr(m.status)}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -380,31 +382,31 @@ export default function VehicleDetails({ vehicleId, onBack }) {
       {/* Tab 5: Expenses */}
       {activeTab === 'expenses' && (
         <div className="card">
-          <h3 className="card-title" style={{ marginBottom: '1rem' }}>Operating Expenses Ledger</h3>
+          <h3 className="card-title" style={{ marginBottom: '1rem' }}>{tr("Operating Expenses Ledger")}</h3>
           {expenses.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)' }}>No expenses recorded for this vehicle.</p>
+            <p style={{ color: 'var(--text-muted)' }}>{tr("No expenses recorded for this vehicle.")}</p>
           ) : (
             <div className="table-responsive">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Expense ID</th>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Payment Method</th>
+                    <th>{tr("Expense ID")}</th>
+                    <th>{tr("Category")}</th>
+                    <th>{tr("Description")}</th>
+                    <th>{tr("Date")}</th>
+                    <th>{tr("Amount")}</th>
+                    <th>{tr("Payment Method")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {expenses.map((e) => (
                     <tr key={e._id}>
                       <td><strong>{e.expenseId}</strong></td>
-                      <td><span className="badge badge-ontrip">{e.category}</span></td>
+                      <td><span className="badge badge-ontrip">{tr(e.category)}</span></td>
                       <td>{e.description}</td>
                       <td>{new Date(e.date).toLocaleDateString()}</td>
                       <td><strong>₹{e.amount?.toLocaleString()}</strong></td>
-                      <td>{e.paymentMethod}</td>
+                      <td>{tr(e.paymentMethod)}</td>
                     </tr>
                   ))}
                 </tbody>

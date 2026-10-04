@@ -16,8 +16,10 @@ import DataTable from '../components/DataTable.jsx';
 import Modal from '../components/Modal.jsx';
 import { driverApi, vehicleApi } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Drivers({ onSelectDriver }) {
+  const { tr } = useT();
   const { role } = useAuth();
   const canManage = role === 'admin' || role === 'fleet_manager';
 
@@ -150,13 +152,13 @@ export default function Drivers({ onSelectDriver }) {
       setDeleteId(null);
       fetchDrivers();
     } catch (err) {
-      alert(err.message || 'Failed to delete driver');
+      alert(tr(err.message || 'Failed to delete driver'));
     }
   };
 
   const columns = [
     {
-      header: 'Driver Name & ID',
+      header: tr("Driver Name & ID"),
       render: (d) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div className="user-avatar-circle" style={{ width: '34px', height: '34px', fontSize: '0.8rem' }}>
@@ -170,7 +172,7 @@ export default function Drivers({ onSelectDriver }) {
       )
     },
     {
-      header: 'Contact Info',
+      header: tr("Contact Info"),
       render: (d) => (
         <div style={{ fontSize: '0.825rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-primary)' }}>
@@ -183,20 +185,20 @@ export default function Drivers({ onSelectDriver }) {
       )
     },
     {
-      header: 'Commercial License',
+      header: tr("Commercial License"),
       render: (d) => (
         <div>
           <div style={{ fontWeight: 600, fontSize: '0.825rem', fontFamily: 'var(--font-mono)' }}>
             {d.licenseNumber}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Expires: {d.licenseExpiry ? new Date(d.licenseExpiry).toLocaleDateString() : 'N/A'}
+            {tr("Expires:")} {d.licenseExpiry ? new Date(d.licenseExpiry).toLocaleDateString() : 'N/A'}
           </div>
         </div>
       )
     },
     {
-      header: 'Assigned Rig',
+      header: tr("Assigned Rig"),
       render: (d) => (
         <div>
           {d.assignedVehicle?.registrationNumber ? (
@@ -205,37 +207,37 @@ export default function Drivers({ onSelectDriver }) {
             </span>
           ) : (
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-              Unassigned
+              {tr("Unassigned")}
             </span>
           )}
         </div>
       )
     },
     {
-      header: 'Status',
+      header: tr("Status"),
       render: (d) => {
         const statusClass = `badge-${d.status.toLowerCase().replace(' ', '-')}`;
-        return <span className={`badge ${statusClass}`}>{d.status}</span>;
+        return <span className={`badge ${statusClass}`}>{tr(d.status)}</span>;
       }
     },
     {
-      header: 'Actions',
+      header: tr("Actions"),
       width: '160px',
       render: (d) => (
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => onSelectDriver(d._id)}
-            title="View Details"
+            title={tr("View Details")}
           >
-            <Eye size={14} /> View
+            <Eye size={14} /> {tr("View")}
           </button>
           {canManage && (
             <>
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => openEditModal(d)}
-                title="Edit Driver"
+                title={tr("Edit Driver")}
               >
                 <Edit size={14} />
               </button>
@@ -263,15 +265,15 @@ export default function Drivers({ onSelectDriver }) {
       <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Driver Personnel Directory</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{tr("Driver Personnel Directory")}</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Commercial licensed operators, vehicle assignments, and compliance status
+              {tr("Commercial licensed operators, vehicle assignments, and compliance status")}
             </p>
           </div>
 
           {canManage && (
             <button className="btn btn-primary" onClick={openAddModal}>
-              <Plus size={16} /> Register New Driver
+              <Plus size={16} /> {tr("Register New Driver")}
             </button>
           )}
         </div>
@@ -283,7 +285,7 @@ export default function Drivers({ onSelectDriver }) {
               type="text"
               className="form-control"
               style={{ paddingLeft: '36px' }}
-              placeholder="Search driver by name, phone, license..."
+              placeholder={tr("Search driver by name, phone, license...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -298,10 +300,10 @@ export default function Drivers({ onSelectDriver }) {
               setPage(1);
             }}
           >
-            <option value="All">All Statuses</option>
-            <option value="Available">Available</option>
-            <option value="On Trip">On Trip</option>
-            <option value="Inactive">Inactive</option>
+            <option value="All">{tr("All Statuses")}</option>
+            <option value="Available">{tr("Available")}</option>
+            <option value="On Trip">{tr("On Trip")}</option>
+            <option value="Inactive">{tr("Inactive")}</option>
           </select>
         </div>
       </div>
@@ -311,7 +313,7 @@ export default function Drivers({ onSelectDriver }) {
         columns={columns}
         data={drivers}
         loading={loading}
-        emptyMessage="No drivers match your criteria"
+        emptyMessage={tr("No drivers match your criteria")}
         emptySubtext="Add a new driver or refine your search filters."
         page={page}
         totalPages={totalPages}
@@ -344,22 +346,22 @@ export default function Drivers({ onSelectDriver }) {
         <form onSubmit={handleFormSubmit}>
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Full Name *</label>
+              <label className="form-label">{tr("Full Name *")}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. Suresh Patel"
+                placeholder={tr("e.g. Suresh Patel")}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Official Email *</label>
+              <label className="form-label">{tr("Official Email *")}</label>
               <input
                 type="email"
                 className="form-control"
-                placeholder="suresh@fleetnova.com"
+                placeholder={tr("suresh@fleetnova.com")}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
@@ -369,7 +371,7 @@ export default function Drivers({ onSelectDriver }) {
 
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Phone Number *</label>
+              <label className="form-label">{tr("Phone Number *")}</label>
               <input
                 type="text"
                 className="form-control"
@@ -380,11 +382,11 @@ export default function Drivers({ onSelectDriver }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Emergency Contact (Name & Phone)</label>
+              <label className="form-label">{tr("Emergency Contact (Name & Phone)")}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="+91 98250 99887 (Brother)"
+                placeholder={tr("+91 98250 99887 (Brother)")}
                 value={formData.emergencyContact}
                 onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
               />
@@ -393,18 +395,18 @@ export default function Drivers({ onSelectDriver }) {
 
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Commercial License Number *</label>
+              <label className="form-label">{tr("Commercial License Number *")}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. DL-1420110012345"
+                placeholder={tr("e.g. DL-1420110012345")}
                 value={formData.licenseNumber}
                 onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
-              <label className="form-label">License Expiry Date *</label>
+              <label className="form-label">{tr("License Expiry Date *")}</label>
               <input
                 type="date"
                 className="form-control"
@@ -417,19 +419,19 @@ export default function Drivers({ onSelectDriver }) {
 
           <div className="grid-cols-3" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Status</label>
+              <label className="form-label">{tr("Status")}</label>
               <select
                 className="form-control"
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               >
-                <option value="Available">Available</option>
-                <option value="On Trip">On Trip</option>
-                <option value="Inactive">Inactive</option>
+                <option value="Available">{tr("Available")}</option>
+                <option value="On Trip">{tr("On Trip")}</option>
+                <option value="Inactive">{tr("Inactive")}</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Date of Joining</label>
+              <label className="form-label">{tr("Date of Joining")}</label>
               <input
                 type="date"
                 className="form-control"
@@ -438,16 +440,16 @@ export default function Drivers({ onSelectDriver }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Assign Vehicle</label>
+              <label className="form-label">{tr("Assign Vehicle")}</label>
               <select
                 className="form-control"
                 value={formData.assignedVehicle}
                 onChange={(e) => setFormData({ ...formData, assignedVehicle: e.target.value })}
               >
-                <option value="">No Vehicle Assigned</option>
+                <option value="">{tr("No Vehicle Assigned")}</option>
                 {vehicles.map((v) => (
                   <option key={v._id} value={v._id}>
-                    {v.registrationNumber} ({v.brand} {v.model})
+                    {tr(v.registrationNumber)} ({tr(v.brand)} {tr(v.model)})
                   </option>
                 ))}
               </select>
@@ -455,22 +457,22 @@ export default function Drivers({ onSelectDriver }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Residential Address</label>
+            <label className="form-label">{tr("Residential Address")}</label>
             <input
               type="text"
               className="form-control"
-              placeholder="Full permanent or residential address"
+              placeholder={tr("Full permanent or residential address")}
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Driver Qualifications & Notes</label>
+            <label className="form-label">{tr("Driver Qualifications & Notes")}</label>
             <textarea
               className="form-control"
               rows={2}
-              placeholder="e.g. Hazardous chemical cargo certified, cold-chain experienced..."
+              placeholder={tr("e.g. Hazardous chemical cargo certified, cold-chain experienced...")}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
@@ -478,10 +480,10 @@ export default function Drivers({ onSelectDriver }) {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button type="submit" className="btn btn-primary">
-              {editingDriver ? 'Save Changes' : 'Register Driver'}
+              {editingDriver ? tr("Save Changes") : tr("Register Driver")}
             </button>
           </div>
         </form>
@@ -491,20 +493,20 @@ export default function Drivers({ onSelectDriver }) {
       <Modal
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
-        title="Confirm Driver Removal"
+        title={tr("Confirm Driver Removal")}
         maxWidth="440px"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'center' }}>
           <AlertTriangle size={48} color="#fb7185" style={{ margin: '0 auto' }} />
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Are you sure you want to delete this driver from the fleet directory? This will remove all vehicle allocations.
+            {tr("Are you sure you want to delete this driver from the fleet directory? This will remove all vehicle allocations.")}
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
             <button className="btn btn-secondary" onClick={() => setDeleteConfirmOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button className="btn btn-danger" onClick={confirmDelete}>
-              Yes, Delete Driver
+              {tr("Yes, Delete Driver")}
             </button>
           </div>
         </div>

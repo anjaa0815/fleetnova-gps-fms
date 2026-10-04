@@ -3,8 +3,10 @@ import Sidebar from '../components/Sidebar.jsx';
 import Navbar from '../components/Navbar.jsx';
 import FleetAIChat from '../components/FleetAIChat.jsx';
 import { Sparkles } from 'lucide-react';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function DashboardLayout({ currentTab, onSelectTab, currentTitle, children }) {
+  const { tr } = useT();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
 
@@ -37,8 +39,8 @@ export default function DashboardLayout({ currentTab, onSelectTab, currentTitle,
         <button
           className="floating-ai-btn"
           onClick={() => setIsAIChatOpen(!isAIChatOpen)}
-          title="Open FleetAI Assistant"
-          aria-label="Open FleetAI Assistant"
+          title={tr("Open FleetAI Assistant")}
+          aria-label={tr("Open FleetAI Assistant")}
         >
           <Sparkles size={24} />
         </button>
