@@ -157,7 +157,11 @@ function MainApp() {
 
       {currentTab === 'notifications' && <Notifications />}
 
-      {currentTab === 'fleet-ai' && <FleetAI />}
+      {currentTab === 'fleet-ai' && (
+        <ProtectedRoute allowedRoles={['admin', 'fleet_manager']}>
+          <FleetAI />
+        </ProtectedRoute>
+      )}
 
       {currentTab === 'settings' && (
         <ProtectedRoute allowedRoles={['admin', 'fleet_manager']}>

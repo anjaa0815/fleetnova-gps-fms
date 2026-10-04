@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -25,12 +25,23 @@ export default function LiveMap({ vehicles = [] }) {
   const defaultPosition = [47.9188, 106.9176];
 
   // Хэрэв координатууд ирээгүй бол демо координатууд оноох
-  const mappedVehicles = vehicles.map((v, index) => ({
-    ...v,
-    lat: v.lat || 47.9188 + (index * 0.012) - 0.01,
-    lng: v.lng || 106.9176 + (index * 0.015) - 0.01,
-    speed: v.speed || Math.floor(Math.random() * 40 + 20),
-  }));
+  // Backend одоогоор GPS координат хадгалдаггүй тул байршил байхгүй үед
+  // тогтмол (санамсаргүй биш) демо координат ашиглана.
+  const mappedVehicles = useMemo(
+    () =>
+      vehicles.map((v, index) => {
+        const hasGps = typeof v.lat === 'number' && typeof v.lng === 'number';
+        return {
+          ...v,
+          isDemoPosition: !hasGps,
+          lat: hasGps ? v.lat : 47.9188 + index * 0.012 - 0.01,
+          lng: hasGps ? v.lng : 106.9176 + index * 0.015 - 0.01,
+          speed: typeof v.speed === 'number' ? v.speed : null,
+        };
+      }),
+    [vehicles]
+  );
+  const isLive = mappedVehicles.some((v) => !v.isDemoPosition);
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg p-4 mb-6">
@@ -41,10 +52,12 @@ export default function LiveMap({ vehicles = [] }) {
         </div>
         <div className="flex items-center space-x-2">
           <span className="flex h-3 w-3 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            {isLive && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
+            <span className={`relative inline-flex rounded-full h-3 w-3 ${isLive ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
           </span>
-          <span className="text-xs text-emerald-400 font-medium">Шууд холбогдсон</span>
+          <span className={`text-xs font-medium ${isLive ? 'text-emerald-400' : 'text-amber-400'}`}>
+            {isLive ? 'Шууд холбогдсон' : 'Демо байршил (GPS төхөөрөмж холбогдоогүй)'}
+          </span>
         </div>
       </div>
 
@@ -69,10 +82,10 @@ export default function LiveMap({ vehicles = [] }) {
             >
               <Popup>
                 <div className="text-slate-900 text-xs">
-                  <p className="font-bold text-sm mb-1">{vehicle.plateNumber || vehicle.name || 'Тээврийн хэрэгсэл'}</p>
-                  <p><b>Загвар:</b> {vehicle.model || vehicle.type || 'Тодорхойгүй'}</p>
-                  <p><b>Жолооч:</b> {vehicle.driver || 'Оноогоогүй'}</p>
-                  <p><b>Хурд:</b> {vehicle.speed} км/цаг</p>
+                  <p className="font-bold text-sm mb-1">{vehicle.registrationNumber || vehicle.plateNumber || vehicle.name || 'Тээврийн хэрэгсэл'}</p>
+                  <p><b>Загвар:</b> {[vehicle.brand, vehicle.model].filter(Boolean).join(' ') || vehicle.vehicleType || 'Тодорхойгүй'}</p>
+                  <p><b>Жолооч:</b> {vehicle.assignedDriver?.name || 'Оноогоогүй'}</p>
+                  <p><b>Хурд:</b> {vehicle.speed ?? '—'} км/цаг</p>
                   <p><b>Төлөв:</b> <span className="text-emerald-600 font-semibold">{vehicle.status || 'Идэвхтэй'}</span></p>
                 </div>
               </Popup>

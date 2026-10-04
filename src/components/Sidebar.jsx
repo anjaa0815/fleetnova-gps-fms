@@ -34,7 +34,7 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
     { id: 'analytics', label: 'Analytics', icon: BarChart3, roles: ['admin', 'fleet_manager'] },
     { id: 'reports', label: 'Reports', icon: FileText, roles: ['admin', 'fleet_manager'] },
     { id: 'notifications', label: 'Notifications', icon: Bell, roles: ['admin', 'fleet_manager', 'driver'] },
-    { id: 'fleet-ai', label: 'FleetAI Assistant', icon: Sparkles, roles: ['admin', 'fleet_manager', 'driver'] },
+    { id: 'fleet-ai', label: 'FleetAI Assistant', icon: Sparkles, roles: ['admin', 'fleet_manager'] },
     { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'fleet_manager'] },
     { id: 'profile', label: 'My Profile', icon: UserCheck, roles: ['admin', 'fleet_manager', 'driver'] }
   ];

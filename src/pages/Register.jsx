@@ -8,8 +8,7 @@ export default function Register({ onSwitchToLogin }) {
     name: '',
     email: '',
     password: '',
-    phone: '',
-    role: 'fleet_manager'
+    phone: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -20,8 +19,8 @@ export default function Register({ onSwitchToLogin }) {
       setError('Please fill in all required fields');
       return;
     }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -136,19 +135,6 @@ export default function Register({ onSwitchToLogin }) {
             </div>
 
             <div className="grid-cols-2" style={{ gap: '0.75rem', marginBottom: '0.5rem' }}>
-              <div className="form-group">
-                <label className="form-label">Role</label>
-                <select
-                  className="form-control"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                >
-                  <option value="fleet_manager">Fleet Manager</option>
-                  <option value="admin">System Administrator</option>
-                  <option value="driver">Fleet Driver</option>
-                </select>
-              </div>
-
               <div className="form-group">
                 <label className="form-label">Phone Number</label>
                 <div style={{ position: 'relative' }}>
