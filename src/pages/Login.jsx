@@ -181,7 +181,8 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
             </button>
           </form>
 
-          {/* Quick Demo Credentials for Evaluation */}
+          {/* Quick Demo Credentials: development builds only (hidden in production) */}
+          {import.meta.env.DEV && (
           <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-subtle)' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem', textAlign: 'center', fontWeight: 600 }}>
               {tr("QUICK DEMO ACCESS (CLICK TO FILL)")}
@@ -213,6 +214,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
               </button>
             </div>
           </div>
+          )}
 
           <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
             {tr("Need an organization account?")}{' '}
