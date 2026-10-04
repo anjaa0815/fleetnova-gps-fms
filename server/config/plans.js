@@ -1,9 +1,9 @@
 // Subscription plans. A limit of -1 means unlimited.
 export const PLANS = {
-  trial: { label: 'Trial', maxVehicles: 10, maxUsers: 5, maxDevices: 10, trialDays: 14 },
-  basic: { label: 'Basic', maxVehicles: 50, maxUsers: 20, maxDevices: 50 },
-  pro: { label: 'Pro', maxVehicles: 500, maxUsers: 200, maxDevices: 500 },
-  enterprise: { label: 'Enterprise', maxVehicles: -1, maxUsers: -1, maxDevices: -1 }
+  trial: { label: 'Trial', maxVehicles: 10, maxUsers: 5, maxDevices: 10, maxEmailsPerDay: 50, maxSmsPerDay: 20, trialDays: 14 },
+  basic: { label: 'Basic', maxVehicles: 50, maxUsers: 20, maxDevices: 50, maxEmailsPerDay: 300, maxSmsPerDay: 100 },
+  pro: { label: 'Pro', maxVehicles: 500, maxUsers: 200, maxDevices: 500, maxEmailsPerDay: 2000, maxSmsPerDay: 500 },
+  enterprise: { label: 'Enterprise', maxVehicles: -1, maxUsers: -1, maxDevices: -1, maxEmailsPerDay: -1, maxSmsPerDay: -1 }
 };
 
 export const PLAN_IDS = Object.keys(PLANS);

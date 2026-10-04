@@ -133,8 +133,15 @@ export const getMe = async (req, res, next) => {
 // @route PUT /api/auth/profile
 export const updateProfile = async (req, res, next) => {
   try {
-    const { name, phone, password } = req.body;
+    const { name, phone, password, alertChannels } = req.body;
     const updateData = {};
+    if (alertChannels && typeof alertChannels === 'object') {
+      const current = (await DataEngine.findById('users', req.user._id))?.alertChannels || {};
+      updateData.alertChannels = {
+        email: typeof alertChannels.email === 'boolean' ? alertChannels.email : Boolean(current.email),
+        sms: typeof alertChannels.sms === 'boolean' ? alertChannels.sms : Boolean(current.sms)
+      };
+    }
     if (name) updateData.name = name;
     if (phone !== undefined) updateData.phone = phone;
 
@@ -154,14 +161,7 @@ export const updateProfile = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      data: {
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        phone: updatedUser.phone,
-        status: updatedUser.status
-      }
+      data: serializeUser(updatedUser)
     });
   } catch (error) {
     next(error);
@@ -276,5 +276,28 @@ export const updateUserStatus = async (req, res, next) => {
     return res.status(200).json({ success: true, data: serializeUser(user) });
   } catch (error) {
     next(error);
+  }
+};
+
+// @desc Admin sets which alert channels (email / SMS) a user of the organization receives
+// @route PUT /api/auth/users/:id/alert-channels
+export const updateAlertChannels = async (req, res, next) => {
+  try {
+    const { email, sms } = req.body;
+    if ([email, sms].some((v) => v !== undefined && typeof v !== 'boolean')) {
+      return res.status(400).json({ success: false, message: 'Channels must be true or false' });
+    }
+    const existing = await DataEngine.findById('users', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const user = await DataEngine.findByIdAndUpdate('users', req.params.id, {
+      alertChannels: {
+        email: email !== undefined ? email : Boolean(existing.alertChannels?.email),
+        sms: sms !== undefined ? sms : Boolean(existing.alertChannels?.sms)
+      }
+    });
+    return res.status(200).json({ success: true, data: serializeUser(user) });
+  } catch (error) {
+    return next(error);
   }
 };
