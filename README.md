@@ -248,6 +248,10 @@ Other tracker brands (Queclink, Ruptela, Meitrack, ...) are not implemented yet:
 
 ---
 
+## 🧪 Tests
+
+`npm test` runs the integration tests against the local JSON store. Set `TEST_MONGODB_URI` (for example `mongodb://127.0.0.1:27017`) to run the same tests on a real MongoDB: every spawned server gets its own throw-away database, and `REQUIRE_MONGODB=true` (set automatically) makes a failed connection fatal instead of silently falling back to the JSON store. CI runs both. `REQUIRE_MONGODB=true` is also a sensible production setting.
+
 ## 📡 Traccar as the GPS receiver (optional)
 
 [Traccar](https://www.traccar.org) (Apache 2.0, 200+ protocols) can receive the trackers while FLEETNOVA keeps organizations, plans, alerts, reports and the UI. Traccar decodes the device protocol and forwards each position to `POST /api/gps/traccar`; the position then goes through the same ingestion as Teltonika / GT06 / OsmAnd (geofences, speed alerts, e-mail / SMS, reports).

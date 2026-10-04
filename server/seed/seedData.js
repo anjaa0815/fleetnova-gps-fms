@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
-import { getLocalStore, saveLocalStore } from '../config/db.js';
-import { generateId } from '../models/dataEngine.js';
+import { getLocalStore, saveLocalStore, isDBConnected } from '../config/db.js';
+import { generateId, DataEngine } from '../models/dataEngine.js';
+import { runAsSystem } from '../middleware/tenantContext.js';
 import { migrateLegacyData } from './migrateLegacyData.js';
 
 const iso = (value) => new Date(value).toISOString();
@@ -9,9 +10,26 @@ const iso = (value) => new Date(value).toISOString();
 async function bootstrapAdmin(store) {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
-  if (!email || !password || (store.users || []).some((u) => u.role === 'super_admin')) return;
+  if (!email || !password) return;
+  const exists = isDBConnected()
+    ? Boolean(await runAsSystem(() => DataEngine.findOne('users', { role: 'super_admin' })))
+    : (store.users || []).some((u) => u.role === 'super_admin');
+  if (exists) return;
   if (password.length < 8) {
     console.warn('[FLEETNOVA] ADMIN_PASSWORD must be at least 8 characters; platform admin not created.');
+    return;
+  }
+  if (isDBConnected()) {
+    await runAsSystem(async () => DataEngine.create('users', {
+      orgId: null,
+      name: 'Platform Administrator',
+      email: email.toLowerCase(),
+      password: await bcrypt.hash(password, 10),
+      role: 'super_admin',
+      phone: '',
+      status: 'active'
+    }));
+    console.log('[FLEETNOVA] Platform admin account created from ADMIN_EMAIL / ADMIN_PASSWORD.');
     return;
   }
   store.users = [
@@ -32,8 +50,30 @@ async function bootstrapAdmin(store) {
   console.log('[FLEETNOVA] Platform admin account created from ADMIN_EMAIL / ADMIN_PASSWORD.');
 }
 
+// Writes a freshly built demo data set into MongoDB (only into an empty database)
+const COLLECTIONS = ['organizations', 'users', 'drivers', 'vehicles', 'trips', 'fuels', 'maintenances', 'expenses', 'notifications'];
+
+async function seedMongo() {
+  const demo = process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO_DATA === 'true';
+  if (!demo) return bootstrapAdmin(null);
+  if (await runAsSystem(() => DataEngine.countDocuments('organizations'))) {
+    console.log('[FLEETNOVA] Database already seeded with realistic fleet data.');
+    return;
+  }
+  const scratch = {};
+  await seedStore(scratch, () => {});
+  await runAsSystem(async () => {
+    for (const name of COLLECTIONS) await DataEngine.createMany(name, scratch[name] || []);
+  });
+  console.log('[FLEETNOVA] Demo data written to MongoDB.');
+}
+
 export async function seedFleetData() {
-  const store = getLocalStore();
+  if (isDBConnected()) return seedMongo();
+  return seedStore(getLocalStore(), saveLocalStore);
+}
+
+async function seedStore(store, saveLocalStore) {
   if (!store.organizations) store.organizations = [];
 
   // Existing single-tenant data is moved into a default organization before anything else

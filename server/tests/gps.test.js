@@ -6,6 +6,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { encodeAvlPacket, encodeLogin } from '../gps/protocols/teltonika.js';
+import { dbEnv } from './dbEnv.js';
 
 const HTTP_PORT = 3800 + Math.floor(Math.random() * 90);
 const TCP_PORT = 5100 + Math.floor(Math.random() * 400);
@@ -93,7 +94,7 @@ before(async () => {
       GPS_TCP_PORT: String(TCP_PORT), GT06_TCP_PORT: '0',
       GPS_TCP_HOST: '127.0.0.1',
       JWT_SECRET: 'test-secret', RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false',
-      FLEETNOVA_DATA_FILE: DATA_FILE,
+      FLEETNOVA_DATA_FILE: DATA_FILE, ...dbEnv(),
       ADMIN_EMAIL: SUPER.email,
       ADMIN_PASSWORD: SUPER.password
     },

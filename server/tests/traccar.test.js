@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
+import { dbEnv } from './dbEnv.js';
 
 const HTTP_PORT = 4300 + Math.floor(Math.random() * 90);
 const MOCK_PORT = 4500 + Math.floor(Math.random() * 90);
@@ -61,7 +62,7 @@ before(async () => {
     env: {
       ...process.env, NODE_ENV: 'production', PORT: String(HTTP_PORT), HOST: '127.0.0.1',
       GPS_TCP_PORT: '0', GT06_TCP_PORT: '0', JWT_SECRET: 'test-secret',
-      RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false', FLEETNOVA_DATA_FILE: DATA_FILE,
+      RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false', FLEETNOVA_DATA_FILE: DATA_FILE, ...dbEnv(),
       ADMIN_EMAIL: 'platform@traccar.example', ADMIN_PASSWORD: 'platform-pass-1',
       TRACCAR_FORWARD_TOKEN: TOKEN, TRACCAR_URL: `http://127.0.0.1:${MOCK_PORT}`, TRACCAR_TOKEN: 'api-token'
     },

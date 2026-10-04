@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { dbEnv } from './dbEnv.js';
 
 const PORT = 3900 + Math.floor(Math.random() * 90);
 const BASE = `http://127.0.0.1:${PORT}/api`;
@@ -47,7 +48,7 @@ before(async () => {
       PORT: String(PORT),
       HOST: '127.0.0.1',
       JWT_SECRET: 'test-secret', RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false',
-      FLEETNOVA_DATA_FILE: DATA_FILE,
+      FLEETNOVA_DATA_FILE: DATA_FILE, ...dbEnv(),
       ADMIN_EMAIL: SUPER.email,
       ADMIN_PASSWORD: SUPER.password
     },

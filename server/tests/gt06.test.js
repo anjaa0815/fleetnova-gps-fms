@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Gt06Parser, PROTOCOL, crcItu, encodeAck, encodeHeartbeat, encodeLocation, encodeLogin, encodePacket } from '../gps/protocols/gt06.js';
 import { encodeLogin as encodeTeltonikaLogin } from '../gps/protocols/teltonika.js';
+import { dbEnv } from './dbEnv.js';
 
 const HTTP_PORT = 3400 + Math.floor(Math.random() * 90);
 const TCP_PORT = 6500 + Math.floor(Math.random() * 90);
@@ -162,7 +163,7 @@ before(async () => {
     env: {
       ...process.env, NODE_ENV: 'production', PORT: String(HTTP_PORT), HOST: '127.0.0.1',
       GPS_TCP_PORT: String(TCP_PORT), GT06_TCP_PORT: String(GT06_PORT), GPS_TCP_HOST: '127.0.0.1',
-      JWT_SECRET: 'test-secret', RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false', FLEETNOVA_DATA_FILE: DATA_FILE
+      JWT_SECRET: 'test-secret', RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false', FLEETNOVA_DATA_FILE: DATA_FILE, ...dbEnv()
     },
     stdio: 'ignore'
   });

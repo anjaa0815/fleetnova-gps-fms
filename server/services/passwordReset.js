@@ -34,7 +34,7 @@ export async function issueResetToken(user) {
 
 export async function findUserByResetToken(token) {
   if (typeof token !== 'string' || !/^[0-9a-f]{64}$/.test(token)) return null;
-  const user = await DataEngine.findOne('users', { passwordResetTokenHash: hash(token) });
+  const user = await DataEngine.findOne('users', { passwordResetTokenHash: hash(token) }, { select: '+passwordResetExpires' });
   if (!user || !user.passwordResetExpires) return null;
   if (new Date(user.passwordResetExpires).getTime() < Date.now()) return null;
   return user;

@@ -15,6 +15,7 @@ const deviceSchema = new mongoose.Schema(
     lastSeenAt: { type: Date, default: null },
     // Alert engine state: geofences the device is currently inside, consecutive over-limit reports
     alertState: {
+      initialized: { type: Boolean, default: false },
       inside: [String],
       overLimitCount: { type: Number, default: 0 },
       speedingAlerted: { type: Boolean, default: false }

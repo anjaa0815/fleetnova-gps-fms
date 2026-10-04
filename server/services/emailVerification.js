@@ -32,7 +32,7 @@ export async function issueVerificationToken(user) {
 // Returns the matching, non-expired user (token not yet used) or null
 export async function findUserByToken(token) {
   if (typeof token !== 'string' || !/^[0-9a-f]{64}$/.test(token)) return null;
-  const user = await DataEngine.findOne('users', { emailVerificationTokenHash: hash(token) });
+  const user = await DataEngine.findOne('users', { emailVerificationTokenHash: hash(token) }, { select: '+emailVerificationExpires' });
   if (!user || !user.emailVerificationExpires) return null;
   if (new Date(user.emailVerificationExpires).getTime() < Date.now()) return null;
   return user;

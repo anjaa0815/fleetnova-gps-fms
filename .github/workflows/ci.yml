@@ -29,6 +29,33 @@ jobs:
       - name: Integration tests
         run: npm test
 
+  test-mongodb:
+    name: Tests on MongoDB 7
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      # every test server gets its own throw-away database; REQUIRE_MONGODB makes a failed connection fatal
+      TEST_MONGODB_URI: mongodb://127.0.0.1:27017
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Integration tests against MongoDB
+        run: npm test
+
   docker:
     name: Docker image builds
     runs-on: ubuntu-latest

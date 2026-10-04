@@ -105,7 +105,8 @@ export const resendVerification = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (typeof email === 'string' && emailVerificationRequired()) {
-      const user = await DataEngine.findOne('users', { email: email.toLowerCase().trim() });
+      // +fields: stored with select:false, which MongoDB would otherwise leave out
+      const user = await DataEngine.findOne('users', { email: email.toLowerCase().trim() }, { select: '+emailVerificationSentAt' });
       if (user && user.emailVerified === false) {
         const sentAt = user.emailVerificationSentAt ? new Date(user.emailVerificationSentAt).getTime() : 0;
         if (Date.now() - sentAt >= resendCooldownMs()) await sendVerification(req, user);
@@ -272,7 +273,7 @@ export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (typeof email === 'string') {
-      const user = await DataEngine.findOne('users', { email: email.toLowerCase().trim() });
+      const user = await DataEngine.findOne('users', { email: email.toLowerCase().trim() }, { select: '+passwordResetSentAt' });
       if (user && user.status !== 'inactive') {
         const sentAt = user.passwordResetSentAt ? new Date(user.passwordResetSentAt).getTime() : 0;
         if (Date.now() - sentAt >= resetCooldownMs()) {
