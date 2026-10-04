@@ -9,6 +9,7 @@ export default {
   "-- Choose Vehicle --": "-- Тээврийн хэрэгсэл сонгох --",
   "-- Not linked --": "-- Холбоогүй --",
   "-- Select Driver (Optional) --": "-- Жолооч сонгох (заавал биш) --",
+  "A GT06 IMEI has exactly 15 digits": "GT06 IMEI яг 15 оронтой байх ёстой",
   "A Teltonika IMEI has exactly 15 digits": "Teltonika IMEI яг 15 оронтой байх ёстой",
   "A device with this IMEI is already registered": "Энэ IMEI-тэй төхөөрөмж аль хэдийн бүртгэлтэй байна",
   "A driver with this license number already exists": "Энэ үнэмлэхний дугаартай жолооч аль хэдийн бүртгэлтэй байна",

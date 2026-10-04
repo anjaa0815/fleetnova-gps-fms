@@ -24,6 +24,20 @@ export async function loadActiveDevice(deviceId) {
   return isActive(org) ? device : null;
 }
 
+// Heartbeats keep a tracker "online" even when it sends no positions. Throttled: at most one write per 20 s.
+const lastSeenWrite = new Map();
+export async function markDeviceSeen(device) {
+  const key = String(device._id);
+  const now = Date.now();
+  if (now - (lastSeenWrite.get(key) || 0) < 20000) return;
+  lastSeenWrite.set(key, now);
+  const fresh = await loadActiveDevice(device._id);
+  if (!fresh) return;
+  await runWithTenant({ orgId: String(fresh.orgId) }, () =>
+    DataEngine.findByIdAndUpdate('devices', fresh._id, { lastSeenAt: new Date(now).toISOString() })
+  );
+}
+
 // Authenticates by the identifier a tracker sends (IMEI / id). Returns the device or null.
 export async function findActiveDeviceByImei(imei) {
   const device = await DataEngine.findOne('devices', { imei: String(imei) });

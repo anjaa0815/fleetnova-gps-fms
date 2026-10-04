@@ -42,6 +42,8 @@ before(async () => {
     env: {
       ...process.env,
       NODE_ENV: 'production',
+      GPS_TCP_PORT: '0',
+      GT06_TCP_PORT: '0',
       PORT: String(PORT),
       HOST: '127.0.0.1',
       JWT_SECRET: 'test-secret',

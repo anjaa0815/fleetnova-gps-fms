@@ -151,6 +151,17 @@ export default function Devices() {
               </div>
             </div>
             <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>GT06 / CONCOX</div>
+              {info.gt06?.enabled ? (
+                <strong>TCP {host}:{info.gt06.port}</strong>
+              ) : (
+                <strong>{tr('Disabled on this server')}</strong>
+              )}
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                {tr('Set the tracker server IP/domain and port; it identifies itself with its IMEI.')}
+              </div>
+            </div>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>HTTP (OSMAND / TRACCAR CLIENT)</div>
               <strong>{window.location.origin}{info.osmand.path}</strong>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -231,11 +242,12 @@ export default function Devices() {
               <label className="form-label">{tr('Protocol')}</label>
               <select className="form-control" disabled={Boolean(editing)} value={form.protocol} onChange={(e) => setForm({ ...form, protocol: e.target.value })}>
                 <option value="teltonika">Teltonika (TCP)</option>
+                <option value="gt06">GT06 / Concox (TCP)</option>
                 <option value="osmand">OsmAnd / Traccar Client (HTTP)</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">{form.protocol === 'teltonika' ? tr('IMEI (15 digits) *') : tr('Device ID *')}</label>
+              <label className="form-label">{form.protocol === 'osmand' ? tr('Device ID *') : tr('IMEI (15 digits) *')}</label>
               <input className="form-control" required disabled={Boolean(editing)} value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value.trim() })} />
             </div>
             <div className="form-group">
@@ -278,7 +290,7 @@ export default function Devices() {
               </>
             ) : (
               <p>
-                {tr('Point the tracker to')} <strong>{host}:{info?.teltonika.port}</strong> (TCP).
+                {tr('Point the tracker to')} <strong>{host}:{created.protocol === 'gt06' ? info?.gt06?.port : info?.teltonika.port}</strong> (TCP).
               </p>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

@@ -92,7 +92,7 @@ before(async () => {
   server = spawn(process.execPath, ['server.js'], {
     env: {
       ...process.env, NODE_ENV: 'production', PORT: String(HTTP_PORT), HOST: '127.0.0.1',
-      GPS_TCP_PORT: String(TCP_PORT), GPS_TCP_HOST: '127.0.0.1', JWT_SECRET: 'test-secret', FLEETNOVA_DATA_FILE: DATA_FILE
+      GPS_TCP_PORT: String(TCP_PORT), GT06_TCP_PORT: '0', GPS_TCP_HOST: '127.0.0.1', JWT_SECRET: 'test-secret', FLEETNOVA_DATA_FILE: DATA_FILE
     },
     stdio: 'ignore'
   });

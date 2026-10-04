@@ -181,6 +181,7 @@ right organization.
 | Protocol | How it connects | Authentication |
 |---|---|---|
 | **Teltonika** (Codec 8 / 8E) | TCP, default port `5027` (`GPS_TCP_PORT`, `0` disables it) | IMEI handshake (device must be registered) |
+| **GT06 / Concox** (0x01 login, 0x13 heartbeat, 0x12/0x22 location, 0x16/0x26 alarm) | TCP, default port `5023` (`GT06_TCP_PORT`, `0` disables it) | IMEI in the login packet (device must be registered as `gt06`) |
 | **OsmAnd / Traccar Client** | `GET/POST /api/gps/osmand?id=&key=&lat=&lon=&timestamp=&speed=<knots>&bearing=&altitude=` | device id + per-device secret key |
 
 - Invalid data is dropped (no fix, impossible coordinates, timestamps from the future), retransmissions are
@@ -188,7 +189,7 @@ right organization.
 - `GET /api/tracking/live` returns the last position of every tracker (the Vehicles map refreshes it every 10 s);
   `GET /api/tracking/history?vehicleId=|deviceId=&from=&to=` returns a route with its distance (route playback in the UI).
 - Try it without hardware: register a Teltonika device with a 15-digit IMEI, link it to a vehicle and run
-  `npm run simulate -- --imei <IMEI>` (drives a fake truck from Ulaanbaatar towards Darkhan).
+  `npm run simulate -- --imei <IMEI>` (drives a fake truck from Ulaanbaatar towards Darkhan; add `--protocol gt06` for a GT06 tracker, which connects to port 5023).
 - The local JSON store keeps the newest `GPS_LOCAL_POSITION_CAP` (default 200000) positions. It is meant for
   development: use MongoDB (or a time-series database) for real fleets.
 
@@ -238,8 +239,12 @@ impossible jumps (over 250 km/h) and GPS drift while parked are ignored; trips u
 split in the `ALERT_TIME_ZONE` time zone (default Asia/Ulaanbaatar). km per litre divides GPS distance by the fuel
 logged in the same period, so it is only meaningful over periods that cover whole refuelling cycles.
 
-Other tracker brands (GT06/Concox, Queclink, Ruptela, ...) are not implemented yet: add a parser next to
-`server/gps/protocols/teltonika.js` and a listener in `server/gps/tcpServer.js`.
+GT06 trackers use CRC-ITU framed packets; the parser tolerates fragmented / batched frames, noise, corrupted frames
+(ignored, the tracker re-sends) and unknown message types. GT06 has no "login rejected" reply, so an unknown or
+unregistered tracker is simply disconnected. The ignition state comes from heartbeats and the 0x22 ACC byte.
+
+Other tracker brands (Queclink, Ruptela, Meitrack, ...) are not implemented yet: add a parser next to
+`server/gps/protocols/` and a listener in `server/gps/`, then register it in `startGpsServers()`.
 
 ---
 
@@ -271,6 +276,7 @@ GEMINI_API_KEY=your_google_gemini_api_key
 
 # GPS tracker listener (0 = disabled)
 GPS_TCP_PORT=5027
+GT06_TCP_PORT=5023
 
 # Alert delivery (see "Email and SMS alerts")
 SMTP_HOST=smtp.example.com
