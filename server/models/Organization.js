@@ -12,7 +12,14 @@ const organizationSchema = new mongoose.Schema(
     address: { type: String, default: '', trim: true },
     settings: {
       // 0 = speed alerts off
-      speedLimitKmh: { type: Number, default: 0, min: 0, max: 300 }
+      speedLimitKmh: { type: Number, default: 0, min: 0, max: 300 },
+      // External delivery (email / SMS) of alerts
+      delivery: {
+        email: { type: Boolean, default: false },
+        sms: { type: Boolean, default: false },
+        types: { type: [String], default: ['speeding', 'geofence_enter', 'geofence_exit'] },
+        language: { type: String, enum: ['mn', 'en'], default: 'mn' }
+      }
     },
     branding: {
       logoUrl: { type: String, default: '' },

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { authApi, organizationApi } from '../services/api.js';
 import Loading from '../components/Loading.jsx';
 import Modal from '../components/Modal.jsx';
+import AlertDeliveryCard from '../components/AlertDeliveryCard.jsx';
 import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Settings() {
@@ -125,6 +126,15 @@ export default function Settings() {
     e.preventDefault();
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const handleToggleChannel = async (userId, channels) => {
+    try {
+      await authApi.updateAlertChannels(userId, channels);
+      fetchUsers();
+    } catch (err) {
+      alert(tr(err.message || 'Failed to update alert channels'));
+    }
   };
 
   const handleToggleUserStatus = async (userId, currentStatus) => {
@@ -249,6 +259,8 @@ export default function Settings() {
         </div>
       )}
 
+      {isAdmin && <AlertDeliveryCard />}
+
       {/* Organization Parameters */}
       <div className="card">
         <h3 className="card-title" style={{ marginBottom: '1.25rem' }}>
@@ -348,6 +360,8 @@ export default function Settings() {
                     <th>{tr("Email")}</th>
                     <th>{tr("Role")}</th>
                     <th>{tr("Status")}</th>
+                    <th>{tr("Email alerts")}</th>
+                    <th>{tr("SMS alerts")}</th>
                     <th>{tr("Action")}</th>
                   </tr>
                 </thead>
@@ -365,6 +379,12 @@ export default function Settings() {
                         <span className={`badge badge-${u.status}`}>
                           {tr(u.status)}
                         </span>
+                      </td>
+                      <td>
+                        <input type="checkbox" checked={Boolean(u.alertChannels?.email)} onChange={(e) => handleToggleChannel(u._id, { email: e.target.checked })} />
+                      </td>
+                      <td>
+                        <input type="checkbox" checked={Boolean(u.alertChannels?.sms)} onChange={(e) => handleToggleChannel(u._id, { sms: e.target.checked })} />
                       </td>
                       <td>
                         {String(u._id) !== String(user?._id) && (

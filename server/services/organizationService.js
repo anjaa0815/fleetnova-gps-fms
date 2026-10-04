@@ -12,6 +12,15 @@ export class ServiceError extends Error {
   }
 }
 
+export const DELIVERY_TYPES = ['speeding', 'geofence_enter', 'geofence_exit'];
+
+export const deliverySettings = (org) => ({
+  email: Boolean(org?.settings?.delivery?.email),
+  sms: Boolean(org?.settings?.delivery?.sms),
+  types: org?.settings?.delivery?.types || [...DELIVERY_TYPES],
+  language: org?.settings?.delivery?.language === 'en' ? 'en' : 'mn'
+});
+
 // Fields that are safe to expose about an organization
 export const serializeOrg = (org) =>
   org && {
@@ -24,7 +33,10 @@ export const serializeOrg = (org) =>
     contactEmail: org.contactEmail || '',
     contactPhone: org.contactPhone || '',
     address: org.address || '',
-    settings: { speedLimitKmh: org.settings?.speedLimitKmh || 0 },
+    settings: {
+      speedLimitKmh: org.settings?.speedLimitKmh || 0,
+      delivery: deliverySettings(org)
+    },
     branding: {
       logoUrl: org.branding?.logoUrl || '',
       primaryColor: org.branding?.primaryColor || '#2563eb'
@@ -39,7 +51,8 @@ export const serializeUser = (u) => ({
   role: u.role,
   phone: u.phone,
   status: u.status,
-  orgId: u.orgId || null
+  orgId: u.orgId || null,
+  alertChannels: { email: Boolean(u.alertChannels?.email), sms: Boolean(u.alertChannels?.sms) }
 });
 
 async function uniqueSlug(name) {
@@ -87,7 +100,7 @@ export async function createOrganizationWithAdmin({ organizationName, plan = 'tr
     contactEmail: normalizedEmail,
     contactPhone: phone,
     address: '',
-    settings: { speedLimitKmh: 0 },
+    settings: { speedLimitKmh: 0, delivery: { email: false, sms: false, types: [...DELIVERY_TYPES], language: 'mn' } },
     branding: { logoUrl: '', primaryColor: '#2563eb' }
   });
 
@@ -106,5 +119,8 @@ export async function createOrganizationWithAdmin({ organizationName, plan = 'tr
 
 export const planLimits = (org) => {
   const plan = getPlan(org?.plan);
-  return { label: plan.label, maxVehicles: plan.maxVehicles, maxUsers: plan.maxUsers, maxDevices: plan.maxDevices };
+  return { label: plan.label, maxVehicles: plan.maxVehicles, maxUsers: plan.maxUsers, maxDevices: plan.maxDevices,
+    maxEmailsPerDay: plan.maxEmailsPerDay,
+    maxSmsPerDay: plan.maxSmsPerDay
+  };
 };

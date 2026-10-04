@@ -11,6 +11,7 @@ export default function Profile() {
   const [phone, setPhone] = useState(user?.phone || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [alertChannels, setAlertChannels] = useState({ email: Boolean(user?.alertChannels?.email), sms: Boolean(user?.alertChannels?.sms) });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
@@ -26,7 +27,7 @@ export default function Profile() {
     }
 
     setLoading(true);
-    const updateData = { name, phone };
+    const updateData = { name, phone, alertChannels };
     if (password) updateData.password = password;
 
     const res = await updateProfile(updateData);
@@ -152,6 +153,23 @@ export default function Profile() {
               style={{ opacity: 0.7 }}
             />
           </div>
+
+          {user?.role !== 'super_admin' && (
+            <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-subtle)' }}>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.5rem' }}>{tr("Alert notifications")}</h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+                {tr("Receive fleet alerts (speeding, geofences) on your email and phone. Your organization must enable each channel.")}
+              </p>
+              <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.875rem' }}>
+                <input type="checkbox" checked={alertChannels.email} onChange={(e) => setAlertChannels({ ...alertChannels, email: e.target.checked })} />
+                {tr("Email alerts")}
+              </label>
+              <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.875rem', marginTop: '0.4rem' }}>
+                <input type="checkbox" checked={alertChannels.sms} onChange={(e) => setAlertChannels({ ...alertChannels, sms: e.target.checked })} />
+                {tr("SMS alerts")} {!phone && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>({tr("add a phone number first")})</span>}
+              </label>
+            </div>
+          )}
 
           <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-subtle)' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>

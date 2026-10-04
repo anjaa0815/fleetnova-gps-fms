@@ -203,6 +203,27 @@ right organization.
   stored but never alert, and the first position of a tracker only initializes its state. The same alert for the
   same vehicle/fence is limited to once a minute to avoid flapping at a boundary.
 
+### Email and SMS alerts
+
+Alerts (speeding, geofence enter/exit) can also be sent by email and SMS:
+
+1. Configure the providers with environment variables (without them, messages are only *simulated* in the server log):
+
+   | Channel | Variables |
+   |---|---|
+   | Email (SMTP) | `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_SECURE` (`true` for port 465), `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` |
+   | SMS via Twilio | `SMS_PROVIDER=twilio`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` |
+   | SMS via any HTTP gateway | `SMS_PROVIDER=http`, `SMS_HTTP_URL`, `SMS_HTTP_TOKEN` (optional), `SMS_FROM` — receives `POST {to, text, from}` |
+
+   Optional: `SMS_DEFAULT_COUNTRY_CODE` (976: 8-digit numbers are treated as Mongolian), `APP_BASE_URL` (link in
+   emails), `ALERT_TIME_ZONE` (Asia/Ulaanbaatar).
+2. An organization admin enables the channels, the alert types and the message language in
+   *Settings → Alert Delivery*, and ticks which users receive email / SMS (users can also choose in their profile).
+   *Send test to me* verifies a provider.
+3. Deliveries are queued and sent by a background worker with retries (up to 4 attempts; provider rejections such
+   as HTTP 4xx are not retried). Each organization has a daily limit per channel according to its plan, every
+   delivery is logged (addresses masked) and messages are never sent for suspended organizations.
+
 Other tracker brands (GT06/Concox, Queclink, Ruptela, ...) are not implemented yet: add a parser next to
 `server/gps/protocols/teltonika.js` and a listener in `server/gps/tcpServer.js`.
 
@@ -236,6 +257,10 @@ GEMINI_API_KEY=your_google_gemini_api_key
 
 # GPS tracker listener (0 = disabled)
 GPS_TCP_PORT=5027
+
+# Alert delivery (see "Email and SMS alerts")
+SMTP_HOST=smtp.example.com
+SMS_PROVIDER=twilio
 
 # Production: creates the platform owner (super admin) on an empty database
 ADMIN_EMAIL=owner@yourcompany.com
