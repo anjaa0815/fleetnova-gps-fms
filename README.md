@@ -248,6 +248,16 @@ Other tracker brands (Queclink, Ruptela, Meitrack, ...) are not implemented yet:
 
 ---
 
+## 📡 Traccar as the GPS receiver (optional)
+
+[Traccar](https://www.traccar.org) (Apache 2.0, 200+ protocols) can receive the trackers while FLEETNOVA keeps organizations, plans, alerts, reports and the UI. Traccar decodes the device protocol and forwards each position to `POST /api/gps/traccar`; the position then goes through the same ingestion as Teltonika / GT06 / OsmAnd (geofences, speed alerts, e-mail / SMS, reports).
+
+- Enable it with `TRACCAR_FORWARD_TOKEN` (the endpoint answers 503 while unset). Traccar sends the token in the `forward.url` query (`?token=`); `X-Traccar-Token` / `Authorization: Bearer` also work if your Traccar version can add headers.
+- Register devices with protocol **"Via Traccar server"**; the identifier is Traccar's `uniqueId` (6–32 letters, digits, `-`, `_`; usually the IMEI). Only devices of that protocol accept forwarded data.
+- Optional device sync: `TRACCAR_URL` plus `TRACCAR_TOKEN` (or `TRACCAR_USER` / `TRACCAR_PASSWORD`). Creating / deleting a device here then creates / deletes it in Traccar (best effort: the response carries `traccarSync`: `synced` / `failed` / `not_configured`). Traccar drops data from unknown devices (`database.registerUnknown=false`).
+- `docker-compose.traccar.yml` + `deploy/traccar/traccar.xml` run both together (set `GPS_TCP_PORT=0` / `GT06_TCP_PORT=0` so Traccar owns the tracker ports). Change the placeholder token and use PostgreSQL / MySQL for Traccar in production.
+- Not verified here: a real Traccar server or tracker (tests use a mock Traccar API and forwarded JSON as documented by Traccar), and the exact `forward.*` keys of your Traccar version. Speed is converted from knots; Traccar keeps its own copy of the positions, so plan the storage twice.
+
 ## 🔐 Sign-up security: email confirmation and rate limits
 
 **Email confirmation.** New self-service accounts must confirm their email address before the first sign-in (the

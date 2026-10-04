@@ -3,6 +3,7 @@ import { DataEngine } from '../models/dataEngine.js';
 import { runAsSystem } from '../middleware/tenantContext.js';
 import { getPlan, isWithinLimit } from '../config/plans.js';
 import { findMissingRef } from '../utils/refs.js';
+import { registerTraccarDevice, removeTraccarDevice, traccarConfigured } from '../services/traccarClient.js';
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 const TELTONIKA_IMEI = /^\d{15}$/;
@@ -49,6 +50,7 @@ export const getConnectionInfo = (req, res) => {
     data: {
       teltonika: { enabled: tcpPort > 0, port: tcpPort > 0 ? tcpPort : null, codecs: ['8', '8E'] },
       gt06: { enabled: gt06Port > 0, port: gt06Port > 0 ? gt06Port : null },
+      traccar: { enabled: Boolean(process.env.TRACCAR_FORWARD_TOKEN), path: '/api/gps/traccar', synced: traccarConfigured() },
       osmand: { path: '/api/gps/osmand', parameters: 'id, key, lat, lon, timestamp, speed (knots), bearing, altitude' }
     }
   });
@@ -72,7 +74,7 @@ export const createDevice = async (req, res, next) => {
     if (!name || typeof name !== 'string' || !imei) {
       return res.status(400).json({ success: false, message: 'Device name and IMEI are required' });
     }
-    if (!['teltonika', 'osmand', 'gt06'].includes(protocol)) {
+    if (!['teltonika', 'osmand', 'gt06', 'traccar'].includes(protocol)) {
       return res.status(400).json({ success: false, message: 'Invalid protocol' });
     }
     const id = String(imei).trim();
@@ -82,7 +84,7 @@ export const createDevice = async (req, res, next) => {
     if (protocol === 'gt06' && !TELTONIKA_IMEI.test(id)) {
       return res.status(400).json({ success: false, message: 'A GT06 IMEI has exactly 15 digits' });
     }
-    if (protocol === 'osmand' && !OSMAND_ID.test(id)) {
+    if ((protocol === 'osmand' || protocol === 'traccar') && !OSMAND_ID.test(id)) {
       return res.status(400).json({ success: false, message: 'Device id must be 6-32 letters, digits, - or _' });
     }
 
@@ -116,8 +118,16 @@ export const createDevice = async (req, res, next) => {
       lastPosition: null
     });
 
+    // Traccar ignores devices it does not know, so register the tracker there too (best effort)
+    const traccarSync = protocol === 'traccar' ? await registerTraccarDevice({ uniqueId: id, name: device.name }) : undefined;
+
     const populated = await DataEngine.findById('devices', device._id, { populate: 'vehicle' });
-    return res.status(201).json({ success: true, message: 'Device registered successfully', data: serializeDevice(populated) });
+    return res.status(201).json({
+      success: true,
+      message: 'Device registered successfully',
+      data: serializeDevice(populated),
+      ...(traccarSync ? { traccarSync } : {})
+    });
   } catch (error) {
     return next(error);
   }
@@ -162,6 +172,7 @@ export const deleteDevice = async (req, res, next) => {
   try {
     const removed = await DataEngine.findByIdAndDelete('devices', req.params.id);
     if (!removed) return res.status(404).json({ success: false, message: 'Device not found' });
+    if (removed.protocol === 'traccar') await removeTraccarDevice(removed.imei);
     return res.status(200).json({ success: true, message: 'Device deleted successfully' });
   } catch (error) {
     return next(error);
