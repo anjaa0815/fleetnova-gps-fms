@@ -15,8 +15,10 @@ import {
 import Loading from '../components/Loading.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { driverApi } from '../services/api.js';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function DriverDetails({ driverId, onBack }) {
+  const { tr } = useT();
   const [driver, setDriver] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,7 +32,7 @@ export default function DriverDetails({ driverId, onBack }) {
           setDriver(res.data);
         }
       } catch (err) {
-        setError(err.message || 'Failed to load driver profile');
+        setError(tr(err.message || 'Failed to load driver profile'));
       } finally {
         setLoading(false);
       }
@@ -39,17 +41,17 @@ export default function DriverDetails({ driverId, onBack }) {
   }, [driverId]);
 
   if (loading) {
-    return <Loading message="Loading driver profile, service ledger & safety record..." />;
+    return <Loading message={tr("Loading driver profile, service ledger & safety record...")} />;
   }
 
   if (error || !driver) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
         <AlertTriangle size={40} color="#fb7185" style={{ margin: '0 auto 1rem auto' }} />
-        <h3>Driver Profile Not Found</h3>
+        <h3>{tr("Driver Profile Not Found")}</h3>
         <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 1.5rem 0' }}>{error}</p>
         <button className="btn btn-secondary" onClick={onBack}>
-          <ArrowLeft size={16} /> Back to Drivers
+          <ArrowLeft size={16} /> {tr("Back to Drivers")}
         </button>
       </div>
     );
@@ -63,7 +65,7 @@ export default function DriverDetails({ driverId, onBack }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button className="btn btn-secondary" onClick={onBack}>
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16} /> {tr("Back")}
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div className="user-avatar-circle" style={{ width: '48px', height: '48px', fontSize: '1.25rem' }}>
@@ -73,11 +75,11 @@ export default function DriverDetails({ driverId, onBack }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>{driver.name}</h2>
                 <span className={`badge badge-${driver.status?.toLowerCase().replace(' ', '-')}`}>
-                  {driver.status}
+                  {tr(driver.status)}
                 </span>
               </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Driver ID: {driver.driverId} • Member since {driver.dateOfJoining ? new Date(driver.dateOfJoining).toLocaleDateString() : 'N/A'}
+                {tr("Driver ID:")} {driver.driverId} {tr("• Member since")} {driver.dateOfJoining ? new Date(driver.dateOfJoining).toLocaleDateString() : 'N/A'}
               </p>
             </div>
           </div>
@@ -113,30 +115,30 @@ export default function DriverDetails({ driverId, onBack }) {
       {/* Driver Performance Metrics */}
       <div className="grid-cols-4">
         <StatCard
-          title="Assigned Deliveries"
+          title={tr("Assigned Deliveries")}
           value={performance.totalTrips || 0}
-          subtext="Total lifetime bookings"
+          subtext={tr("Total lifetime bookings")}
           icon={Navigation}
           color="#3b82f6"
         />
         <StatCard
-          title="Completed Trips"
+          title={tr("Completed Trips")}
           value={performance.completedTrips || 0}
-          subtext="Delivered successfully"
+          subtext={tr("Delivered successfully")}
           icon={CheckCircle2}
           color="#10b981"
         />
         <StatCard
-          title="Distance Covered"
+          title={tr("Distance Covered")}
           value={`${performance.totalDistanceKm?.toLocaleString() || 0} km`}
-          subtext="Highway & city transit"
+          subtext={tr("Highway & city transit")}
           icon={Truck}
           color="#06b6d4"
         />
         <StatCard
-          title="Delivery Success Rate"
+          title={tr("Delivery Success Rate")}
           value={`${performance.completionRate || 100}%`}
-          subtext="Proof of Delivery verified"
+          subtext={tr("Proof of Delivery verified")}
           icon={Award}
           color="#8b5cf6"
         />
@@ -147,41 +149,41 @@ export default function DriverDetails({ driverId, onBack }) {
         {/* Personal & License Information */}
         <div className="card">
           <h3 className="card-title" style={{ marginBottom: '1rem' }}>
-            <User size={18} color="var(--primary)" /> Driver Dossier & Credentials
+            <User size={18} color="var(--primary)" /> {tr("Driver Dossier & Credentials")}
           </h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', fontSize: '0.85rem' }}>
             <div>
-              <div style={{ color: 'var(--text-muted)' }}>PRIMARY CONTACT</div>
+              <div style={{ color: 'var(--text-muted)' }}>{tr("PRIMARY CONTACT")}</div>
               <div style={{ fontWeight: 600 }}>{driver.phone}</div>
             </div>
             <div>
-              <div style={{ color: 'var(--text-muted)' }}>EMAIL ADDRESS</div>
+              <div style={{ color: 'var(--text-muted)' }}>{tr("EMAIL ADDRESS")}</div>
               <div style={{ fontWeight: 600 }}>{driver.email}</div>
             </div>
             <div>
-              <div style={{ color: 'var(--text-muted)' }}>COMMERCIAL LICENSE</div>
+              <div style={{ color: 'var(--text-muted)' }}>{tr("COMMERCIAL LICENSE")}</div>
               <div style={{ fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{driver.licenseNumber}</div>
             </div>
             <div>
-              <div style={{ color: 'var(--text-muted)' }}>LICENSE EXPIRY</div>
+              <div style={{ color: 'var(--text-muted)' }}>{tr("LICENSE EXPIRY")}</div>
               <div style={{ fontWeight: 600 }}>
                 {driver.licenseExpiry ? new Date(driver.licenseExpiry).toLocaleDateString() : 'N/A'}
               </div>
             </div>
             <div style={{ gridColumn: 'span 2' }}>
-              <div style={{ color: 'var(--text-muted)' }}>EMERGENCY CONTACT</div>
-              <div style={{ fontWeight: 600 }}>{driver.emergencyContact || 'None on file'}</div>
+              <div style={{ color: 'var(--text-muted)' }}>{tr("EMERGENCY CONTACT")}</div>
+              <div style={{ fontWeight: 600 }}>{driver.emergencyContact || tr("None on file")}</div>
             </div>
             <div style={{ gridColumn: 'span 2' }}>
-              <div style={{ color: 'var(--text-muted)' }}>RESIDENTIAL ADDRESS</div>
-              <div style={{ fontWeight: 600 }}>{driver.address || 'Address not registered'}</div>
+              <div style={{ color: 'var(--text-muted)' }}>{tr("RESIDENTIAL ADDRESS")}</div>
+              <div style={{ fontWeight: 600 }}>{driver.address || tr("Address not registered")}</div>
             </div>
           </div>
 
           {driver.notes && (
             <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)', fontSize: '0.825rem' }}>
-              <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>QUALIFICATIONS & SPECIALIZATIONS</div>
+              <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{tr("QUALIFICATIONS & SPECIALIZATIONS")}</div>
               <p style={{ color: 'var(--text-secondary)' }}>{driver.notes}</p>
             </div>
           )}
@@ -190,7 +192,7 @@ export default function DriverDetails({ driverId, onBack }) {
         {/* Assigned Vehicle Card */}
         <div className="card">
           <h3 className="card-title" style={{ marginBottom: '1rem' }}>
-            <Truck size={18} color="var(--accent-cyan)" /> Dedicated Fleet Vehicle
+            <Truck size={18} color="var(--accent-cyan)" /> {tr("Dedicated Fleet Vehicle")}
           </h3>
 
           {driver.assignedVehicle ? (
@@ -225,25 +227,25 @@ export default function DriverDetails({ driverId, onBack }) {
                     {driver.assignedVehicle.registrationNumber}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    {driver.assignedVehicle.brand} {driver.assignedVehicle.model} • {driver.assignedVehicle.fuelType}
+                    {driver.assignedVehicle.brand} {driver.assignedVehicle.model} • {tr(driver.assignedVehicle.fuelType)}
                   </div>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', fontSize: '0.85rem' }}>
                 <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>VEHICLE STATUS</div>
-                  <strong style={{ color: 'var(--accent-emerald)' }}>{driver.assignedVehicle.status}</strong>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("VEHICLE STATUS")}</div>
+                  <strong style={{ color: 'var(--accent-emerald)' }}>{tr(driver.assignedVehicle.status)}</strong>
                 </div>
                 <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>CURRENT ODOMETER</div>
-                  <strong>{driver.assignedVehicle.currentMileage?.toLocaleString()} km</strong>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("CURRENT ODOMETER")}</div>
+                  <strong>{driver.assignedVehicle.currentMileage?.toLocaleString()} {tr("km")}</strong>
                 </div>
               </div>
             </div>
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-              No commercial vehicle currently assigned to this driver.
+              {tr("No commercial vehicle currently assigned to this driver.")}
             </div>
           )}
         </div>
@@ -252,22 +254,22 @@ export default function DriverDetails({ driverId, onBack }) {
       {/* Driver Trip History Table */}
       <div className="card">
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>
-          <Navigation size={18} color="var(--primary)" /> Driver Transit & Delivery Log
+          <Navigation size={18} color="var(--primary)" /> {tr("Driver Transit & Delivery Log")}
         </h3>
 
         {trips.length === 0 ? (
-          <p style={{ color: 'var(--text-muted)' }}>No completed or scheduled trips found for this driver.</p>
+          <p style={{ color: 'var(--text-muted)' }}>{tr("No completed or scheduled trips found for this driver.")}</p>
         ) : (
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Trip ID</th>
-                  <th>Route</th>
-                  <th>Distance</th>
-                  <th>Start Date</th>
-                  <th>Purpose</th>
-                  <th>Status</th>
+                  <th>{tr("Trip ID")}</th>
+                  <th>{tr("Route")}</th>
+                  <th>{tr("Distance")}</th>
+                  <th>{tr("Start Date")}</th>
+                  <th>{tr("Purpose")}</th>
+                  <th>{tr("Status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -275,10 +277,10 @@ export default function DriverDetails({ driverId, onBack }) {
                   <tr key={t._id}>
                     <td><strong>{t.tripId}</strong></td>
                     <td>{t.source} ➔ {t.destination}</td>
-                    <td>{t.distance} km</td>
+                    <td>{t.distance} {tr("km")}</td>
                     <td>{new Date(t.startDate).toLocaleDateString()}</td>
-                    <td>{t.purpose}</td>
-                    <td><span className={`badge badge-${t.status.toLowerCase().replace(' ', '-')}`}>{t.status}</span></td>
+                    <td>{tr(t.purpose)}</td>
+                    <td><span className={`badge badge-${t.status.toLowerCase().replace(' ', '-')}`}>{tr(t.status)}</span></td>
                   </tr>
                 ))}
               </tbody>

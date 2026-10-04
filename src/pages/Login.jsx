@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Truck, Lock, Mail, ArrowRight, ShieldCheck, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
+  const { tr } = useT();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,7 +14,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Please provide your email and password');
+      setError(tr("Please provide your email and password"));
       return;
     }
     setLoading(true);
@@ -20,7 +22,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
     const res = await login(email, password);
     setLoading(false);
     if (!res.success) {
-      setError(res.message);
+      setError(tr(res.message));
     }
   };
 
@@ -77,10 +79,10 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
             <Truck size={28} />
           </div>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            FLEETNOVA
+            {tr("FLEETNOVA")}
           </h2>
           <p style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 700, letterSpacing: '0.1em', marginTop: '2px' }}>
-            SMART FLEET MANAGEMENT SYSTEM
+            {tr("SMART FLEET MANAGEMENT SYSTEM")}
           </p>
         </div>
 
@@ -104,7 +106,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">Email Address</label>
+              <label className="form-label">{tr("Email Address")}</label>
               <div style={{ position: 'relative' }}>
                 <Mail
                   size={16}
@@ -120,7 +122,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
                   type="email"
                   className="form-control"
                   style={{ paddingLeft: '38px' }}
-                  placeholder="admin@fleetnova.com"
+                  placeholder={tr("admin@fleetnova.com")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -130,7 +132,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
 
             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="form-label">Password</label>
+                <label className="form-label">{tr("Password")}</label>
                 <button
                   type="button"
                   onClick={onSwitchToForgot}
@@ -143,7 +145,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
                     fontWeight: 600
                   }}
                 >
-                  Forgot password?
+                  {tr("Forgot password?")}
                 </button>
               </div>
               <div style={{ position: 'relative' }}>
@@ -175,14 +177,15 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
               disabled={loading}
               style={{ width: '100%', padding: '0.75rem', fontSize: '0.95rem' }}
             >
-              {loading ? 'Authenticating...' : 'Sign In to FLEETNOVA'} <ArrowRight size={16} />
+              {loading ? tr("Authenticating...") : tr("Sign In to FLEETNOVA")} <ArrowRight size={16} />
             </button>
           </form>
 
-          {/* Quick Demo Credentials for Evaluation */}
+          {/* Quick Demo Credentials: development builds only (hidden in production) */}
+          {import.meta.env.DEV && (
           <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-subtle)' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem', textAlign: 'center', fontWeight: 600 }}>
-              QUICK DEMO ACCESS (CLICK TO FILL)
+              {tr("QUICK DEMO ACCESS (CLICK TO FILL)")}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
               <button
@@ -191,7 +194,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
                 style={{ fontSize: '0.7rem', padding: '0.4rem 0.2rem' }}
                 onClick={() => handleQuickLogin('admin@fleetnova.com', 'admin123')}
               >
-                👑 Admin
+                {tr("👑 Admin")}
               </button>
               <button
                 type="button"
@@ -199,21 +202,22 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
                 style={{ fontSize: '0.7rem', padding: '0.4rem 0.2rem' }}
                 onClick={() => handleQuickLogin('manager@fleetnova.com', 'manager123')}
               >
-                💼 Manager
+                {tr("💼 Manager")}
               </button>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 style={{ fontSize: '0.7rem', padding: '0.4rem 0.2rem' }}
-                onClick={() => handleQuickLogin('rajesh.kumar@fleetnova.com', 'driver123')}
+                onClick={() => handleQuickLogin('driver@fleetnova.com', 'driver123')}
               >
-                🚚 Driver
+                {tr("🚚 Driver")}
               </button>
             </div>
           </div>
+          )}
 
           <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
-            Need an organization account?{' '}
+            {tr("Need an organization account?")}{' '}
             <button
               type="button"
               onClick={onSwitchToRegister}
@@ -225,7 +229,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
                 cursor: 'pointer'
               }}
             >
-              Register here
+              {tr("Register here")}
             </button>
           </div>
         </div>

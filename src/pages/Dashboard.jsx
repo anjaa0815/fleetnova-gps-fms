@@ -18,8 +18,10 @@ import {
 import StatCard from '../components/StatCard.jsx';
 import Loading from '../components/Loading.jsx';
 import { dashboardApi } from '../services/api.js';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Dashboard({ onNavigate }) {
+  const { tr } = useT();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,7 +34,7 @@ export default function Dashboard({ onNavigate }) {
         setData(res.data);
       }
     } catch (err) {
-      setError(err.message || 'Failed to load dashboard telemetry');
+      setError(tr(err.message || 'Failed to load dashboard telemetry'));
     } finally {
       setLoading(false);
     }
@@ -43,17 +45,17 @@ export default function Dashboard({ onNavigate }) {
   }, []);
 
   if (loading) {
-    return <Loading message="Syncing live fleet telemetry and financial metrics..." />;
+    return <Loading message={tr("Syncing live fleet telemetry and financial metrics...")} />;
   }
 
   if (error || !data) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
         <AlertTriangle size={40} color="#fb7185" style={{ margin: '0 auto 1rem auto' }} />
-        <h3>Telemetry Feed Error</h3>
+        <h3>{tr("Telemetry Feed Error")}</h3>
         <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 1.5rem 0' }}>{error}</p>
         <button className="btn btn-primary" onClick={fetchDashboard}>
-          Retry Sync
+          {tr("Retry Sync")}
         </button>
       </div>
     );
@@ -81,7 +83,7 @@ export default function Dashboard({ onNavigate }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <AlertTriangle size={20} color="#fbbf24" />
             <div>
-              <strong style={{ color: '#fbbf24' }}>Fleet Advisory:</strong> {cards.maintenanceVehicles} vehicle(s) currently require scheduled maintenance or emergency service.
+              <strong style={{ color: '#fbbf24' }}>{tr("Fleet Advisory:")}</strong> {cards.maintenanceVehicles} {tr("vehicle(s) currently require scheduled maintenance or emergency service.")}
             </div>
           </div>
           <button
@@ -89,7 +91,7 @@ export default function Dashboard({ onNavigate }) {
             onClick={() => onNavigate('maintenance')}
             style={{ backgroundColor: '#f59e0b', color: '#000', fontWeight: 700 }}
           >
-            Review Maintenance Roster
+            {tr("Review Maintenance Roster")}
           </button>
         </div>
       )}
@@ -97,30 +99,30 @@ export default function Dashboard({ onNavigate }) {
       {/* Primary KPI Metric Cards (Grid of 5x2 or 4x2) */}
       <div className="grid-cols-4">
         <StatCard
-          title="Total Vehicles"
+          title={tr("Total Vehicles")}
           value={cards.totalVehicles}
-          subtext={`${cards.activeVehicles} on trip | ${cards.availableVehicles} available`}
+          subtext={tr('{a} on trip | {b} available', { a: cards.activeVehicles, b: cards.availableVehicles })}
           icon={Truck}
           color="#3b82f6"
         />
         <StatCard
-          title="Active Deliveries"
+          title={tr("Active Deliveries")}
           value={cards.activeTrips}
-          subtext={`${cards.scheduledTrips} scheduled | ${cards.completedTrips} completed`}
+          subtext={tr('{a} scheduled | {b} completed', { a: cards.scheduledTrips, b: cards.completedTrips })}
           icon={Navigation}
           color="#10b981"
         />
         <StatCard
-          title="Active Drivers"
+          title={tr("Active Drivers")}
           value={cards.totalDrivers}
-          subtext={`${cards.availableDrivers} ready for assignment`}
+          subtext={tr('{a} ready for assignment', { a: cards.availableDrivers })}
           icon={Users}
           color="#06b6d4"
         />
         <StatCard
-          title="Maintenance Alert"
+          title={tr("Maintenance Alert")}
           value={cards.maintenanceVehicles}
-          subtext="Vehicles currently in workshop"
+          subtext={tr("Vehicles currently in workshop")}
           icon={Wrench}
           color="#f59e0b"
         />
@@ -128,30 +130,30 @@ export default function Dashboard({ onNavigate }) {
 
       <div className="grid-cols-4">
         <StatCard
-          title="Gross Expenses"
-          value={`₹${cards.totalExpenses.toLocaleString()}`}
-          subtext="Comprehensive operating costs"
+          title={tr("Gross Expenses")}
+          value={`₮${cards.totalExpenses.toLocaleString()}`}
+          subtext={tr("Comprehensive operating costs")}
           icon={Receipt}
           color="#8b5cf6"
         />
         <StatCard
-          title="Fuel Expenditure"
-          value={`₹${cards.totalFuelCost.toLocaleString()}`}
-          subtext={`${cards.totalFuelConsumed} Liters consumed`}
+          title={tr("Fuel Expenditure")}
+          value={`₮${cards.totalFuelCost.toLocaleString()}`}
+          subtext={tr('{a} Liters consumed', { a: cards.totalFuelConsumed })}
           icon={Fuel}
           color="#06b6d4"
         />
         <StatCard
-          title="Maintenance Cost"
-          value={`₹${cards.totalMaintenanceCost.toLocaleString()}`}
-          subtext="Scheduled services & parts"
+          title={tr("Maintenance Cost")}
+          value={`₮${cards.totalMaintenanceCost.toLocaleString()}`}
+          subtext={tr("Scheduled services & parts")}
           icon={Wrench}
           color="#fb7185"
         />
         <StatCard
-          title="Avg Fuel Efficiency"
+          title={tr("Avg Fuel Efficiency")}
           value={`${cards.avgFuelEfficiency} km/L`}
-          subtext="Commercial fleet baseline"
+          subtext={tr("Commercial fleet baseline")}
           icon={TrendingUp}
           color="#10b981"
         />
@@ -163,10 +165,10 @@ export default function Dashboard({ onNavigate }) {
         <div className="card" style={{ gridColumn: 'span 2' }}>
           <div className="card-header">
             <h3 className="card-title">
-              <Activity size={18} color="var(--primary)" /> Real-Time Vehicle Status & Allocation
+              <Activity size={18} color="var(--primary)" /> {tr("Real-Time Vehicle Status & Allocation")}
             </h3>
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('vehicles')}>
-              View All Vehicles <ArrowRight size={14} />
+              {tr("View All Vehicles")} <ArrowRight size={14} />
             </button>
           </div>
 
@@ -183,12 +185,12 @@ export default function Dashboard({ onNavigate }) {
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    {item.status}
+                    {tr(item.status)}
                   </span>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color }} />
                 </div>
                 <div style={{ fontSize: '1.45rem', fontWeight: 800 }}>{item.count}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.percentage}% of fleet</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.percentage}{tr("% of fleet")}</div>
               </div>
             ))}
           </div>
@@ -211,7 +213,7 @@ export default function Dashboard({ onNavigate }) {
                   backgroundColor: item.color,
                   transition: 'width 0.5s ease'
                 }}
-                title={`${item.status}: ${item.count} (${item.percentage}%)`}
+                title={`${tr(item.status)}: ${item.count} (${item.percentage}%)`}
               />
             ))}
           </div>
@@ -219,7 +221,7 @@ export default function Dashboard({ onNavigate }) {
             {vehicleStatusBreakdown.map((item) => (
               <div key={item.status} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                 <span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: item.color }} />
-                {item.status} ({item.count})
+                {tr(item.status)} ({item.count})
               </div>
             ))}
           </div>
@@ -252,10 +254,10 @@ export default function Dashboard({ onNavigate }) {
               >
                 <Sparkles size={18} />
               </div>
-              <h4 style={{ fontSize: '1rem', fontWeight: 700 }}>FleetAI Smart Co-Pilot</h4>
+              <h4 style={{ fontSize: '1rem', fontWeight: 700 }}>{tr("FleetAI Smart Co-Pilot")}</h4>
             </div>
             <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1rem' }}>
-              Gemini 3.8 is continuously analyzing trip logs, fuel consumption peaks, and scheduled repair timelines.
+              {tr("Gemini 3.8 is continuously analyzing trip logs, fuel consumption peaks, and scheduled repair timelines.")}
             </p>
             <div
               style={{
@@ -268,7 +270,7 @@ export default function Dashboard({ onNavigate }) {
                 marginBottom: '1rem'
               }}
             >
-              💡 <strong>AI Tip:</strong> {cards.avgFuelEfficiency < 12 ? 'Diesel fuel consumption spiked 6% on northern corridor routes. Check tire pressures on multi-axle trailers.' : 'High fleet efficiency sustained this week with electric couriers taking 100% of urban parcel routes.'}
+              💡 <strong>{tr("AI Tip:")}</strong> {cards.avgFuelEfficiency < 12 ? tr("Diesel fuel consumption spiked 6% on northern corridor routes. Check tire pressures on multi-axle trailers.") : tr("High fleet efficiency sustained this week with electric couriers taking 100% of urban parcel routes.")}
             </div>
           </div>
 
@@ -277,7 +279,7 @@ export default function Dashboard({ onNavigate }) {
             onClick={() => onNavigate('fleet-ai')}
             style={{ width: '100%', gap: '0.5rem' }}
           >
-            Launch FleetAI Assistant <ArrowRight size={16} />
+            {tr("Launch FleetAI Assistant")} <ArrowRight size={16} />
           </button>
         </div>
       </div>
@@ -288,16 +290,16 @@ export default function Dashboard({ onNavigate }) {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
-              <Navigation size={18} color="var(--primary)" /> Active & Recent Deliveries
+              <Navigation size={18} color="var(--primary)" /> {tr("Active & Recent Deliveries")}
             </h3>
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('trips')}>
-              All Trips <ArrowRight size={14} />
+              {tr("All Trips")} <ArrowRight size={14} />
             </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {recentTrips.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No recent trip dispatches recorded.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{tr("No recent trip dispatches recorded.")}</p>
             ) : (
               recentTrips.map((t) => (
                 <div
@@ -319,19 +321,19 @@ export default function Dashboard({ onNavigate }) {
                         {t.tripId}
                       </strong>
                       <span className={`badge badge-${t.status.toLowerCase().replace(' ', '-')}`}>
-                        {t.status}
+                        {tr(t.status)}
                       </span>
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      {t.source} ➔ {t.destination} ({t.distance} km)
+                      {t.source} ➔ {t.destination} ({t.distance} {tr("km)")}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-cyan)' }}>
-                      {t.vehicle?.registrationNumber || 'Vehicle'}
+                      {t.vehicle?.registrationNumber || tr("Vehicle")}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      {t.driver?.name || 'Driver'}
+                      {t.driver?.name || tr("Driver")}
                     </div>
                   </div>
                 </div>
@@ -344,16 +346,16 @@ export default function Dashboard({ onNavigate }) {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
-              <Wrench size={18} color="var(--accent-amber)" /> Scheduled Vehicle Maintenance
+              <Wrench size={18} color="var(--accent-amber)" /> {tr("Scheduled Vehicle Maintenance")}
             </h3>
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('maintenance')}>
-              Maintenance Log <ArrowRight size={14} />
+              {tr("Maintenance Log")} <ArrowRight size={14} />
             </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {upcomingMaintenance.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>All vehicles are up to date on maintenance!</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{tr("All vehicles are up to date on maintenance!")}</p>
             ) : (
               upcomingMaintenance.map((m) => (
                 <div
@@ -372,32 +374,32 @@ export default function Dashboard({ onNavigate }) {
                   <div style={{ minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2px' }}>
                       <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                        {m.vehicle?.registrationNumber || 'Vehicle'}
+                        {m.vehicle?.registrationNumber || tr("Vehicle")}
                       </strong>
                       <span className={`badge badge-${m.status.toLowerCase().replace(' ', '-')}`}>
-                        {m.status}
+                        {tr(m.status)}
                       </span>
                       {m.isOverdue && (
                         <span style={{ fontSize: '0.65rem', color: '#fb7185', fontWeight: 700 }}>
-                          OVERDUE
+                          {tr("OVERDUE")}
                         </span>
                       )}
                       {m.isDueSoon && (
                         <span style={{ fontSize: '0.65rem', color: '#fbbf24', fontWeight: 700 }}>
-                          DUE SOON
+                          {tr("DUE SOON")}
                         </span>
                       )}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      {m.maintenanceType} - {m.description}
+                      {tr(m.maintenanceType)} - {m.description}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      ₹{m.cost?.toLocaleString()}
+                      ₮{m.cost?.toLocaleString()}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      {m.serviceDate ? new Date(m.serviceDate).toLocaleDateString() : 'Pending'}
+                      {m.serviceDate ? new Date(m.serviceDate).toLocaleDateString() : tr("Pending")}
                     </div>
                   </div>
                 </div>
@@ -413,34 +415,34 @@ export default function Dashboard({ onNavigate }) {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
-              <Fuel size={18} color="var(--accent-cyan)" /> Fleet Fuel Consumption Telemetry
+              <Fuel size={18} color="var(--accent-cyan)" /> {tr("Fleet Fuel Consumption Telemetry")}
             </h3>
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('fuel')}>
-              View Fuel Logs <ArrowRight size={14} />
+              {tr("View Fuel Logs")} <ArrowRight size={14} />
             </button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
             <div style={{ padding: '0.85rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-secondary)' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>TOTAL FUEL DISPENSED</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tr("TOTAL FUEL DISPENSED")}</div>
               <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
                 {fuelOverview.totalConsumed.toLocaleString()} L
               </div>
             </div>
             <div style={{ padding: '0.85rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-secondary)' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>HIGHEST CONSUMING RIG</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tr("HIGHEST CONSUMING RIG")}</div>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                 {fuelOverview.highestFuelVehicle.registration}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                {fuelOverview.highestFuelVehicle.quantity} Liters consumed
+                {fuelOverview.highestFuelVehicle.quantity} {tr("Liters consumed")}
               </div>
             </div>
           </div>
 
           {/* Top Fuel Consuming Vehicles Table/Bar */}
           <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-            TOP FUEL CONSUMING RIGS
+            {tr("TOP FUEL CONSUMING RIGS")}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {charts?.fuelByVehicleData?.map((item) => (
@@ -465,10 +467,10 @@ export default function Dashboard({ onNavigate }) {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
-              <Receipt size={18} color="var(--accent-purple)" /> Expense Category Distribution
+              <Receipt size={18} color="var(--accent-purple)" /> {tr("Expense Category Distribution")}
             </h3>
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('expenses')}>
-              All Expenses <ArrowRight size={14} />
+              {tr("All Expenses")} <ArrowRight size={14} />
             </button>
           </div>
 
@@ -478,9 +480,9 @@ export default function Dashboard({ onNavigate }) {
               return (
                 <div key={cat} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
-                    <span style={{ fontWeight: 600 }}>{cat}</span>
+                    <span style={{ fontWeight: 600 }}>{tr(cat)}</span>
                     <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
-                      ₹{amount.toLocaleString()} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>({percentage}%)</span>
+                      ₮{amount.toLocaleString()} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>({percentage}%)</span>
                     </span>
                   </div>
                   <div style={{ height: '7px', backgroundColor: 'var(--bg-secondary)', borderRadius: '9999px', overflow: 'hidden' }}>
@@ -507,9 +509,9 @@ export default function Dashboard({ onNavigate }) {
               alignItems: 'center'
             }}
           >
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Gross Fleet Operating Expenditure:</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>{tr("Gross Fleet Operating Expenditure:")}</span>
             <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-              ₹{cards.totalExpenses.toLocaleString()}
+              ₮{cards.totalExpenses.toLocaleString()}
             </span>
           </div>
         </div>

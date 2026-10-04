@@ -20,7 +20,7 @@ function getAIClient() {
   return aiClient;
 }
 
-export async function askFleetAI(userPrompt, fleetContext) {
+export async function askFleetAI(userPrompt, fleetContext, lang = 'en') {
   const ai = getAIClient();
 
   const systemInstruction = `You are FleetAI, the intelligent assistant for FLEETNOVA Smart Fleet Management System.
@@ -31,7 +31,7 @@ If the requested information is not available in the context, clearly explain th
 Provide concise, actionable, and professional responses formatted with clean markdown, bullet points, and highlight metrics.
 When providing numerical information (costs, mileage, count), use the supplied database data.
 Do not modify database records.
-Do not expose API keys, credentials or internal technical secrets.`;
+Do not expose API keys, credentials or internal technical secrets.${lang === 'mn' ? '\nAlways answer in Mongolian (Монгол хэл), keeping vehicle registration numbers, IDs and names as they appear in the data.' : ''}`;
 
   const promptWithContext = `LIVE FLEET DATABASE CONTEXT:
 ${JSON.stringify(fleetContext, null, 2)}
@@ -59,7 +59,9 @@ ${userPrompt}`;
   }
 
   // Graceful rule-based intelligent fallback if API key is unconfigured or unavailable
-  return generateAlgorithmicFleetResponse(userPrompt, fleetContext);
+  return lang === 'mn'
+    ? generateAlgorithmicFleetResponseMn(userPrompt, fleetContext)
+    : generateAlgorithmicFleetResponse(userPrompt, fleetContext);
 }
 
 function generateAlgorithmicFleetResponse(query, context) {
@@ -71,9 +73,9 @@ function generateAlgorithmicFleetResponse(query, context) {
 - **Total Fleet Size:** ${summary.totalVehicles} vehicles (${summary.activeVehicles} on active trips, ${summary.availableVehicles} available, ${summary.maintenanceVehicles} under service)
 - **Active Trips:** ${summary.activeTrips} ongoing trips | **Completed Trips:** ${summary.completedTrips}
 - **Financials:**
-  - **Total Expenses:** ₹${summary.totalExpenses.toLocaleString()}
-  - **Fuel Expenditure:** ₹${summary.totalFuelCost.toLocaleString()}
-  - **Maintenance Costs:** ₹${summary.totalMaintenanceCost.toLocaleString()}
+  - **Total Expenses:** ₮${summary.totalExpenses.toLocaleString()}
+  - **Fuel Expenditure:** ₮${summary.totalFuelCost.toLocaleString()}
+  - **Maintenance Costs:** ₮${summary.totalMaintenanceCost.toLocaleString()}
 - **Staff:** ${summary.totalDrivers} registered drivers.`;
   }
 
@@ -83,7 +85,7 @@ function generateAlgorithmicFleetResponse(query, context) {
       return `### 🛠️ Maintenance Status
 All scheduled services are up to date! Currently, zero vehicles are flagged with critical overdue repairs.`;
     }
-    const details = activeMaint.map(m => `- **${m.vehicle?.registrationNumber || m.vehicle || 'Vehicle'}**: ${m.maintenanceType} (${m.description}) - Status: **${m.status}**, Cost: ₹${m.cost?.toLocaleString() || 0}`).join('\n');
+    const details = activeMaint.map(m => `- **${m.vehicle || 'Vehicle'}**: ${m.type} (${m.description}) - Status: **${m.status}**, Cost: ₮${m.cost?.toLocaleString() || 0}`).join('\n');
     return `### 🛠️ Vehicles Requiring or Under Maintenance
 Found **${activeMaint.length}** vehicles needing attention:
 ${details}
@@ -93,7 +95,7 @@ ${details}
   if (q.includes('fuel') || q.includes('efficiency') || q.includes('consumption')) {
     return `### ⛽ Fuel Analytics & Consumption
 - **Total Fuel Consumed:** ${summary.totalFuelConsumed || 0} Liters
-- **Total Fuel Cost:** ₹${(summary.totalFuelCost || 0).toLocaleString()}
+- **Total Fuel Cost:** ₮${(summary.totalFuelCost || 0).toLocaleString()}
 - **Average Fleet Mileage:** ${summary.avgFuelEfficiency || '12.4'} km/L
 - **Top Advice:** Monitor sudden fuel drops on older diesel trucks and utilize EV/CNG vans for city corridors to reduce operational overhead by up to 18%.`;
   }
@@ -109,9 +111,9 @@ ${availableDrivers.slice(0, 3).map(d => `- ${d.name} (${d.phone}) - Available`).
 
   if (q.includes('expense') || q.includes('cost') || q.includes('spend')) {
     return `### 💰 Expense Breakdown
-- **Gross Expenses Recorded:** ₹${(summary.totalExpenses || 0).toLocaleString()}
-- **Fuel Share:** ₹${(summary.totalFuelCost || 0).toLocaleString()}
-- **Maintenance Share:** ₹${(summary.totalMaintenanceCost || 0).toLocaleString()}
+- **Gross Expenses Recorded:** ₮${(summary.totalExpenses || 0).toLocaleString()}
+- **Fuel Share:** ₮${(summary.totalFuelCost || 0).toLocaleString()}
+- **Maintenance Share:** ₮${(summary.totalMaintenanceCost || 0).toLocaleString()}
 - **Optimization Tip:** Scheduling preventive maintenance reduces emergency road breakdowns by 34%, protecting your monthly budget.`;
   }
 
@@ -132,4 +134,74 @@ You can ask me specific questions such as:
 2. *"Give me today's fleet summary."*
 3. *"Analyze fuel expenses."*
 4. *"Which vehicles have high operating costs?"*`;
+}
+
+function generateAlgorithmicFleetResponseMn(query, context) {
+  const q = query.toLowerCase();
+  const { summary, vehicles = [], drivers = [], maintenances = [] } = context;
+  const has = (...words) => words.some((w) => q.includes(w));
+  const money = (n) => `₮${(n || 0).toLocaleString()}`;
+
+  if (has('summary', 'overview', 'today', 'хураангуй', 'тойм', 'өнөөдөр')) {
+    return `### 🚚 FLEETNOVA бодит цагийн үйл ажиллагааны хураангуй
+- **Паркийн хэмжээ:** ${summary.totalVehicles} тээврийн хэрэгсэл (${summary.activeVehicles} рейсэнд, ${summary.availableVehicles} чөлөөтэй, ${summary.maintenanceVehicles} засварт)
+- **Идэвхтэй рейс:** ${summary.activeTrips} | **Дууссан рейс:** ${summary.completedTrips}
+- **Санхүү:**
+  - **Нийт зардал:** ${money(summary.totalExpenses)}
+  - **Шатахууны зардал:** ${money(summary.totalFuelCost)}
+  - **Засварын зардал:** ${money(summary.totalMaintenanceCost)}
+- **Ажилтан:** ${summary.totalDrivers} бүртгэлтэй жолооч.`;
+  }
+
+  if (has('maintenance', 'service', 'repair', 'засвар', 'үйлчилгээ')) {
+    const active = maintenances.filter((m) => m.status !== 'Completed');
+    if (active.length === 0) {
+      return `### 🛠️ Засварын төлөв
+Товлосон бүх үйлчилгээ хугацаандаа хийгдсэн байна. Яаралтай засвар шаардлагатай тээврийн хэрэгсэл одоогоор алга.`;
+    }
+    const details = active
+      .map((m) => `- **${m.vehicle || 'Тээврийн хэрэгсэл'}**: ${m.type} (${m.description}) - Төлөв: **${m.status}**, Өртөг: ${money(m.cost)}`)
+      .join('\n');
+    return `### 🛠️ Засвартай эсвэл засвар шаардлагатай тээврийн хэрэгсэл
+**${active.length}** тээврийн хэрэгсэлд анхаарал хэрэгтэй байна:
+${details}`;
+  }
+
+  if (has('fuel', 'efficiency', 'consumption', 'шатахуун', 'бензин', 'дизель', 'зарцуулалт')) {
+    return `### ⛽ Шатахууны шинжилгээ
+- **Нийт зарцуулсан шатахуун:** ${summary.totalFuelConsumed || 0} литр
+- **Шатахууны нийт өртөг:** ${money(summary.totalFuelCost)}`;
+  }
+
+  if (has('driver', 'жолооч')) {
+    const free = drivers.filter((d) => d.status === 'Available');
+    return `### 👤 Жолооч нарын мэдээлэл
+- **Нийт жолооч:** ${drivers.length}
+- **Рейсэнд яваа:** ${drivers.filter((d) => d.status === 'On Trip').length}
+- **Оноолтод чөлөөтэй:** ${free.length}
+${free.slice(0, 3).map((d) => `- ${d.name} (${d.phone})`).join('\n')}`;
+  }
+
+  if (has('expense', 'cost', 'spend', 'зардал', 'өртөг', 'мөнгө')) {
+    return `### 💰 Зардлын задаргаа
+- **Нийт бүртгэсэн зардал:** ${money(summary.totalExpenses)}
+- **Шатахуун:** ${money(summary.totalFuelCost)}
+- **Засвар:** ${money(summary.totalMaintenanceCost)}`;
+  }
+
+  if (has('expiry', 'insurance', 'license', 'даатгал', 'үнэмлэх', 'хугацаа')) {
+    return `### 📄 Баримт бичгийн хугацааны сануулга
+${(context.documentAlerts || []).length ? context.documentAlerts.map((a) => `- ${a}`).join('\n') : '- Ойрын 30 хоногт хугацаа дуусах баримт алга.'}`;
+  }
+
+  return `### 🤖 FleetAI туслах
+FLEETNOVA парк өгөгдлийн сангаас:
+- **Тээврийн хэрэгсэл:** нийт ${vehicles.length} (${summary.availableVehicles} бэлэн)
+- **Идэвхтэй хүргэлт:** ${summary.activeTrips} рейс
+- **Бэлэн байдал:** ${Math.round((summary.availableVehicles / (vehicles.length || 1)) * 100)}%
+
+Дараах мэт асуулт асууж болно:
+1. *"Аль тээврийн хэрэгсэлд засвар хэрэгтэй вэ?"*
+2. *"Өнөөдрийн паркийн хураангуйг өгөөч."*
+3. *"Шатахууны зардлыг шинжилнэ үү."*`;
 }

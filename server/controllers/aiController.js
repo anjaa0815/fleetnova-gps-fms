@@ -5,12 +5,13 @@ import { askFleetAI } from '../services/geminiService.js';
 // @route POST /api/ai/chat
 export const chatWithFleetAI = async (req, res, next) => {
   try {
-    const { message } = req.body;
+    const { message, lang } = req.body;
+    const language = lang === 'mn' ? 'mn' : 'en';
 
-    if (!message || message.trim() === '') {
+    if (typeof message !== 'string' || message.trim() === '' || message.length > 2000) {
       return res.status(400).json({
         success: false,
-        message: 'Message is required'
+        message: 'Message is required (max 2000 characters)'
       });
     }
 
@@ -106,7 +107,7 @@ export const chatWithFleetAI = async (req, res, next) => {
       documentAlerts
     };
 
-    const aiAnswer = await askFleetAI(message, fleetContext);
+    const aiAnswer = await askFleetAI(message, fleetContext, language);
 
     return res.status(200).json({
       success: true,

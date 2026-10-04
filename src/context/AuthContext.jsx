@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../services/api.js';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  const { tr } = useT();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,7 +49,7 @@ export const AuthProvider = ({ children }) => {
       }
       throw new Error(res.message || 'Login failed');
     } catch (err) {
-      setError(err.message);
+      setError(tr(err.message));
       return { success: false, message: err.message };
     }
   };
@@ -63,7 +65,7 @@ export const AuthProvider = ({ children }) => {
       }
       throw new Error(res.message || 'Registration failed');
     } catch (err) {
-      setError(err.message);
+      setError(tr(err.message));
       return { success: false, message: err.message };
     }
   };
@@ -78,7 +80,7 @@ export const AuthProvider = ({ children }) => {
       const res = await authApi.updateProfile(profileData);
       if (res.success && res.data) {
         setUser((prev) => ({ ...prev, ...res.data }));
-        return { success: true, message: 'Profile updated' };
+        return { success: true, message: tr("Profile updated") };
       }
       throw new Error(res.message || 'Failed to update profile');
     } catch (err) {

@@ -26,7 +26,7 @@ export const getVehicles = async (req, res, next) => {
     }
 
     // Sort
-    const sortField = sort;
+    const sortField = ['createdAt', 'registrationNumber', 'brand', 'model', 'status', 'currentMileage', 'manufacturingYear'].includes(sort) ? sort : 'createdAt';
     const sortDirection = order === 'asc' ? 1 : -1;
     vehicles.sort((a, b) => {
       if (a[sortField] < b[sortField]) return -1 * sortDirection;
@@ -231,9 +231,17 @@ export const updateVehicle = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Vehicle not found' });
     }
 
-    const updateData = { ...req.body };
+    const allowed = [
+      'registrationNumber', 'vehicleType', 'brand', 'model', 'manufacturingYear', 'fuelType',
+      'fuelCapacity', 'currentMileage', 'status', 'assignedDriver', 'purchaseDate',
+      'insuranceExpiry', 'registrationExpiry', 'lastServiceDate', 'nextServiceDate', 'notes'
+    ];
+    const updateData = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updateData[key] = req.body[key];
+    }
     if (updateData.registrationNumber) {
-      updateData.registrationNumber = updateData.registrationNumber.trim().toUpperCase();
+      updateData.registrationNumber = String(updateData.registrationNumber).trim().toUpperCase();
     }
 
     const updated = await DataEngine.findByIdAndUpdate('vehicles', req.params.id, updateData);

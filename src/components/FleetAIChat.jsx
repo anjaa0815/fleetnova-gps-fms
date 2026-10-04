@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User, Sparkles, Trash2, RotateCcw, AlertCircle } from 'lucide-react';
 import { aiApi } from '../services/api.js';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 const SUGGESTED_PROMPTS = [
   "Give me today's fleet summary",
@@ -13,11 +14,12 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export default function FleetAIChat({ isDrawer = false, onClose }) {
+  const { tr, lang } = useT();
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
       sender: 'ai',
-      text: "👋 Hello! I am **FleetAI**, your intelligent FLEETNOVA fleet operations co-pilot. I analyze real-time database records for all vehicles, drivers, trips, fuel metrics, and scheduled maintenance.\n\nHow can I help optimize your fleet operations today?",
+      text: tr("👋 Hello! I am **FleetAI**, your intelligent FLEETNOVA fleet operations co-pilot. I analyze real-time database records for all vehicles, drivers, trips, fuel metrics, and scheduled maintenance. How can I help optimize your fleet operations today?"),
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -34,14 +36,14 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
     scrollToBottom();
   }, [messages, loading]);
 
-  const handleSend = async (textToSend) => {
+  const handleSend = async (textToSend, displayText) => {
     const prompt = (textToSend || input).trim();
     if (!prompt || loading) return;
 
     const userMsg = {
       id: Date.now().toString(),
       sender: 'user',
-      text: prompt,
+      text: displayText || prompt,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -51,7 +53,7 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
     setLoading(true);
 
     try {
-      const res = await aiApi.chat(prompt);
+      const res = await aiApi.chat(prompt, lang);
       if (res.success && res.message) {
         const aiMsg = {
           id: (Date.now() + 1).toString(),
@@ -65,7 +67,7 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
       }
     } catch (err) {
       console.error('FleetAI chat error:', err);
-      setError(err.message || 'Unable to communicate with FleetAI server.');
+      setError(tr(err.message || 'Unable to communicate with FleetAI server.'));
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,7 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
       {
         id: 'welcome',
         sender: 'ai',
-        text: "Chat cleared. Ready for your next fleet analysis query.",
+        text: tr("Chat cleared. Ready for your next fleet analysis query."),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -151,7 +153,7 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
           </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              FleetAI Assistant
+              {tr("FleetAI Assistant")}
               <span
                 style={{
                   fontSize: '0.65rem',
@@ -162,11 +164,11 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
                   border: '1px solid rgba(6, 182, 212, 0.3)'
                 }}
               >
-                Gemini Powered
+                {tr("Gemini Powered")}
               </span>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Read-only operations analyst with live MongoDB context
+              {tr("Read-only operations analyst with live MongoDB context")}
             </div>
           </div>
         </div>
@@ -175,7 +177,7 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
           <button
             onClick={handleClear}
             className="btn btn-secondary btn-sm"
-            title="Clear Chat"
+            title={tr("Clear Chat")}
             style={{ padding: '0.35rem' }}
           >
             <Trash2 size={16} />
@@ -205,12 +207,12 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
         }}
       >
         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-          <Sparkles size={14} color="var(--accent-cyan)" /> Suggestions:
+          <Sparkles size={14} color="var(--accent-cyan)" /> {tr("Suggestions:")}
         </span>
         {SUGGESTED_PROMPTS.map((prompt, idx) => (
           <button
             key={idx}
-            onClick={() => handleSend(prompt)}
+            onClick={() => handleSend(prompt, tr(prompt))}
             disabled={loading}
             style={{
               background: 'var(--bg-secondary)',
@@ -231,7 +233,7 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
               e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
-            {prompt}
+            {tr(prompt)}
           </button>
         ))}
       </div>
@@ -334,7 +336,7 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
               }}
             >
               <div className="spinner" style={{ width: '16px', height: '16px' }}></div>
-              FleetAI is analyzing real-time fleet data...
+              {tr("FleetAI is analyzing real-time fleet data...")}
             </div>
           </div>
         )}
@@ -363,7 +365,7 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
               className="btn btn-danger btn-sm"
               style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
             >
-              <RotateCcw size={12} /> Retry
+              <RotateCcw size={12} /> {tr("Retry")}
             </button>
           </div>
         )}
@@ -389,7 +391,7 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
           <input
             type="text"
             className="form-control"
-            placeholder="Ask FleetAI about vehicles, expenses, fuel, or maintenance..."
+            placeholder={tr("Ask FleetAI about vehicles, expenses, fuel, or maintenance...")}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}

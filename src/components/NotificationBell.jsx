@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCheck, AlertTriangle, Info, Calendar, ShieldAlert } from 'lucide-react';
 import { notificationApi } from '../services/api.js';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function NotificationBell({ onNavigate }) {
+  const { tr } = useT();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -79,7 +81,7 @@ export default function NotificationBell({ onNavigate }) {
           cursor: 'pointer',
           position: 'relative'
         }}
-        aria-label="Notifications"
+        aria-label={tr("Notifications")}
       >
         <Bell size={18} />
         {unreadCount > 0 && (
@@ -120,7 +122,7 @@ export default function NotificationBell({ onNavigate }) {
             }}
           >
             <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-              Notifications ({unreadCount} new)
+              {tr("Notifications (")}{unreadCount} {tr("new)")}
             </div>
             {unreadCount > 0 && (
               <button
@@ -137,7 +139,7 @@ export default function NotificationBell({ onNavigate }) {
                   gap: '0.25rem'
                 }}
               >
-                <CheckCheck size={14} /> Mark all read
+                <CheckCheck size={14} /> {tr("Mark all read")}
               </button>
             )}
           </div>
@@ -145,7 +147,7 @@ export default function NotificationBell({ onNavigate }) {
           <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
             {notifications.length === 0 ? (
               <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                No active notifications
+                {tr("No active notifications")}
               </div>
             ) : (
               notifications.map((n) => (
@@ -169,7 +171,7 @@ export default function NotificationBell({ onNavigate }) {
                   {!n.isRead && (
                     <button
                       onClick={(e) => handleMarkAsRead(n._id, e)}
-                      title="Mark as read"
+                      title={tr("Mark as read")}
                       style={{
                         background: 'transparent',
                         border: 'none',
@@ -208,7 +210,7 @@ export default function NotificationBell({ onNavigate }) {
                 cursor: 'pointer'
               }}
             >
-              View all notifications →
+              {tr("View all notifications →")}
             </button>
           </div>
         </div>

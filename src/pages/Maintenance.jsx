@@ -16,8 +16,10 @@ import Modal from '../components/Modal.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { maintenanceApi, vehicleApi } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Maintenance() {
+  const { tr } = useT();
   const { role } = useAuth();
   const canManage = role === 'admin' || role === 'fleet_manager';
 
@@ -148,28 +150,28 @@ export default function Maintenance() {
       setDeleteId(null);
       fetchMaintenance();
     } catch (err) {
-      alert(err.message || 'Failed to delete record');
+      alert(tr(err.message || 'Failed to delete record'));
     }
   };
 
   const columns = [
     {
-      header: 'Job ID & Type',
+      header: tr("Job ID & Type"),
       render: (m) => (
         <div>
           <strong style={{ color: 'var(--text-primary)' }}>{m.maintenanceId}</strong>
           <div style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
-            {m.maintenanceType}
+            {tr(m.maintenanceType)}
           </div>
         </div>
       )
     },
     {
-      header: 'Rig Registration',
+      header: tr("Rig Registration"),
       render: (m) => (
         <div>
           <strong style={{ color: 'var(--text-primary)' }}>
-            {m.vehicle?.registrationNumber || 'Vehicle'}
+            {m.vehicle?.registrationNumber || tr("Vehicle")}
           </strong>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
             {m.vehicle?.brand} {m.vehicle?.model}
@@ -178,7 +180,7 @@ export default function Maintenance() {
       )
     },
     {
-      header: 'Service Center & Scope',
+      header: tr("Service Center & Scope"),
       render: (m) => (
         <div>
           <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.serviceCenter}</div>
@@ -189,7 +191,7 @@ export default function Maintenance() {
       )
     },
     {
-      header: 'Dates',
+      header: tr("Dates"),
       render: (m) => {
         const now = new Date();
         const nextDate = m.nextServiceDate ? new Date(m.nextServiceDate) : null;
@@ -197,10 +199,10 @@ export default function Maintenance() {
 
         return (
           <div style={{ fontSize: '0.8rem' }}>
-            <div>Service: {new Date(m.serviceDate).toLocaleDateString()}</div>
+            <div>{tr("Service:")} {new Date(m.serviceDate).toLocaleDateString()}</div>
             {nextDate && (
               <div style={{ fontSize: '0.75rem', color: isOverdue ? '#fb7185' : 'var(--text-muted)', fontWeight: isOverdue ? 700 : 400 }}>
-                Next: {nextDate.toLocaleDateString()} {isOverdue && '(OVERDUE)'}
+                {tr("Next:")} {nextDate.toLocaleDateString()} {isOverdue && tr("(OVERDUE)")}
               </div>
             )}
           </div>
@@ -208,22 +210,22 @@ export default function Maintenance() {
       }
     },
     {
-      header: 'Cost',
+      header: tr("Cost"),
       render: (m) => (
         <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
-          ₹{m.cost?.toLocaleString()}
+          ₮{m.cost?.toLocaleString()}
         </strong>
       )
     },
     {
-      header: 'Status',
+      header: tr("Status"),
       render: (m) => {
         const statusClass = `badge-${m.status.toLowerCase().replace(' ', '-')}`;
-        return <span className={`badge ${statusClass}`}>{m.status}</span>;
+        return <span className={`badge ${statusClass}`}>{tr(m.status)}</span>;
       }
     },
     {
-      header: 'Actions',
+      header: tr("Actions"),
       width: '120px',
       render: (m) => (
         canManage && (
@@ -231,9 +233,9 @@ export default function Maintenance() {
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => openEditModal(m)}
-              title="Edit / Update Status"
+              title={tr("Edit / Update Status")}
             >
-              Update
+              {tr("Update")}
             </button>
             <button
               className="btn btn-danger btn-sm"
@@ -241,7 +243,7 @@ export default function Maintenance() {
                 setDeleteId(m._id);
                 setDeleteConfirmOpen(true);
               }}
-              title="Delete Record"
+              title={tr("Delete Record")}
             >
               <Trash2 size={13} />
             </button>
@@ -256,30 +258,30 @@ export default function Maintenance() {
       {/* Metric Cards */}
       <div className="grid-cols-4">
         <StatCard
-          title="Total Maintenance Cost"
-          value={`₹${summary.totalCost.toLocaleString()}`}
-          subtext="Parts and labor expenditure"
+          title={tr("Total Maintenance Cost")}
+          value={`₮${summary.totalCost.toLocaleString()}`}
+          subtext={tr("Parts and labor expenditure")}
           icon={DollarSign}
           color="#f59e0b"
         />
         <StatCard
-          title="Active Workshop Jobs"
+          title={tr("Active Workshop Jobs")}
           value={summary.activeRepairs}
-          subtext="In progress or scheduled"
+          subtext={tr("In progress or scheduled")}
           icon={Wrench}
           color="#3b82f6"
         />
         <StatCard
-          title="Completed Services"
+          title={tr("Completed Services")}
           value={summary.completedServices}
-          subtext="Certified safe rigs"
+          subtext={tr("Certified safe rigs")}
           icon={CheckCircle2}
           color="#10b981"
         />
         <StatCard
-          title="Overdue / Due Soon"
+          title={tr("Overdue / Due Soon")}
           value={`${summary.overdueCount + summary.dueSoonCount}`}
-          subtext={`${summary.overdueCount} overdue | ${summary.dueSoonCount} due soon`}
+          subtext={tr('{a} overdue | {b} due soon', { a: summary.overdueCount, b: summary.dueSoonCount })}
           icon={AlertTriangle}
           color={summary.overdueCount > 0 ? '#fb7185' : '#fbbf24'}
         />
@@ -289,15 +291,15 @@ export default function Maintenance() {
       <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Preventive Maintenance & Repairs</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{tr("Preventive Maintenance & Repairs")}</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Schedule oil changes, tire replacement, engine diagnostics, and workshop jobs
+              {tr("Schedule oil changes, tire replacement, engine diagnostics, and workshop jobs")}
             </p>
           </div>
 
           {canManage && (
             <button className="btn btn-primary" onClick={openAddModal}>
-              <Plus size={16} /> Book Service / Repair
+              <Plus size={16} /> {tr("Book Service / Repair")}
             </button>
           )}
         </div>
@@ -309,7 +311,7 @@ export default function Maintenance() {
               type="text"
               className="form-control"
               style={{ paddingLeft: '36px' }}
-              placeholder="Search by job ID, rig, workshop center..."
+              placeholder={tr("Search by job ID, rig, workshop center...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -324,10 +326,10 @@ export default function Maintenance() {
               setPage(1);
             }}
           >
-            <option value="All">All Statuses</option>
-            <option value="Scheduled">Scheduled</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
+            <option value="All">{tr("All Statuses")}</option>
+            <option value="Scheduled">{tr("Scheduled")}</option>
+            <option value="In Progress">{tr("In Progress")}</option>
+            <option value="Completed">{tr("Completed")}</option>
           </select>
 
           <select
@@ -339,14 +341,14 @@ export default function Maintenance() {
               setPage(1);
             }}
           >
-            <option value="All">All Service Types</option>
-            <option value="Regular Service">Regular Service</option>
-            <option value="Oil Change">Oil Change</option>
-            <option value="Tire Replacement">Tire Replacement</option>
-            <option value="Brake Service">Brake Service</option>
-            <option value="Engine Service">Engine Service</option>
-            <option value="Repair">Repair</option>
-            <option value="Other">Other</option>
+            <option value="All">{tr("All Service Types")}</option>
+            <option value="Regular Service">{tr("Regular Service")}</option>
+            <option value="Oil Change">{tr("Oil Change")}</option>
+            <option value="Tire Replacement">{tr("Tire Replacement")}</option>
+            <option value="Brake Service">{tr("Brake Service")}</option>
+            <option value="Engine Service">{tr("Engine Service")}</option>
+            <option value="Repair">{tr("Repair")}</option>
+            <option value="Other">{tr("Other")}</option>
           </select>
         </div>
       </div>
@@ -356,7 +358,7 @@ export default function Maintenance() {
         columns={columns}
         data={records}
         loading={loading}
-        emptyMessage="No maintenance records found"
+        emptyMessage={tr("No maintenance records found")}
         emptySubtext="Schedule a routine inspection or log a service repair job."
         page={page}
         totalPages={totalPages}
@@ -379,46 +381,46 @@ export default function Maintenance() {
         <form onSubmit={handleFormSubmit}>
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Select Vehicle *</label>
+              <label className="form-label">{tr("Select Vehicle *")}</label>
               <select
                 className="form-control"
                 value={formData.vehicleId}
                 onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
                 required
               >
-                <option value="">-- Choose Vehicle --</option>
+                <option value="">{tr("-- Choose Vehicle --")}</option>
                 {vehicles.map((v) => (
                   <option key={v._id} value={v._id}>
-                    {v.registrationNumber} ({v.brand} {v.model}) - {v.status}
+                    {tr(v.registrationNumber)} ({tr(v.brand)} {tr(v.model)}) - {tr(v.status)}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Maintenance Category *</label>
+              <label className="form-label">{tr("Maintenance Category *")}</label>
               <select
                 className="form-control"
                 value={formData.maintenanceType}
                 onChange={(e) => setFormData({ ...formData, maintenanceType: e.target.value })}
               >
-                <option value="Regular Service">Regular Service</option>
-                <option value="Oil Change">Oil Change</option>
-                <option value="Tire Replacement">Tire Replacement</option>
-                <option value="Brake Service">Brake Service</option>
-                <option value="Engine Service">Engine Service</option>
-                <option value="Repair">Repair</option>
-                <option value="Other">Other</option>
+                <option value="Regular Service">{tr("Regular Service")}</option>
+                <option value="Oil Change">{tr("Oil Change")}</option>
+                <option value="Tire Replacement">{tr("Tire Replacement")}</option>
+                <option value="Brake Service">{tr("Brake Service")}</option>
+                <option value="Engine Service">{tr("Engine Service")}</option>
+                <option value="Repair">{tr("Repair")}</option>
+                <option value="Other">{tr("Other")}</option>
               </select>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Service Description / Scope *</label>
+            <label className="form-label">{tr("Service Description / Scope *")}</label>
             <input
               type="text"
               className="form-control"
-              placeholder="e.g. Brake pad replacement & ABS diagnostic check"
+              placeholder={tr("e.g. Brake pad replacement & ABS diagnostic check")}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
@@ -427,7 +429,7 @@ export default function Maintenance() {
 
           <div className="grid-cols-3" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Service Date *</label>
+              <label className="form-label">{tr("Service Date *")}</label>
               <input
                 type="date"
                 className="form-control"
@@ -437,7 +439,7 @@ export default function Maintenance() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Next Service Date</label>
+              <label className="form-label">{tr("Next Service Date")}</label>
               <input
                 type="date"
                 className="form-control"
@@ -446,7 +448,7 @@ export default function Maintenance() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Service Cost (₹) *</label>
+              <label className="form-label">{tr("Service Cost (₮) *")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -459,11 +461,11 @@ export default function Maintenance() {
 
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Authorized Service Center *</label>
+              <label className="form-label">{tr("Authorized Service Center *")}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. Tata Motors Commercial Workshop, Okhla"
+                placeholder={tr("e.g. Tata Motors Commercial Workshop, Okhla")}
                 value={formData.serviceCenter}
                 onChange={(e) => setFormData({ ...formData, serviceCenter: e.target.value })}
                 required
@@ -471,25 +473,25 @@ export default function Maintenance() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Job Status *</label>
+              <label className="form-label">{tr("Job Status *")}</label>
               <select
                 className="form-control"
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               >
-                <option value="Scheduled">Scheduled (Locks rig to Maintenance)</option>
-                <option value="In Progress">In Progress (Under active repair)</option>
-                <option value="Completed">Completed (Returns rig to Available)</option>
+                <option value="Scheduled">{tr("Scheduled (Locks rig to Maintenance)")}</option>
+                <option value="In Progress">{tr("In Progress (Under active repair)")}</option>
+                <option value="Completed">{tr("Completed (Returns rig to Available)")}</option>
               </select>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Technician Notes & Part Numbers</label>
+            <label className="form-label">{tr("Technician Notes & Part Numbers")}</label>
             <textarea
               className="form-control"
               rows={2}
-              placeholder="e.g. Part invoice #8920, oil sample test passed..."
+              placeholder={tr("e.g. Part invoice #8920, oil sample test passed...")}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
@@ -497,10 +499,10 @@ export default function Maintenance() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button type="submit" className="btn btn-primary">
-              {editingRecord ? 'Save Changes' : 'Confirm Service Booking'}
+              {editingRecord ? tr("Save Changes") : tr("Confirm Service Booking")}
             </button>
           </div>
         </form>
@@ -510,19 +512,19 @@ export default function Maintenance() {
       <Modal
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
-        title="Delete Maintenance Record"
+        title={tr("Delete Maintenance Record")}
         maxWidth="440px"
       >
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Are you sure you want to delete this maintenance job record?
+            {tr("Are you sure you want to delete this maintenance job record?")}
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
             <button className="btn btn-secondary" onClick={() => setDeleteConfirmOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button className="btn btn-danger" onClick={confirmDelete}>
-              Yes, Delete
+              {tr("Yes, Delete")}
             </button>
           </div>
         </div>

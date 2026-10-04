@@ -119,5 +119,5 @@ export const dashboardApi = {
 
 // FleetAI API
 export const aiApi = {
-  chat: (message) => apiRequest('/ai/chat', 'POST', { message })
+  chat: (message, lang) => apiRequest('/ai/chat', 'POST', { message, lang })
 };

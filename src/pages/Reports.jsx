@@ -19,8 +19,10 @@ import {
   maintenanceApi,
   expenseApi
 } from '../services/api.js';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Reports() {
+  const { tr } = useT();
   const [reportType, setReportType] = useState('trip'); // trip, fuel, maintenance, expense, vehicle, driver
   const [startDate, setStartDate] = useState('2026-08-01');
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
@@ -133,38 +135,38 @@ export default function Reports() {
       const totalKm = records.reduce((acc, t) => acc + (t.distance || 0), 0);
       const completed = records.filter(t => t.status === 'Completed').length;
       return [
-        { label: 'Total Dispatches', val: records.length },
-        { label: 'Completed Deliveries', val: completed },
-        { label: 'Gross Transit Distance', val: `${totalKm.toLocaleString()} km` }
+        { label: tr("Total Dispatches"), val: records.length },
+        { label: tr("Completed Deliveries"), val: completed },
+        { label: tr("Gross Transit Distance"), val: `${totalKm.toLocaleString()} km` }
       ];
     }
     if (reportType === 'fuel') {
       const totalCost = records.reduce((acc, f) => acc + (f.totalCost || 0), 0);
       const totalLiters = records.reduce((acc, f) => acc + (f.quantity || 0), 0);
       return [
-        { label: 'Fuel Logs', val: records.length },
-        { label: 'Total Liters Dispensed', val: `${totalLiters.toLocaleString()} L` },
-        { label: 'Gross Fuel Expenditure', val: `₹${totalCost.toLocaleString()}` }
+        { label: tr("Fuel Logs"), val: records.length },
+        { label: tr("Total Liters Dispensed"), val: `${totalLiters.toLocaleString()} L` },
+        { label: tr("Gross Fuel Expenditure"), val: `₮${totalCost.toLocaleString()}` }
       ];
     }
     if (reportType === 'maintenance') {
       const totalMaintCost = records.reduce((acc, m) => acc + (m.cost || 0), 0);
       const completedJobs = records.filter(m => m.status === 'Completed').length;
       return [
-        { label: 'Maintenance Records', val: records.length },
-        { label: 'Completed Services', val: completedJobs },
-        { label: 'Total Workshop Cost', val: `₹${totalMaintCost.toLocaleString()}` }
+        { label: tr("Maintenance Records"), val: records.length },
+        { label: tr("Completed Services"), val: completedJobs },
+        { label: tr("Total Workshop Cost"), val: `₮${totalMaintCost.toLocaleString()}` }
       ];
     }
     if (reportType === 'expense') {
       const totalExp = records.reduce((acc, e) => acc + (e.amount || 0), 0);
       return [
-        { label: 'Expense Vouchers', val: records.length },
-        { label: 'Total Operating Spend', val: `₹${totalExp.toLocaleString()}` }
+        { label: tr("Expense Vouchers"), val: records.length },
+        { label: tr("Total Operating Spend"), val: `₮${totalExp.toLocaleString()}` }
       ];
     }
     return [
-      { label: 'Total Records In Scope', val: records.length }
+      { label: tr("Total Records In Scope"), val: records.length }
     ];
   };
 
@@ -176,18 +178,18 @@ export default function Reports() {
       <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>Audit & Analytical Reports</h2>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>{tr("Audit & Analytical Reports")}</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Export customized compliance summaries, financial totals, and operational records
+              {tr("Export customized compliance summaries, financial totals, and operational records")}
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="btn btn-secondary btn-sm" onClick={handlePrint}>
-              <Printer size={15} /> Print
+              <Printer size={15} /> {tr("Print")}
             </button>
             <button className="btn btn-primary btn-sm" onClick={handleExportCSV} disabled={records.length === 0}>
-              <Download size={15} /> Export CSV
+              <Download size={15} /> {tr("Export CSV")}
             </button>
           </div>
         </div>
@@ -195,23 +197,23 @@ export default function Reports() {
         {/* Filter Controls Bar */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Report Module</label>
+            <label className="form-label">{tr("Report Module")}</label>
             <select
               className="form-control"
               value={reportType}
               onChange={(e) => setReportType(e.target.value)}
             >
-              <option value="trip">Trip Logistics Summary</option>
-              <option value="fuel">Fuel Consumption & Costs</option>
-              <option value="maintenance">Maintenance Workshop History</option>
-              <option value="expense">Operating Expense Ledger</option>
-              <option value="vehicle">Vehicle Inventory Status</option>
-              <option value="driver">Driver Personnel Roster</option>
+              <option value="trip">{tr("Trip Logistics Summary")}</option>
+              <option value="fuel">{tr("Fuel Consumption & Costs")}</option>
+              <option value="maintenance">{tr("Maintenance Workshop History")}</option>
+              <option value="expense">{tr("Operating Expense Ledger")}</option>
+              <option value="vehicle">{tr("Vehicle Inventory Status")}</option>
+              <option value="driver">{tr("Driver Personnel Roster")}</option>
             </select>
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">From Date</label>
+            <label className="form-label">{tr("From Date")}</label>
             <input
               type="date"
               className="form-control"
@@ -221,7 +223,7 @@ export default function Reports() {
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">To Date</label>
+            <label className="form-label">{tr("To Date")}</label>
             <input
               type="date"
               className="form-control"
@@ -231,16 +233,16 @@ export default function Reports() {
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Filter Rig</label>
+            <label className="form-label">{tr("Filter Rig")}</label>
             <select
               className="form-control"
               value={selectedVehicle}
               onChange={(e) => setSelectedVehicle(e.target.value)}
             >
-              <option value="All">All Vehicles</option>
+              <option value="All">{tr("All Vehicles")}</option>
               {vehicles.map((v) => (
                 <option key={v._id} value={v._id}>
-                  {v.registrationNumber} ({v.brand})
+                  {tr(v.registrationNumber)} ({tr(v.brand)})
                 </option>
               ))}
             </select>
@@ -267,14 +269,14 @@ export default function Reports() {
       {/* Report Records Table */}
       <div className="card">
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>
-          <FileText size={18} color="var(--primary)" /> Detailed Audit Records ({records.length})
+          <FileText size={18} color="var(--primary)" /> {tr("Detailed Audit Records (")}{records.length})
         </h3>
 
         {loading ? (
-          <Loading message="Generating report table..." />
+          <Loading message={tr("Generating report table...")} />
         ) : records.length === 0 ? (
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
-            No records matched the selected date parameters.
+            {tr("No records matched the selected date parameters.")}
           </p>
         ) : (
           <div className="table-responsive">
@@ -283,69 +285,69 @@ export default function Reports() {
                 <tr>
                   {reportType === 'trip' && (
                     <>
-                      <th>Trip ID</th>
-                      <th>Rig</th>
-                      <th>Operator</th>
-                      <th>Origin ➔ Destination</th>
-                      <th>Distance</th>
-                      <th>Start Date</th>
-                      <th>Status</th>
+                      <th>{tr("Trip ID")}</th>
+                      <th>{tr("Rig")}</th>
+                      <th>{tr("Operator")}</th>
+                      <th>{tr("Origin ➔ Destination")}</th>
+                      <th>{tr("Distance")}</th>
+                      <th>{tr("Start Date")}</th>
+                      <th>{tr("Status")}</th>
                     </>
                   )}
                   {reportType === 'fuel' && (
                     <>
-                      <th>Record ID</th>
-                      <th>Rig</th>
-                      <th>Date</th>
-                      <th>Type</th>
-                      <th>Quantity</th>
-                      <th>Rate</th>
-                      <th>Total Cost</th>
-                      <th>Station</th>
+                      <th>{tr("Record ID")}</th>
+                      <th>{tr("Rig")}</th>
+                      <th>{tr("Date")}</th>
+                      <th>{tr("Type")}</th>
+                      <th>{tr("Quantity")}</th>
+                      <th>{tr("Rate")}</th>
+                      <th>{tr("Total Cost")}</th>
+                      <th>{tr("Station")}</th>
                     </>
                   )}
                   {reportType === 'maintenance' && (
                     <>
-                      <th>Job ID</th>
-                      <th>Rig</th>
-                      <th>Type</th>
-                      <th>Scope / Description</th>
-                      <th>Service Date</th>
-                      <th>Workshop</th>
-                      <th>Cost</th>
-                      <th>Status</th>
+                      <th>{tr("Job ID")}</th>
+                      <th>{tr("Rig")}</th>
+                      <th>{tr("Type")}</th>
+                      <th>{tr("Scope / Description")}</th>
+                      <th>{tr("Service Date")}</th>
+                      <th>{tr("Workshop")}</th>
+                      <th>{tr("Cost")}</th>
+                      <th>{tr("Status")}</th>
                     </>
                   )}
                   {reportType === 'expense' && (
                     <>
-                      <th>Voucher ID</th>
-                      <th>Rig</th>
-                      <th>Category</th>
-                      <th>Description</th>
-                      <th>Date</th>
-                      <th>Amount</th>
-                      <th>Method</th>
+                      <th>{tr("Voucher ID")}</th>
+                      <th>{tr("Rig")}</th>
+                      <th>{tr("Category")}</th>
+                      <th>{tr("Description")}</th>
+                      <th>{tr("Date")}</th>
+                      <th>{tr("Amount")}</th>
+                      <th>{tr("Method")}</th>
                     </>
                   )}
                   {reportType === 'vehicle' && (
                     <>
-                      <th>Rig ID</th>
-                      <th>Reg Number</th>
-                      <th>Type</th>
-                      <th>Brand & Model</th>
-                      <th>Fuel</th>
-                      <th>Odometer</th>
-                      <th>Status</th>
+                      <th>{tr("Rig ID")}</th>
+                      <th>{tr("Reg Number")}</th>
+                      <th>{tr("Type")}</th>
+                      <th>{tr("Brand & Model")}</th>
+                      <th>{tr("Fuel")}</th>
+                      <th>{tr("Odometer")}</th>
+                      <th>{tr("Status")}</th>
                     </>
                   )}
                   {reportType === 'driver' && (
                     <>
-                      <th>Driver ID</th>
-                      <th>Name</th>
-                      <th>Phone</th>
-                      <th>License Number</th>
-                      <th>License Expiry</th>
-                      <th>Status</th>
+                      <th>{tr("Driver ID")}</th>
+                      <th>{tr("Name")}</th>
+                      <th>{tr("Phone")}</th>
+                      <th>{tr("License Number")}</th>
+                      <th>{tr("License Expiry")}</th>
+                      <th>{tr("Status")}</th>
                     </>
                   )}
                 </tr>
@@ -356,58 +358,58 @@ export default function Reports() {
                     {reportType === 'trip' && (
                       <>
                         <td><strong>{r.tripId}</strong></td>
-                        <td>{r.vehicle?.registrationNumber || 'Vehicle'}</td>
-                        <td>{r.driver?.name || 'Driver'}</td>
+                        <td>{r.vehicle?.registrationNumber || tr("Vehicle")}</td>
+                        <td>{r.driver?.name || tr("Driver")}</td>
                         <td>{r.source} ➔ {r.destination}</td>
-                        <td>{r.distance} km</td>
+                        <td>{r.distance} {tr("km")}</td>
                         <td>{new Date(r.startDate).toLocaleDateString()}</td>
-                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{r.status}</span></td>
+                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{tr(r.status)}</span></td>
                       </>
                     )}
                     {reportType === 'fuel' && (
                       <>
                         <td><strong>{r.fuelRecordId}</strong></td>
-                        <td>{r.vehicle?.registrationNumber || 'Vehicle'}</td>
+                        <td>{r.vehicle?.registrationNumber || tr("Vehicle")}</td>
                         <td>{new Date(r.date).toLocaleDateString()}</td>
-                        <td>{r.fuelType}</td>
+                        <td>{tr(r.fuelType)}</td>
                         <td>{r.quantity} L</td>
-                        <td>₹{r.pricePerLiter}</td>
-                        <td><strong>₹{r.totalCost?.toLocaleString()}</strong></td>
+                        <td>₮{r.pricePerLiter}</td>
+                        <td><strong>₮{r.totalCost?.toLocaleString()}</strong></td>
                         <td>{r.fuelStation}</td>
                       </>
                     )}
                     {reportType === 'maintenance' && (
                       <>
                         <td><strong>{r.maintenanceId}</strong></td>
-                        <td>{r.vehicle?.registrationNumber || 'Vehicle'}</td>
-                        <td>{r.maintenanceType}</td>
+                        <td>{r.vehicle?.registrationNumber || tr("Vehicle")}</td>
+                        <td>{tr(r.maintenanceType)}</td>
                         <td>{r.description}</td>
                         <td>{new Date(r.serviceDate).toLocaleDateString()}</td>
                         <td>{r.serviceCenter}</td>
-                        <td><strong>₹{r.cost?.toLocaleString()}</strong></td>
-                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{r.status}</span></td>
+                        <td><strong>₮{r.cost?.toLocaleString()}</strong></td>
+                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{tr(r.status)}</span></td>
                       </>
                     )}
                     {reportType === 'expense' && (
                       <>
                         <td><strong>{r.expenseId}</strong></td>
-                        <td>{r.vehicle?.registrationNumber || 'Vehicle'}</td>
-                        <td><span className="badge badge-ontrip">{r.category}</span></td>
+                        <td>{r.vehicle?.registrationNumber || tr("Vehicle")}</td>
+                        <td><span className="badge badge-ontrip">{tr(r.category)}</span></td>
                         <td>{r.description}</td>
                         <td>{new Date(r.date).toLocaleDateString()}</td>
-                        <td><strong>₹{r.amount?.toLocaleString()}</strong></td>
-                        <td>{r.paymentMethod}</td>
+                        <td><strong>₮{r.amount?.toLocaleString()}</strong></td>
+                        <td>{tr(r.paymentMethod)}</td>
                       </>
                     )}
                     {reportType === 'vehicle' && (
                       <>
                         <td><strong>{r.vehicleId}</strong></td>
                         <td>{r.registrationNumber}</td>
-                        <td>{r.vehicleType}</td>
+                        <td>{tr(r.vehicleType)}</td>
                         <td>{r.brand} {r.model}</td>
-                        <td>{r.fuelType}</td>
-                        <td>{r.currentMileage?.toLocaleString()} km</td>
-                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{r.status}</span></td>
+                        <td>{tr(r.fuelType)}</td>
+                        <td>{r.currentMileage?.toLocaleString()} {tr("km")}</td>
+                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{tr(r.status)}</span></td>
                       </>
                     )}
                     {reportType === 'driver' && (
@@ -417,7 +419,7 @@ export default function Reports() {
                         <td>{r.phone}</td>
                         <td>{r.licenseNumber}</td>
                         <td>{new Date(r.licenseExpiry).toLocaleDateString()}</td>
-                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{r.status}</span></td>
+                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{tr(r.status)}</span></td>
                       </>
                     )}
                   </tr>

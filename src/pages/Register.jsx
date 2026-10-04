@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Truck, Lock, Mail, User, Phone, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Register({ onSwitchToLogin }) {
+  const { tr } = useT();
   const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    phone: '',
-    role: 'fleet_manager'
+    phone: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -17,11 +18,11 @@ export default function Register({ onSwitchToLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password) {
-      setError('Please fill in all required fields');
+      setError(tr("Please fill in all required fields"));
       return;
     }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError(tr("Password must be at least 8 characters"));
       return;
     }
 
@@ -30,7 +31,7 @@ export default function Register({ onSwitchToLogin }) {
     const res = await register(formData);
     setLoading(false);
     if (!res.success) {
-      setError(res.message);
+      setError(tr(res.message));
     }
   };
 
@@ -79,9 +80,9 @@ export default function Register({ onSwitchToLogin }) {
           >
             <Truck size={24} />
           </div>
-          <h2 style={{ fontSize: '1.45rem', fontWeight: 800 }}>Create FLEETNOVA Account</h2>
+          <h2 style={{ fontSize: '1.45rem', fontWeight: 800 }}>{tr("Create FLEETNOVA Account")}</h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Join the smart centralized fleet management platform
+            {tr("Join the smart centralized fleet management platform")}
           </p>
         </div>
 
@@ -104,14 +105,14 @@ export default function Register({ onSwitchToLogin }) {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">Full Name *</label>
+              <label className="form-label">{tr("Full Name *")}</label>
               <div style={{ position: 'relative' }}>
                 <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="text"
                   className="form-control"
                   style={{ paddingLeft: '38px' }}
-                  placeholder="e.g. Vikramaditya Singh"
+                  placeholder={tr("e.g. Vikramaditya Singh")}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
@@ -120,14 +121,14 @@ export default function Register({ onSwitchToLogin }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Email Address *</label>
+              <label className="form-label">{tr("Email Address *")}</label>
               <div style={{ position: 'relative' }}>
                 <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="email"
                   className="form-control"
                   style={{ paddingLeft: '38px' }}
-                  placeholder="vikram@fleetoperations.com"
+                  placeholder={tr("vikram@fleetoperations.com")}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
@@ -137,20 +138,7 @@ export default function Register({ onSwitchToLogin }) {
 
             <div className="grid-cols-2" style={{ gap: '0.75rem', marginBottom: '0.5rem' }}>
               <div className="form-group">
-                <label className="form-label">Role</label>
-                <select
-                  className="form-control"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                >
-                  <option value="fleet_manager">Fleet Manager</option>
-                  <option value="admin">System Administrator</option>
-                  <option value="driver">Fleet Driver</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Phone Number</label>
+                <label className="form-label">{tr("Phone Number")}</label>
                 <div style={{ position: 'relative' }}>
                   <Phone size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
@@ -166,7 +154,7 @@ export default function Register({ onSwitchToLogin }) {
             </div>
 
             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-              <label className="form-label">Password * (min 6 characters)</label>
+              <label className="form-label">{tr("Password * (min 8 characters)")}</label>
               <div style={{ position: 'relative' }}>
                 <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
@@ -187,12 +175,12 @@ export default function Register({ onSwitchToLogin }) {
               disabled={loading}
               style={{ width: '100%', padding: '0.75rem' }}
             >
-              {loading ? 'Creating Account...' : 'Complete Registration'} <ArrowRight size={16} />
+              {loading ? tr("Creating Account...") : tr("Complete Registration")} <ArrowRight size={16} />
             </button>
           </form>
 
           <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
-            Already registered?{' '}
+            {tr("Already registered?")}{' '}
             <button
               type="button"
               onClick={onSwitchToLogin}
@@ -204,7 +192,7 @@ export default function Register({ onSwitchToLogin }) {
                 cursor: 'pointer'
               }}
             >
-              Sign In
+              {tr("Sign In")}
             </button>
           </div>
         </div>

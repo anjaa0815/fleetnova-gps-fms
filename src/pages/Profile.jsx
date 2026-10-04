@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { User, Mail, Phone, Lock, ShieldCheck, CheckCircle2, AlertTriangle, KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Profile() {
+  const { tr } = useT();
   const { user, updateProfile } = useAuth();
 
   const [name, setName] = useState(user?.name || '');
@@ -19,7 +21,7 @@ export default function Profile() {
     setError(null);
 
     if (password && password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(tr("Passwords do not match"));
       return;
     }
 
@@ -31,11 +33,11 @@ export default function Profile() {
     setLoading(false);
 
     if (res.success) {
-      setMessage('Profile updated successfully');
+      setMessage(tr("Profile updated successfully"));
       setPassword('');
       setConfirmPassword('');
     } else {
-      setError(res.message);
+      setError(tr(res.message));
     }
   };
 
@@ -63,11 +65,11 @@ export default function Profile() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>{user?.name}</h2>
             <span className={`role-badge ${user?.role}`}>
-              {user?.role === 'fleet_manager' ? 'Fleet Manager' : user?.role}
+              {user?.role === 'fleet_manager' ? tr("Fleet Manager") : tr(user?.role)}
             </span>
           </div>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {user?.email} • Status: <strong style={{ color: 'var(--accent-emerald)' }}>Active</strong>
+            {user?.email} {tr("• Status:")} <strong style={{ color: 'var(--accent-emerald)' }}>{tr("Active")}</strong>
           </p>
         </div>
       </div>
@@ -75,7 +77,7 @@ export default function Profile() {
       {/* Profile Edit Form */}
       <div className="card">
         <h3 className="card-title" style={{ marginBottom: '1.25rem' }}>
-          <User size={18} color="var(--primary)" /> Edit Account Details
+          <User size={18} color="var(--primary)" /> {tr("Edit Account Details")}
         </h3>
 
         {message && (
@@ -119,7 +121,7 @@ export default function Profile() {
         <form onSubmit={handleSubmit}>
           <div className="grid-cols-2" style={{ gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Full Name</label>
+              <label className="form-label">{tr("Full Name")}</label>
               <input
                 type="text"
                 className="form-control"
@@ -130,7 +132,7 @@ export default function Profile() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Phone Number</label>
+              <label className="form-label">{tr("Phone Number")}</label>
               <input
                 type="text"
                 className="form-control"
@@ -141,7 +143,7 @@ export default function Profile() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Email Address (Read-only)</label>
+            <label className="form-label">{tr("Email Address (Read-only)")}</label>
             <input
               type="email"
               className="form-control"
@@ -153,12 +155,12 @@ export default function Profile() {
 
           <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-subtle)' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <KeyRound size={16} color="var(--accent-cyan)" /> Change Password (Leave blank to keep existing)
+              <KeyRound size={16} color="var(--accent-cyan)" /> {tr("Change Password (Leave blank to keep existing)")}
             </h4>
 
             <div className="grid-cols-2" style={{ gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">New Password</label>
+                <label className="form-label">{tr("New Password")}</label>
                 <input
                   type="password"
                   className="form-control"
@@ -169,7 +171,7 @@ export default function Profile() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Confirm New Password</label>
+                <label className="form-label">{tr("Confirm New Password")}</label>
                 <input
                   type="password"
                   className="form-control"
@@ -183,7 +185,7 @@ export default function Profile() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Saving Changes...' : 'Save Profile Settings'}
+              {loading ? tr("Saving Changes...") : tr("Save Profile Settings")}
             </button>
           </div>
         </form>

@@ -2,8 +2,11 @@ import React from 'react';
 import { Menu, Sparkles, User, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import NotificationBell from './NotificationBell.jsx';
+import LanguageSwitch from './LanguageSwitch.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Navbar({ currentTitle, onToggleMobile, onNavigate, onOpenFleetAI }) {
+  const { tr } = useT();
   const { user, logout } = useAuth();
   const role = user?.role || 'driver';
 
@@ -25,13 +28,13 @@ export default function Navbar({ currentTitle, onToggleMobile, onNavigate, onOpe
             cursor: 'pointer'
           }}
           className="mobile-menu-btn"
-          aria-label="Toggle navigation menu"
+          aria-label={tr("Toggle navigation menu")}
         >
           <Menu size={20} />
         </button>
 
         <h1 className="page-header-title">
-          {currentTitle || 'Dashboard'}
+          {currentTitle || tr("Dashboard")}
         </h1>
       </div>
 
@@ -46,15 +49,17 @@ export default function Navbar({ currentTitle, onToggleMobile, onNavigate, onOpe
           }}
         >
           <Sparkles size={14} />
-          <span className="hidden-mobile">FleetAI</span>
+          <span className="hidden-mobile">{tr("FleetAI")}</span>
         </button>
+
+        <LanguageSwitch />
 
         {/* Notifications Component */}
         <NotificationBell onNavigate={onNavigate} />
 
         {/* Role Tag */}
         <span className={`role-badge ${role}`}>
-          {role === 'fleet_manager' ? 'Manager' : role}
+          {role === 'fleet_manager' ? tr("Manager") : tr(role)}
         </span>
 
         {/* User Mini Avatar Menu */}
@@ -70,7 +75,7 @@ export default function Navbar({ currentTitle, onToggleMobile, onNavigate, onOpe
             border: '1px solid var(--border-subtle)',
             backgroundColor: 'var(--bg-card)'
           }}
-          title="Account Profile"
+          title={tr("Account Profile")}
         >
           <div
             style={{
@@ -89,7 +94,7 @@ export default function Navbar({ currentTitle, onToggleMobile, onNavigate, onOpe
             {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
           </div>
           <span style={{ fontSize: '0.825rem', fontWeight: 600 }} className="hidden-mobile">
-            {user?.name?.split(' ')[0] || 'User'}
+            {user?.name?.split(' ')[0] || tr("User")}
           </span>
         </div>
       </div>

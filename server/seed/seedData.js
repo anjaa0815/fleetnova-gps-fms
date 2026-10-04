@@ -2,8 +2,38 @@ import bcrypt from 'bcryptjs';
 import { getLocalStore, saveLocalStore } from '../config/db.js';
 import { generateId } from '../models/dataEngine.js';
 
+const iso = (value) => new Date(value).toISOString();
+
+async function bootstrapAdmin(store) {
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password || (store.users && store.users.length > 0)) return;
+  if (password.length < 8) {
+    console.warn('[FLEETNOVA] ADMIN_PASSWORD must be at least 8 characters; admin not created.');
+    return;
+  }
+  store.users = [{
+    _id: generateId(),
+    name: 'Administrator',
+    email: email.toLowerCase(),
+    password: await bcrypt.hash(password, 10),
+    role: 'admin',
+    phone: '',
+    status: 'active',
+    createdAt: new Date().toISOString()
+  }];
+  saveLocalStore();
+  console.log('[FLEETNOVA] Initial admin account created from ADMIN_EMAIL / ADMIN_PASSWORD.');
+}
+
 export async function seedFleetData() {
   const store = getLocalStore();
+
+  // Demo data ships with well-known default passwords: never seed it in production unless explicitly requested
+  if (process.env.NODE_ENV === 'production' && process.env.SEED_DEMO_DATA !== 'true') {
+    await bootstrapAdmin(store);
+    return;
+  }
 
   // If already seeded with vehicles and users, skip unless forced
   if (store.users && store.users.length > 0 && store.vehicles && store.vehicles.length >= 10) {
@@ -11,7 +41,7 @@ export async function seedFleetData() {
     return;
   }
 
-  console.log('[FLEETNOVA] Seeding initial commercial fleet data...');
+  console.log('[FLEETNOVA] Seeding initial commercial fleet data (Mongolia, amounts in MNT)...');
 
   const salt = await bcrypt.genSalt(10);
   const adminPassword = await bcrypt.hash('admin123', salt);
@@ -22,33 +52,33 @@ export async function seedFleetData() {
   const users = [
     {
       _id: generateId(),
-      name: 'Rohan Sharma',
+      name: 'Д.Бат-Эрдэнэ',
       email: 'admin@fleetnova.com',
       password: adminPassword,
       role: 'admin',
-      phone: '+91 98765 43210',
+      phone: '+976 9911 2233',
       status: 'active',
-      createdAt: new Date('2025-01-10').toISOString()
+      createdAt: iso('2025-01-10')
     },
     {
       _id: generateId(),
-      name: 'Priya Iyer',
+      name: 'Б.Оюунчимэг',
       email: 'manager@fleetnova.com',
       password: managerPassword,
       role: 'fleet_manager',
-      phone: '+91 98450 12345',
+      phone: '+976 9919 4455',
       status: 'active',
-      createdAt: new Date('2025-01-15').toISOString()
+      createdAt: iso('2025-01-15')
     },
     {
       _id: generateId(),
-      name: 'Rajesh Kumar',
-      email: 'rajesh.kumar@fleetnova.com',
+      name: 'Г.Төмөрбаатар',
+      email: 'driver@fleetnova.com',
       password: driverPassword,
       role: 'driver',
-      phone: '+91 97110 88990',
+      phone: '+976 9505 8899',
       status: 'active',
-      createdAt: new Date('2025-02-01').toISOString()
+      createdAt: iso('2025-02-01')
     }
   ];
 
@@ -57,77 +87,77 @@ export async function seedFleetData() {
     {
       _id: generateId(),
       driverId: 'DRV-1001',
-      name: 'Rajesh Kumar',
-      email: 'rajesh.kumar@fleetnova.com',
-      phone: '+91 97110 88990',
-      licenseNumber: 'DL-1420110012345',
-      licenseExpiry: new Date('2027-08-15').toISOString(),
-      dateOfJoining: new Date('2023-03-12').toISOString(),
+      name: 'Г.Төмөрбаатар',
+      email: 'driver@fleetnova.com',
+      phone: '+976 9505 8899',
+      licenseNumber: 'УБ-87012345',
+      licenseExpiry: iso('2027-08-15'),
+      dateOfJoining: iso('2023-03-12'),
       assignedVehicle: null,
       status: 'On Trip',
-      emergencyContact: '+91 98110 54321 (Spouse)',
-      address: 'Sector 62, Noida, Uttar Pradesh',
-      notes: 'Specialist in heavy container transport with zero accident record.'
+      emergencyContact: '+976 9911 5432 (Эхнэр)',
+      address: 'Баянгол дүүрэг, 16-р хороо, Улаанбаатар',
+      notes: 'Чингэлэг тээврийн мэргэшсэн жолооч, осолгүй ажилласан туршлагатай.'
     },
     {
       _id: generateId(),
       driverId: 'DRV-1002',
-      name: 'Suresh Patel',
-      email: 'suresh.patel@fleetnova.com',
-      phone: '+91 98250 33441',
-      licenseNumber: 'GJ-0120150098765',
-      licenseExpiry: new Date('2026-10-20').toISOString(), // Approaching expiry
-      dateOfJoining: new Date('2022-06-18').toISOString(),
+      name: 'Н.Эрдэнэбат',
+      email: 'erdenebat@fleetnova.com',
+      phone: '+976 9925 3344',
+      licenseNumber: 'ДА-92045612',
+      licenseExpiry: iso('2026-10-20'), // Approaching expiry
+      dateOfJoining: iso('2022-06-18'),
       assignedVehicle: null,
       status: 'Available',
-      emergencyContact: '+91 98250 99887 (Brother)',
-      address: 'Navrangpura, Ahmedabad, Gujarat',
-      notes: 'Expert in refrigerated cold chain deliveries.'
+      emergencyContact: '+976 9925 9988 (Ах)',
+      address: 'Дархан хот, 3-р баг, Дархан-Уул аймаг',
+      notes: 'Хүйтэн хэлхээний (хөргөгчтэй) хүргэлтийн мэргэжилтэн.'
     },
     {
       _id: generateId(),
       driverId: 'DRV-1003',
-      name: 'Amit Verma',
-      email: 'amit.verma@fleetnova.com',
-      phone: '+91 99340 77123',
-      licenseNumber: 'MH-0220180045612',
-      licenseExpiry: new Date('2028-04-10').toISOString(),
-      dateOfJoining: new Date('2024-01-05').toISOString(),
+      name: 'Ч.Мөнхбат',
+      email: 'munkhbat@fleetnova.com',
+      phone: '+976 9934 7712',
+      licenseNumber: 'УБ-90078123',
+      licenseExpiry: iso('2028-04-10'),
+      dateOfJoining: iso('2024-01-05'),
       assignedVehicle: null,
       status: 'On Trip',
-      emergencyContact: '+91 99340 11223 (Father)',
-      address: 'Andheri East, Mumbai, Maharashtra',
-      notes: 'Urban multi-drop parcel logistics driver.'
+      emergencyContact: '+976 9934 1122 (Аав)',
+      address: 'Сүхбаатар дүүрэг, 8-р хороо, Улаанбаатар',
+      notes: 'Хотын доторх олон цэгт ачаа, илгээмжийн жолооч.'
     },
     {
       _id: generateId(),
       driverId: 'DRV-1004',
-      name: 'Gurpreet Singh',
-      email: 'gurpreet.singh@fleetnova.com',
-      phone: '+91 98140 66554',
-      licenseNumber: 'PB-1020160078901',
-      licenseExpiry: new Date('2027-12-05').toISOString(),
-      dateOfJoining: new Date('2021-11-20').toISOString(),
+      name: 'Б.Ганбаатар',
+      email: 'ganbaatar@fleetnova.com',
+      phone: '+976 9914 6655',
+      licenseNumber: 'ЭР-88034567',
+      licenseExpiry: iso('2027-12-05'),
+      dateOfJoining: iso('2021-11-20'),
       assignedVehicle: null,
       status: 'Available',
-      emergencyContact: '+91 98140 22334 (Uncle)',
-      address: 'GT Road, Ludhiana, Punjab',
-      notes: 'Cross-country interstate highway freight captain.'
+      emergencyContact: '+976 9914 2233 (Авга ах)',
+      address: 'Эрдэнэт хот, Баян-Өндөр, Орхон аймаг',
+      notes: 'Хот хоорондын алсын зайн тээврийн ахлах жолооч.'
     },
     {
       _id: generateId(),
       driverId: 'DRV-1005',
-      name: 'Manoj Pillai',
-      email: 'manoj.pillai@fleetnova.com',
-      phone: '+91 94470 55112',
-      licenseNumber: 'KL-0720190034123',
-      licenseExpiry: new Date('2026-10-10').toISOString(), // Approaching expiry
-      dateOfJoining: new Date('2023-08-14').toISOString(),
+      name: 'О.Алтанцэцэг',
+      email: 'altantsetseg@fleetnova.com',
+      phone: '+976 9447 5511',
+      licenseNumber: 'УБ-95023412',
+      licenseExpiry: iso('2026-10-10'), // Approaching expiry
+      dateOfJoining: iso('2023-08-14'),
       assignedVehicle: null,
       status: 'Available',
-      emergencyContact: '+91 94470 99001 (Sister)',
-      address: 'Edapally, Kochi, Kerala',
-      notes: 'EV commercial vehicle certified.'
+      emergencyContact: '+976 9447 9900 (Эгч)',
+      address: 'Хан-Уул дүүрэг, 11-р хороо, Улаанбаатар',
+      notes: 'Цахилгаан тээврийн хэрэгслийн гэрчилгээтэй жолооч.'
     }
   ];
 
@@ -136,202 +166,202 @@ export async function seedFleetData() {
     {
       _id: generateId(),
       vehicleId: 'VEH-1001',
-      registrationNumber: 'DL-01-AX-9920',
+      registrationNumber: '8821 УБА',
       vehicleType: 'Truck',
-      brand: 'Tata Motors',
-      model: 'Prima 5530.S',
+      brand: 'Sinotruk',
+      model: 'HOWO A7',
       manufacturingYear: 2022,
       fuelType: 'Diesel',
       fuelCapacity: 350,
       currentMileage: 84500,
       status: 'On Trip',
       assignedDriver: drivers[0]._id,
-      purchaseDate: new Date('2022-04-15').toISOString(),
-      insuranceExpiry: new Date('2027-04-15').toISOString(),
-      registrationExpiry: new Date('2037-04-15').toISOString(),
-      lastServiceDate: new Date('2026-08-10').toISOString(),
-      nextServiceDate: new Date('2026-11-10').toISOString(),
-      notes: 'Heavy multi-axle freight prime mover.'
+      purchaseDate: iso('2022-04-15'),
+      insuranceExpiry: iso('2027-04-15'),
+      registrationExpiry: iso('2037-04-15'),
+      lastServiceDate: iso('2026-08-10'),
+      nextServiceDate: iso('2026-11-10'),
+      notes: 'Олон тэнхлэгт хүнд даацын чирэгч.'
     },
     {
       _id: generateId(),
       vehicleId: 'VEH-1002',
-      registrationNumber: 'MH-12-RN-4402',
+      registrationNumber: '4402 УБЕ',
       vehicleType: 'Truck',
-      brand: 'Ashok Leyland',
-      model: 'AVTR 4220',
+      brand: 'Shacman',
+      model: 'X3000',
       manufacturingYear: 2023,
       fuelType: 'Diesel',
       fuelCapacity: 300,
       currentMileage: 52300,
       status: 'Available',
       assignedDriver: drivers[1]._id,
-      purchaseDate: new Date('2023-01-20').toISOString(),
-      insuranceExpiry: new Date('2026-10-18').toISOString(), // 24 days left - Warning alert!
-      registrationExpiry: new Date('2038-01-20').toISOString(),
-      lastServiceDate: new Date('2026-07-15').toISOString(),
-      nextServiceDate: new Date('2026-10-15').toISOString(),
-      notes: 'Equipped with digital telematics & tire pressure sensor.'
+      purchaseDate: iso('2023-01-20'),
+      insuranceExpiry: iso('2026-10-18'), // Warning alert!
+      registrationExpiry: iso('2038-01-20'),
+      lastServiceDate: iso('2026-07-15'),
+      nextServiceDate: iso('2026-10-15'),
+      notes: 'GPS болон дугуйн даралтын мэдрэгчтэй.'
     },
     {
       _id: generateId(),
       vehicleId: 'VEH-1003',
-      registrationNumber: 'KA-03-MM-7890',
+      registrationNumber: '7890 УНА',
       vehicleType: 'Van',
-      brand: 'Tata Motors',
-      model: 'Ace EV Electric',
+      brand: 'BYD',
+      model: 'T3 Electric',
       manufacturingYear: 2024,
       fuelType: 'Electric',
-      fuelCapacity: 21,
+      fuelCapacity: 50,
       currentMileage: 18400,
       status: 'Available',
       assignedDriver: drivers[4]._id,
-      purchaseDate: new Date('2024-02-10').toISOString(),
-      insuranceExpiry: new Date('2027-02-10').toISOString(),
-      registrationExpiry: new Date('2039-02-10').toISOString(),
-      lastServiceDate: new Date('2026-06-25').toISOString(),
-      nextServiceDate: new Date('2026-12-25').toISOString(),
-      notes: 'Zero emission intra-city parcel courier.'
+      purchaseDate: iso('2024-02-10'),
+      insuranceExpiry: iso('2027-02-10'),
+      registrationExpiry: iso('2039-02-10'),
+      lastServiceDate: iso('2026-06-25'),
+      nextServiceDate: iso('2026-12-25'),
+      notes: 'Хотын доторх илгээмж хүргэлтийн утааггүй цахилгаан фургон.'
     },
     {
       _id: generateId(),
       vehicleId: 'VEH-1004',
-      registrationNumber: 'TN-09-CB-1122',
+      registrationNumber: '1122 ДАА',
       vehicleType: 'Truck',
-      brand: 'BharatBenz',
-      model: '2823R',
+      brand: 'Hino',
+      model: '500 FM',
       manufacturingYear: 2021,
       fuelType: 'Diesel',
       fuelCapacity: 380,
       currentMileage: 112000,
       status: 'On Trip',
       assignedDriver: drivers[2]._id,
-      purchaseDate: new Date('2021-05-18').toISOString(),
-      insuranceExpiry: new Date('2027-05-18').toISOString(),
-      registrationExpiry: new Date('2036-05-18').toISOString(),
-      lastServiceDate: new Date('2026-08-01').toISOString(),
-      nextServiceDate: new Date('2026-11-01').toISOString(),
-      notes: 'Long haul refrigerated container cargo.'
+      purchaseDate: iso('2021-05-18'),
+      insuranceExpiry: iso('2027-05-18'),
+      registrationExpiry: iso('2036-05-18'),
+      lastServiceDate: iso('2026-08-01'),
+      nextServiceDate: iso('2026-11-01'),
+      notes: 'Алсын зайн хөргөгчтэй чингэлэг ачаа.'
     },
     {
       _id: generateId(),
       vehicleId: 'VEH-1005',
-      registrationNumber: 'HR-26-DK-5544',
+      registrationNumber: '5544 УБЯ',
       vehicleType: 'Van',
-      brand: 'Mahindra',
-      model: 'Bolero Maxi Truck Plus',
+      brand: 'Hyundai',
+      model: 'Porter II',
       manufacturingYear: 2022,
       fuelType: 'CNG',
       fuelCapacity: 60,
       currentMileage: 64200,
       status: 'Maintenance',
       assignedDriver: null,
-      purchaseDate: new Date('2022-09-12').toISOString(),
-      insuranceExpiry: new Date('2026-11-12').toISOString(),
-      registrationExpiry: new Date('2037-09-12').toISOString(),
-      lastServiceDate: new Date('2026-05-14').toISOString(),
-      nextServiceDate: new Date('2026-09-15').toISOString(), // Overdue maintenance!
-      notes: 'Currently in workshop for complete transmission check.'
+      purchaseDate: iso('2022-09-12'),
+      insuranceExpiry: iso('2026-11-12'),
+      registrationExpiry: iso('2037-09-12'),
+      lastServiceDate: iso('2026-05-14'),
+      nextServiceDate: iso('2026-09-15'), // Overdue maintenance!
+      notes: 'Хурдны хайрцгийн бүрэн оношилгоонд цехэд байгаа.'
     },
     {
       _id: generateId(),
       vehicleId: 'VEH-1006',
-      registrationNumber: 'GJ-06-TR-8812',
+      registrationNumber: '8812 УБЭ',
       vehicleType: 'Bus',
-      brand: 'Eicher',
-      model: 'Skyline Pro 3009L',
+      brand: 'Hyundai',
+      model: 'Universe',
       manufacturingYear: 2023,
       fuelType: 'Diesel',
       fuelCapacity: 160,
       currentMileage: 38900,
       status: 'Available',
       assignedDriver: drivers[3]._id,
-      purchaseDate: new Date('2023-03-30').toISOString(),
-      insuranceExpiry: new Date('2027-03-30').toISOString(),
-      registrationExpiry: new Date('2038-03-30').toISOString(),
-      lastServiceDate: new Date('2026-08-15').toISOString(),
-      nextServiceDate: new Date('2026-11-15').toISOString(),
-      notes: 'Corporate shuttle & airport transfer fleet.'
+      purchaseDate: iso('2023-03-30'),
+      insuranceExpiry: iso('2027-03-30'),
+      registrationExpiry: iso('2038-03-30'),
+      lastServiceDate: iso('2026-08-15'),
+      nextServiceDate: iso('2026-11-15'),
+      notes: 'Байгууллагын ажилчдын болон нисэх буудлын дамжлагын автобус.'
     },
     {
       _id: generateId(),
       vehicleId: 'VEH-1007',
-      registrationNumber: 'UP-32-BN-3390',
+      registrationNumber: '3390 УБХ',
       vehicleType: 'Pickup',
-      brand: 'Isuzu',
-      model: 'D-Max V-Cross',
+      brand: 'Toyota',
+      model: 'Hilux',
       manufacturingYear: 2023,
       fuelType: 'Diesel',
-      fuelCapacity: 75,
+      fuelCapacity: 80,
       currentMileage: 41200,
       status: 'Available',
       assignedDriver: null,
-      purchaseDate: new Date('2023-07-22').toISOString(),
-      insuranceExpiry: new Date('2027-07-22').toISOString(),
-      registrationExpiry: new Date('2038-07-22').toISOString(),
-      lastServiceDate: new Date('2026-07-20').toISOString(),
-      nextServiceDate: new Date('2026-10-20').toISOString(),
-      notes: 'Field engineering & emergency breakdown recovery vehicle.'
+      purchaseDate: iso('2023-07-22'),
+      insuranceExpiry: iso('2027-07-22'),
+      registrationExpiry: iso('2038-07-22'),
+      lastServiceDate: iso('2026-07-20'),
+      nextServiceDate: iso('2026-10-20'),
+      notes: 'Талбайн инженер, замын яаралтай туслалцааны машин.'
     },
     {
       _id: generateId(),
       vehicleId: 'VEH-1008',
-      registrationNumber: 'WB-02-AL-6710',
+      registrationNumber: '6710 УБЖ',
       vehicleType: 'Van',
-      brand: 'Force Motors',
-      model: 'Traveller 3050',
+      brand: 'Toyota',
+      model: 'Hiace',
       manufacturingYear: 2021,
       fuelType: 'Diesel',
       fuelCapacity: 70,
       currentMileage: 98400,
       status: 'Available',
       assignedDriver: null,
-      purchaseDate: new Date('2021-10-05').toISOString(),
-      insuranceExpiry: new Date('2026-10-25').toISOString(), // Warning expiry
-      registrationExpiry: new Date('2036-10-05').toISOString(),
-      lastServiceDate: new Date('2026-06-10').toISOString(),
-      nextServiceDate: new Date('2026-10-10').toISOString(),
-      notes: 'High capacity delivery van.'
+      purchaseDate: iso('2021-10-05'),
+      insuranceExpiry: iso('2026-10-25'), // Warning expiry
+      registrationExpiry: iso('2036-10-05'),
+      lastServiceDate: iso('2026-06-10'),
+      nextServiceDate: iso('2026-10-10'),
+      notes: 'Их даацтай хүргэлтийн фургон.'
     },
     {
       _id: generateId(),
       vehicleId: 'VEH-1009',
-      registrationNumber: 'TS-07-UK-4411',
+      registrationNumber: '4411 УБА',
       vehicleType: 'Sedan',
-      brand: 'Hyundai',
-      model: 'Aura CNG',
-      manufacturingYear: 2024,
-      fuelType: 'CNG',
-      fuelCapacity: 65,
-      currentMileage: 14500,
+      brand: 'Toyota',
+      model: 'Prius 30',
+      manufacturingYear: 2019,
+      fuelType: 'Hybrid',
+      fuelCapacity: 45,
+      currentMileage: 74500,
       status: 'Available',
       assignedDriver: null,
-      purchaseDate: new Date('2024-04-01').toISOString(),
-      insuranceExpiry: new Date('2027-04-01').toISOString(),
-      registrationExpiry: new Date('2039-04-01').toISOString(),
-      lastServiceDate: new Date('2026-08-20').toISOString(),
-      nextServiceDate: new Date('2027-02-20').toISOString(),
-      notes: 'Executive inspection & client visit vehicle.'
+      purchaseDate: iso('2022-04-01'),
+      insuranceExpiry: iso('2027-04-01'),
+      registrationExpiry: iso('2039-04-01'),
+      lastServiceDate: iso('2026-08-20'),
+      nextServiceDate: iso('2027-02-20'),
+      notes: 'Удирдлагын үзлэг, үйлчлүүлэгчтэй уулзах албаны машин.'
     },
     {
       _id: generateId(),
       vehicleId: 'VEH-1010',
-      registrationNumber: 'RJ-14-ZC-9080',
+      registrationNumber: '9080 УБЮ',
       vehicleType: 'SUV',
-      brand: 'Mahindra',
-      model: 'Scorpio-N Diesel',
+      brand: 'Toyota',
+      model: 'Land Cruiser Prado',
       manufacturingYear: 2023,
       fuelType: 'Diesel',
-      fuelCapacity: 60,
+      fuelCapacity: 87,
       currentMileage: 32000,
       status: 'Available',
       assignedDriver: null,
-      purchaseDate: new Date('2023-11-15').toISOString(),
-      insuranceExpiry: new Date('2026-11-15').toISOString(),
-      registrationExpiry: new Date('2038-11-15').toISOString(),
-      lastServiceDate: new Date('2026-07-01').toISOString(),
-      nextServiceDate: new Date('2026-11-01').toISOString(),
-      notes: 'Site inspection & rugged terrain escort.'
+      purchaseDate: iso('2023-11-15'),
+      insuranceExpiry: iso('2026-11-15'),
+      registrationExpiry: iso('2038-11-15'),
+      lastServiceDate: iso('2026-07-01'),
+      nextServiceDate: iso('2026-11-01'),
+      notes: 'Талбайн үзлэг, хүнд замын дагалдах машин.'
     }
   ];
 
@@ -349,507 +379,489 @@ export async function seedFleetData() {
       tripId: 'TRIP-1001',
       vehicle: vehicles[0]._id,
       driver: drivers[0]._id,
-      source: 'New Delhi ICD',
-      destination: 'Mundra Port, Gujarat',
-      startDate: new Date('2026-09-22T08:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-09-25T18:00:00Z').toISOString(),
+      source: 'Улаанбаатар, Төв агуулах',
+      destination: 'Замын-Үүд боомт',
+      startDate: iso('2026-09-22T08:00:00Z'),
+      expectedEndDate: iso('2026-09-25T18:00:00Z'),
       actualEndDate: null,
-      distance: 1140,
-      purpose: 'Export Electronics Consignment',
-      fuelUsed: 290,
-      tripExpense: 8500,
+      distance: 700,
+      purpose: 'Экспортын электрон бараа',
+      fuelUsed: 245,
+      tripExpense: 280000,
       status: 'In Progress',
-      notes: 'High value export shipment. Speed governor verified.'
+      notes: 'Өндөр үнэтэй экспортын ачаа. Хурд хязгаарлагч шалгагдсан.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1002',
       vehicle: vehicles[3]._id,
       driver: drivers[2]._id,
-      source: 'JNPT Port, Mumbai',
-      destination: 'Whitefield, Bengaluru',
-      startDate: new Date('2026-09-23T06:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-09-26T14:00:00Z').toISOString(),
+      source: 'Улаанбаатар, Налайх',
+      destination: 'Эрдэнэт хот',
+      startDate: iso('2026-09-23T06:00:00Z'),
+      expectedEndDate: iso('2026-09-26T14:00:00Z'),
       actualEndDate: null,
-      distance: 980,
-      purpose: 'Pharmaceutical Supplies (Cold Chain)',
-      fuelUsed: 240,
-      tripExpense: 7200,
+      distance: 380,
+      purpose: 'Эмийн бүтээгдэхүүн (хүйтэн хэлхээ)',
+      fuelUsed: 110,
+      tripExpense: 240000,
       status: 'In Progress',
-      notes: 'Continuous temperature monitoring active (+4C).'
+      notes: 'Температурын тасралтгүй хяналт идэвхтэй (+4°C).'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1003',
       vehicle: vehicles[1]._id,
       driver: drivers[1]._id,
-      source: 'Pune Automotive Park',
-      destination: 'Chennai Oragadam Hub',
-      startDate: new Date('2026-09-15T09:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-09-18T18:00:00Z').toISOString(),
-      actualEndDate: new Date('2026-09-18T17:30:00Z').toISOString(),
-      distance: 1180,
-      purpose: 'Auto Ancillary Spare Parts',
-      fuelUsed: 310,
-      tripExpense: 9200,
+      source: 'Дархан, Үйлдвэрийн бүс',
+      destination: 'Улаанбаатар, Автозамын төв',
+      startDate: iso('2026-09-15T09:00:00Z'),
+      expectedEndDate: iso('2026-09-16T18:00:00Z'),
+      actualEndDate: iso('2026-09-16T17:30:00Z'),
+      distance: 220,
+      purpose: 'Автомашины сэлбэг',
+      fuelUsed: 63,
+      tripExpense: 150000,
       status: 'Completed',
-      notes: 'Delivered on schedule with complete proof of delivery.'
+      notes: 'Хүргэлтийн баримтын хамт цагтаа хүргэсэн.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1004',
       vehicle: vehicles[2]._id,
       driver: drivers[4]._id,
-      source: 'Bengaluru Central Hub',
-      destination: 'Electronic City Phase 2',
-      startDate: new Date('2026-09-19T07:30:00Z').toISOString(),
-      expectedEndDate: new Date('2026-09-19T16:00:00Z').toISOString(),
-      actualEndDate: new Date('2026-09-19T15:45:00Z').toISOString(),
+      source: 'Улаанбаатар, Баянзүрх дэд төв',
+      destination: 'Улаанбаатар, Налайх дүүрэг',
+      startDate: iso('2026-09-19T07:30:00Z'),
+      expectedEndDate: iso('2026-09-19T16:00:00Z'),
+      actualEndDate: iso('2026-09-19T15:45:00Z'),
       distance: 65,
-      purpose: 'E-commerce FMCG Last Mile Delivery',
+      purpose: 'Цахим худалдааны хэрэглээний барааны хүргэлт',
       fuelUsed: 14,
-      tripExpense: 450,
+      tripExpense: 15000,
       status: 'Completed',
-      notes: 'Electric delivery test successfully completed.'
+      notes: 'Цахилгаан фургоны туршилтын хүргэлт амжилттай боллоо.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1005',
       vehicle: vehicles[5]._id,
       driver: drivers[3]._id,
-      source: 'Ahmedabad Airport',
-      destination: 'Gandhinagar GIFT City',
-      startDate: new Date('2026-09-20T10:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-09-20T19:00:00Z').toISOString(),
-      actualEndDate: new Date('2026-09-20T18:40:00Z').toISOString(),
+      source: 'Буянт-Ухаа нисэх буудал',
+      destination: 'Тэрэлж жуулчны бааз',
+      startDate: iso('2026-09-20T10:00:00Z'),
+      expectedEndDate: iso('2026-09-20T19:00:00Z'),
+      actualEndDate: iso('2026-09-20T18:40:00Z'),
       distance: 85,
-      purpose: 'VIP Financial Delegation Transit',
+      purpose: 'Гадаадын төлөөлөгчдийг тээвэрлэсэн',
       fuelUsed: 22,
-      tripExpense: 800,
+      tripExpense: 40000,
       status: 'Completed',
-      notes: 'Client satisfaction rated 5/5.'
+      notes: 'Үйлчлүүлэгчийн үнэлгээ 5/5.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1006',
       vehicle: vehicles[6]._id,
       driver: drivers[1]._id,
-      source: 'Lucknow Transport Nagar',
-      destination: 'Kanpur Industrial Area',
-      startDate: new Date('2026-09-12T08:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-09-12T17:00:00Z').toISOString(),
-      actualEndDate: new Date('2026-09-12T16:30:00Z').toISOString(),
-      distance: 190,
-      purpose: 'Machinery Tooling Parts',
+      source: 'Улаанбаатар, Налайх замын агуулах',
+      destination: 'Мандалговь хот',
+      startDate: iso('2026-09-12T08:00:00Z'),
+      expectedEndDate: iso('2026-09-12T20:00:00Z'),
+      actualEndDate: iso('2026-09-12T19:30:00Z'),
+      distance: 300,
+      purpose: 'Тоног төхөөрөмжийн сэлбэг',
       fuelUsed: 36,
-      tripExpense: 1400,
+      tripExpense: 70000,
       status: 'Completed',
-      notes: 'Smooth delivery.'
+      notes: 'Саадгүй хүргэсэн.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1007',
       vehicle: vehicles[7]._id,
       driver: drivers[3]._id,
-      source: 'Kolkata Dankuni Freight Yard',
-      destination: 'Siliguri Logistics Junction',
-      startDate: new Date('2026-09-08T07:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-09-10T12:00:00Z').toISOString(),
-      actualEndDate: new Date('2026-09-10T11:20:00Z').toISOString(),
-      distance: 575,
-      purpose: 'Tea & Consumer Packaged Goods',
-      fuelUsed: 130,
-      tripExpense: 4200,
+      source: 'Улаанбаатар, Яармаг',
+      destination: 'Сайншанд хот',
+      startDate: iso('2026-09-08T07:00:00Z'),
+      expectedEndDate: iso('2026-09-09T14:00:00Z'),
+      actualEndDate: iso('2026-09-09T13:20:00Z'),
+      distance: 460,
+      purpose: 'Хүнсний болон өдөр тутмын хэрэглээний бараа',
+      fuelUsed: 58,
+      tripExpense: 130000,
       status: 'Completed',
-      notes: 'Highway tolls recorded via FASTag.'
+      notes: 'Замын хураамжийн төлбөр картаар бүртгэгдсэн.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1008',
       vehicle: vehicles[0]._id,
       driver: drivers[0]._id,
-      source: 'Gurugram Warehouse',
-      destination: 'Jaipur Sitapura Hub',
-      startDate: new Date('2026-09-02T06:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-09-03T14:00:00Z').toISOString(),
-      actualEndDate: new Date('2026-09-03T13:10:00Z').toISOString(),
-      distance: 260,
-      purpose: 'Textile Fabric Export Bundles',
-      fuelUsed: 75,
-      tripExpense: 2200,
+      source: 'Улаанбаатар, Сонгинохайрхан дүүрэг',
+      destination: 'Цэцэрлэг хот, Архангай',
+      startDate: iso('2026-09-02T06:00:00Z'),
+      expectedEndDate: iso('2026-09-03T14:00:00Z'),
+      actualEndDate: iso('2026-09-03T13:10:00Z'),
+      distance: 430,
+      purpose: 'Ноос, ноолуурын түүхий эд',
+      fuelUsed: 120,
+      tripExpense: 110000,
       status: 'Completed',
-      notes: 'Direct delivery completed.'
+      notes: 'Шууд хүргэлт хийгдсэн.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1009',
       vehicle: vehicles[1]._id,
       driver: drivers[1]._id,
-      source: 'Mumbai Bhiwandi',
-      destination: 'Surat Ring Road Warehouse',
-      startDate: new Date('2026-08-28T09:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-08-29T15:00:00Z').toISOString(),
-      actualEndDate: new Date('2026-08-29T14:45:00Z').toISOString(),
-      distance: 270,
-      purpose: 'Diamond Tools & High Precision Goods',
-      fuelUsed: 78,
-      tripExpense: 2600,
+      source: 'Улаанбаатар, Тэргүүн агуулах',
+      destination: 'Дархан, Худалдааны төв',
+      startDate: iso('2026-08-28T09:00:00Z'),
+      expectedEndDate: iso('2026-08-28T19:00:00Z'),
+      actualEndDate: iso('2026-08-28T18:45:00Z'),
+      distance: 220,
+      purpose: 'Өндөр нарийвчлалтай багаж хэрэгсэл',
+      fuelUsed: 62,
+      tripExpense: 90000,
       status: 'Completed',
-      notes: 'Escorted container logistics.'
+      notes: 'Хамгаалалттай чингэлэг тээвэр.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1010',
       vehicle: vehicles[3]._id,
       driver: drivers[2]._id,
-      source: 'Chennai Port',
-      destination: 'Hyderabad Shamshabad Cargo',
-      startDate: new Date('2026-08-20T08:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-08-22T16:00:00Z').toISOString(),
-      actualEndDate: new Date('2026-08-22T15:10:00Z').toISOString(),
-      distance: 640,
-      purpose: 'Aerospace Engineering Components',
-      fuelUsed: 175,
-      tripExpense: 5100,
+      source: 'Улаанбаатар, Гуравсан төв',
+      destination: 'Чойбалсан хот',
+      startDate: iso('2026-08-20T08:00:00Z'),
+      expectedEndDate: iso('2026-08-22T16:00:00Z'),
+      actualEndDate: iso('2026-08-22T15:10:00Z'),
+      distance: 660,
+      purpose: 'Уул уурхайн тоног төхөөрөмжийн сэлбэг',
+      fuelUsed: 185,
+      tripExpense: 210000,
       status: 'Completed',
-      notes: 'Critical supply line cleared.'
+      notes: 'Чухал нийлүүлэлтийн ачаа амжилттай хүргэгдсэн.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1011',
       vehicle: vehicles[5]._id,
       driver: drivers[3]._id,
-      source: 'Vadodara Terminal',
-      destination: 'Rajkot Highway Hub',
-      startDate: new Date('2026-08-14T07:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-08-14T19:00:00Z').toISOString(),
-      actualEndDate: new Date('2026-08-14T18:20:00Z').toISOString(),
-      distance: 240,
-      purpose: 'Intercity Passenger Tour Group',
-      fuelUsed: 62,
-      tripExpense: 1800,
+      source: 'Улаанбаатар, Төв автобусны буудал',
+      destination: 'Хархорин, Өвөрхангай',
+      startDate: iso('2026-08-14T07:00:00Z'),
+      expectedEndDate: iso('2026-08-14T19:00:00Z'),
+      actualEndDate: iso('2026-08-14T18:20:00Z'),
+      distance: 370,
+      purpose: 'Хот хоорондын жуулчны бүлгийн тээвэр',
+      fuelUsed: 100,
+      tripExpense: 85000,
       status: 'Completed',
-      notes: 'AC bus service.'
+      notes: 'Кондиционертэй автобусны үйлчилгээ.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1012',
       vehicle: vehicles[6]._id,
       driver: drivers[4]._id,
-      source: 'Hyderabad Hitec City',
-      destination: 'Warangal Sub-station',
-      startDate: new Date('2026-09-28T08:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-09-29T18:00:00Z').toISOString(),
+      source: 'Улаанбаатар, Хан-Уул дүүрэг',
+      destination: 'Багануур дүүрэг, дэд станц',
+      startDate: iso('2026-09-28T08:00:00Z'),
+      expectedEndDate: iso('2026-09-29T18:00:00Z'),
       actualEndDate: null,
       distance: 150,
-      purpose: 'Solar Panel Maintenance Kit Delivery',
+      purpose: 'Нарны панелийн засварын иж бүрдэл хүргэлт',
       fuelUsed: 0,
-      tripExpense: 1200,
+      tripExpense: 45000,
       status: 'Scheduled',
-      notes: 'Scheduled for upcoming dispatch.'
+      notes: 'Удахгүй гарахаар товлосон.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1013',
       vehicle: vehicles[9]._id,
       driver: drivers[3]._id,
-      source: 'Jaipur MI Road',
-      destination: 'Jodhpur Industrial Estate',
-      startDate: new Date('2026-09-29T09:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-09-30T17:00:00Z').toISOString(),
+      source: 'Улаанбаатар, Төв оффис',
+      destination: 'Эрдэнэт хот, Уурхайн бүс',
+      startDate: iso('2026-09-29T09:00:00Z'),
+      expectedEndDate: iso('2026-09-30T17:00:00Z'),
       actualEndDate: null,
-      distance: 330,
-      purpose: 'Senior Audit Inspection Route',
+      distance: 380,
+      purpose: 'Ахлах аудитын үзлэгийн чиглэл',
       fuelUsed: 0,
-      tripExpense: 2000,
+      tripExpense: 90000,
       status: 'Scheduled',
-      notes: 'Official company escort.'
+      notes: 'Компанийн албан ёсны дагалдах машинтай.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1014',
       vehicle: vehicles[1]._id,
       driver: drivers[1]._id,
-      source: 'Nagpur Multi-Modal Hub',
-      destination: 'Raipur Logistics Park',
-      startDate: new Date('2026-08-05T08:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-08-06T18:00:00Z').toISOString(),
-      actualEndDate: new Date('2026-08-06T17:40:00Z').toISOString(),
-      distance: 285,
-      purpose: 'Steel & Ferroalloy Deliveries',
-      fuelUsed: 80,
-      tripExpense: 2500,
+      source: 'Улаанбаатар, Эрдэнэтийн замын агуулах',
+      destination: 'Булган хот',
+      startDate: iso('2026-08-05T08:00:00Z'),
+      expectedEndDate: iso('2026-08-06T18:00:00Z'),
+      actualEndDate: iso('2026-08-06T17:40:00Z'),
+      distance: 330,
+      purpose: 'Барилгын материал, төмөр хийц',
+      fuelUsed: 90,
+      tripExpense: 100000,
       status: 'Completed',
-      notes: 'Weighbridge slip confirmed.'
+      notes: 'Жингийн баримт баталгаажсан.'
     },
     {
       _id: generateId(),
       tripId: 'TRIP-1015',
       vehicle: vehicles[4]._id,
       driver: drivers[0]._id,
-      source: 'Chandigarh Transport Yard',
-      destination: 'Shimla Mall Road Distribution',
-      startDate: new Date('2026-08-01T06:00:00Z').toISOString(),
-      expectedEndDate: new Date('2026-08-02T12:00:00Z').toISOString(),
+      source: 'Улаанбаатар, Яармаг',
+      destination: 'Налайх, Хөдөө аж ахуйн төв',
+      startDate: iso('2026-08-01T06:00:00Z'),
+      expectedEndDate: iso('2026-08-02T12:00:00Z'),
       actualEndDate: null,
-      distance: 120,
-      purpose: 'Emergency Fruit Harvest',
+      distance: 40,
+      purpose: 'Хүнсний ногооны яаралтай хүргэлт',
       fuelUsed: 0,
       tripExpense: 0,
       status: 'Cancelled',
-      notes: 'Trip cancelled due to extreme monsoon landslide warning on NH-5.'
+      notes: 'Аадар борооны улмаас замын нөхцөл эрсдэлтэй болсон тул цуцалсан.'
     }
   ];
 
-  // 5. Fuel Records (12 records)
+  // 5. Fuel Records (10 records) - prices in MNT per liter, totals computed from quantity * price
+  const fuelRecord = (rec) => ({ _id: generateId(), ...rec, totalCost: Math.round(rec.quantity * rec.pricePerLiter) });
+
   const fuels = [
-    {
-      _id: generateId(),
+    fuelRecord({
       fuelRecordId: 'FUEL-1001',
       vehicle: vehicles[0]._id,
-      date: new Date('2026-09-22T09:30:00Z').toISOString(),
+      date: iso('2026-09-22T09:30:00Z'),
       fuelType: 'Diesel',
-      quantity: 220,
-      pricePerLiter: 89.60,
-      totalCost: 19712,
+      quantity: 140,
+      pricePerLiter: 3050,
       odometerReading: 83900,
-      fuelStation: 'Indian Oil Highway Care, Behror NH-48',
+      fuelStation: 'Петровис, Улаанбаатар–Дархан чиглэл',
       driver: drivers[0]._id,
-      notes: 'Tank filled before western corridor run.'
-    },
-    {
-      _id: generateId(),
+      notes: 'Баруун чиглэлийн ачилтын өмнө сав дүүргэсэн.'
+    }),
+    fuelRecord({
       fuelRecordId: 'FUEL-1002',
       vehicle: vehicles[3]._id,
-      date: new Date('2026-09-23T07:15:00Z').toISOString(),
+      date: iso('2026-09-23T07:15:00Z'),
       fuelType: 'Diesel',
-      quantity: 200,
-      pricePerLiter: 90.20,
-      totalCost: 18040,
+      quantity: 130,
+      pricePerLiter: 3070,
       odometerReading: 111400,
-      fuelStation: 'Bharat Petroleum COCO, Khalapur Expressway',
+      fuelStation: 'Шунхлай, Налайх зам',
       driver: drivers[2]._id,
-      notes: 'Automated fuel card payment.'
-    },
-    {
-      _id: generateId(),
+      notes: 'Шатахууны картаар автоматаар төлсөн.'
+    }),
+    fuelRecord({
       fuelRecordId: 'FUEL-1003',
       vehicle: vehicles[1]._id,
-      date: new Date('2026-09-15T11:00:00Z').toISOString(),
-      fuelType: 'Diesel',
-      quantity: 180,
-      pricePerLiter: 89.50,
-      totalCost: 16110,
-      odometerReading: 51200,
-      fuelStation: 'HPCL Super Fuel, Kolhapur Bypass',
-      driver: drivers[1]._id,
-      notes: 'Includes DEF fluid check.'
-    },
-    {
-      _id: generateId(),
-      fuelRecordId: 'FUEL-1004',
-      vehicle: vehicles[4]._id,
-      date: new Date('2026-09-10T14:20:00Z').toISOString(),
-      fuelType: 'CNG',
-      quantity: 38,
-      pricePerLiter: 79.40,
-      totalCost: 3017.2,
-      odometerReading: 63800,
-      fuelStation: 'Indraprastha Gas Limited, Manesar Sector 3',
-      driver: drivers[0]._id,
-      notes: 'Full cylinder pressurization 200 bar.'
-    },
-    {
-      _id: generateId(),
-      fuelRecordId: 'FUEL-1005',
-      vehicle: vehicles[5]._id,
-      date: new Date('2026-09-19T16:00:00Z').toISOString(),
+      date: iso('2026-09-15T11:00:00Z'),
       fuelType: 'Diesel',
       quantity: 110,
-      pricePerLiter: 90.00,
-      totalCost: 9900,
+      pricePerLiter: 3040,
+      odometerReading: 51200,
+      fuelStation: 'Магнай Трейд, Дарханы эхлэл',
+      driver: drivers[1]._id,
+      notes: 'Нэмэлт шингэний түвшин шалгасан.'
+    }),
+    fuelRecord({
+      fuelRecordId: 'FUEL-1004',
+      vehicle: vehicles[4]._id,
+      date: iso('2026-09-10T14:20:00Z'),
+      fuelType: 'CNG',
+      quantity: 38,
+      pricePerLiter: 1450,
+      odometerReading: 63800,
+      fuelStation: 'Гэм ХХК, Улаанбаатар, Баянгол дүүрэг',
+      driver: drivers[0]._id,
+      notes: 'Баллоныг бүрэн дүүргэсэн.'
+    }),
+    fuelRecord({
+      fuelRecordId: 'FUEL-1005',
+      vehicle: vehicles[5]._id,
+      date: iso('2026-09-19T16:00:00Z'),
+      fuelType: 'Diesel',
+      quantity: 60,
+      pricePerLiter: 3060,
       odometerReading: 38400,
-      fuelStation: 'Reliance Petro Petroleum, Sanand Cross Road',
+      fuelStation: 'МСС, Буянт-Ухаа',
       driver: drivers[3]._id,
-      notes: 'Pre-charter refuel.'
-    },
-    {
-      _id: generateId(),
+      notes: 'Тусгай үйлчилгээний өмнө дүүргэсэн.'
+    }),
+    fuelRecord({
       fuelRecordId: 'FUEL-1006',
       vehicle: vehicles[6]._id,
-      date: new Date('2026-09-12T09:00:00Z').toISOString(),
+      date: iso('2026-09-12T09:00:00Z'),
       fuelType: 'Diesel',
-      quantity: 55,
-      pricePerLiter: 89.70,
-      totalCost: 4933.5,
+      quantity: 40,
+      pricePerLiter: 3050,
       odometerReading: 40900,
-      fuelStation: 'Indian Oil Swagat, Unnao Toll',
+      fuelStation: 'Петровис, Мандалговийн зам',
       driver: drivers[1]._id,
-      notes: 'Standard diesel refill.'
-    },
-    {
-      _id: generateId(),
+      notes: 'Ердийн дизель дүүргэлт.'
+    }),
+    fuelRecord({
       fuelRecordId: 'FUEL-1007',
       vehicle: vehicles[7]._id,
-      date: new Date('2026-09-08T08:30:00Z').toISOString(),
+      date: iso('2026-09-08T08:30:00Z'),
       fuelType: 'Diesel',
-      quantity: 95,
-      pricePerLiter: 91.10,
-      totalCost: 8654.5,
+      quantity: 60,
+      pricePerLiter: 3080,
       odometerReading: 97800,
-      fuelStation: 'BPCL Oasis, Burdwan Highway',
+      fuelStation: 'Шунхлай, Сайншандын зам',
       driver: drivers[3]._id,
-      notes: 'Long haul refill.'
-    },
-    {
-      _id: generateId(),
+      notes: 'Алсын зайн замын өмнөх дүүргэлт.'
+    }),
+    fuelRecord({
       fuelRecordId: 'FUEL-1008',
       vehicle: vehicles[8]._id,
-      date: new Date('2026-09-14T10:15:00Z').toISOString(),
-      fuelType: 'CNG',
-      quantity: 35,
-      pricePerLiter: 82.50,
-      totalCost: 2887.5,
-      odometerReading: 14200,
-      fuelStation: 'Bhagyanagar Gas, Madhapur',
+      date: iso('2026-09-14T10:15:00Z'),
+      fuelType: 'Petrol',
+      quantity: 30,
+      pricePerLiter: 2950,
+      odometerReading: 74200,
+      fuelStation: 'Магнай Трейд, Хан-Уул дүүрэг',
       driver: drivers[4]._id,
-      notes: 'City pool refill.'
-    },
-    {
-      _id: generateId(),
+      notes: 'Хотын дотоодын албаны машин.'
+    }),
+    fuelRecord({
       fuelRecordId: 'FUEL-1009',
       vehicle: vehicles[9]._id,
-      date: new Date('2026-09-18T12:00:00Z').toISOString(),
+      date: iso('2026-09-18T12:00:00Z'),
       fuelType: 'Diesel',
-      quantity: 50,
-      pricePerLiter: 92.40,
-      totalCost: 4620,
+      quantity: 35,
+      pricePerLiter: 3090,
       odometerReading: 31600,
-      fuelStation: 'IOCL Highway Service, Ajmer Road',
+      fuelStation: 'МСС, Налайх зам',
       driver: drivers[3]._id,
-      notes: 'Scorpio fuel top-up.'
-    },
-    {
-      _id: generateId(),
+      notes: 'Land Cruiser нэмэлт дүүргэлт.'
+    }),
+    fuelRecord({
       fuelRecordId: 'FUEL-1010',
       vehicle: vehicles[0]._id,
-      date: new Date('2026-08-30T15:45:00Z').toISOString(),
+      date: iso('2026-08-30T15:45:00Z'),
       fuelType: 'Diesel',
-      quantity: 210,
-      pricePerLiter: 89.20,
-      totalCost: 18732,
+      quantity: 140,
+      pricePerLiter: 3030,
       odometerReading: 82100,
-      fuelStation: 'Nayara Energy Highway Hub, Rewari',
+      fuelStation: 'Петровис, Төв шатахуун түгээх станц',
       driver: drivers[0]._id,
-      notes: 'End of August scheduled fuel fill.'
-    }
+      notes: '8-р сарын төгсгөлийн товлосон дүүргэлт.'
+    })
   ];
 
-  // 6. Maintenance Records (8 records)
+  // 6. Maintenance Records (7 records) - costs in MNT
   const maintenances = [
     {
       _id: generateId(),
       maintenanceId: 'MNT-1001',
-      vehicle: vehicles[4]._id, // VEH-1005 (Bolero)
+      vehicle: vehicles[4]._id, // VEH-1005 (Porter)
       maintenanceType: 'Engine Service',
-      description: 'Complete transmission overhaul, clutch plate replacement & fuel pump calibration',
-      serviceDate: new Date('2026-09-16T10:00:00Z').toISOString(),
-      nextServiceDate: new Date('2026-12-16T10:00:00Z').toISOString(),
-      cost: 24500,
-      serviceCenter: 'Mahindra Authorized Commercial Workshop, Gurgaon',
+      description: 'Хурдны хайрцгийн бүрэн засвар, шүүрч дискний солилт, шатахууны насосны тохируулга',
+      serviceDate: iso('2026-09-16T10:00:00Z'),
+      nextServiceDate: iso('2026-12-16T10:00:00Z'),
+      cost: 3800000,
+      serviceCenter: 'Hyundai албан ёсны засварын төв, Улаанбаатар',
       status: 'In Progress',
-      notes: 'Parts ordered from OEM central depot; expected delivery by tomorrow.'
+      notes: 'Сэлбэгийг үйлдвэрлэгчийн агуулахаас захиалсан; маргааш ирэх хүлээлттэй.'
     },
     {
       _id: generateId(),
       maintenanceId: 'MNT-1002',
       vehicle: vehicles[1]._id, // VEH-1002
       maintenanceType: 'Brake Service',
-      description: 'Air brake shoe adjustment, lining replacement & ABS sensor diagnostic',
-      serviceDate: new Date('2026-09-28T09:00:00Z').toISOString(),
-      nextServiceDate: new Date('2026-10-15T09:00:00Z').toISOString(), // Due soon!
-      cost: 11800,
-      serviceCenter: 'Ashok Leyland Service Zone, Chakan Pune',
+      description: 'Агаарын тоормосны холхивч тохируулга, давхарга солилт, ABS мэдрэгчийн оношилгоо',
+      serviceDate: iso('2026-09-28T09:00:00Z'),
+      nextServiceDate: iso('2026-10-15T09:00:00Z'), // Due soon!
+      cost: 1200000,
+      serviceCenter: 'Shacman албан ёсны үйлчилгээний төв, Налайх зам',
       status: 'Scheduled',
-      notes: 'Preventive maintenance scheduled before southern coastal tour.'
+      notes: 'Урт замын аяллын өмнөх урьдчилан сэргийлэх засвар.'
     },
     {
       _id: generateId(),
       maintenanceId: 'MNT-1003',
       vehicle: vehicles[0]._id, // VEH-1001
       maintenanceType: 'Regular Service',
-      description: '80,000 km Major Service: Synthetic engine oil replacement, lube filters & DEF system check',
-      serviceDate: new Date('2026-08-10T08:30:00Z').toISOString(),
-      nextServiceDate: new Date('2026-11-10T08:30:00Z').toISOString(),
-      cost: 18400,
-      serviceCenter: 'Tata Motors Commercial Hub, Okhla New Delhi',
+      description: '80,000 км-ийн их засвар: синтетик хөдөлгүүрийн тос, шүүлтүүр, нэмэлт шингэний системийн шалгалт',
+      serviceDate: iso('2026-08-10T08:30:00Z'),
+      nextServiceDate: iso('2026-11-10T08:30:00Z'),
+      cost: 1500000,
+      serviceCenter: 'Sinotruk албан ёсны төв, Улаанбаатар',
       status: 'Completed',
-      notes: 'Engine tuning certified Euro VI compliant.'
+      notes: 'Хөдөлгүүрийн тохиргоо Euro V стандартад нийцсэн.'
     },
     {
       _id: generateId(),
       maintenanceId: 'MNT-1004',
-      vehicle: vehicles[2]._id, // VEH-1003 (Ace EV)
+      vehicle: vehicles[2]._id, // VEH-1003 (BYD T3)
       maintenanceType: 'Regular Service',
-      description: 'EV Battery health diagnostic, motor coolant replenishment & regenerative braking check',
-      serviceDate: new Date('2026-06-25T11:00:00Z').toISOString(),
-      nextServiceDate: new Date('2026-12-25T11:00:00Z').toISOString(),
-      cost: 4200,
-      serviceCenter: 'Tata EV Commercial Workshop, Hosur Road Bengaluru',
+      description: 'Цахилгаан батарейны төлөв байдлын оношилгоо, моторын хөргөлтийн шингэн нөхөлт, регенератив тоормосны шалгалт',
+      serviceDate: iso('2026-06-25T11:00:00Z'),
+      nextServiceDate: iso('2026-12-25T11:00:00Z'),
+      cost: 350000,
+      serviceCenter: 'BYD албан ёсны цахилгаан тээврийн цех, Улаанбаатар',
       status: 'Completed',
-      notes: 'High voltage battery degradation < 1.2%, excellent state of health.'
+      notes: 'Өндөр хүчдэлийн батарейны элэгдэл 1.2%-иас бага, маш сайн байдалтай.'
     },
     {
       _id: generateId(),
       maintenanceId: 'MNT-1005',
       vehicle: vehicles[3]._id, // VEH-1004
       maintenanceType: 'Tire Replacement',
-      description: 'Rear dual-axle radial tires replacement (4 new Apollo EnduRace RD tires) + wheel alignment',
-      serviceDate: new Date('2026-08-01T10:00:00Z').toISOString(),
-      nextServiceDate: new Date('2026-11-01T10:00:00Z').toISOString(),
-      cost: 48000,
-      serviceCenter: 'Apollo Commercial Tyres Center, Poonamallee Chennai',
+      description: 'Арын хос тэнхлэгийн радиал дугуй солилт (4 шинэ дугуй) + дугуйн тэнхлэгийн тохируулга',
+      serviceDate: iso('2026-08-01T10:00:00Z'),
+      nextServiceDate: iso('2026-11-01T10:00:00Z'),
+      cost: 4800000,
+      serviceCenter: 'Дугуйн төв ХХК, Улаанбаатар',
       status: 'Completed',
-      notes: 'Tire serial numbers registered with warranty portal.'
+      notes: 'Дугуйн сериал дугаарыг баталгаат хугацааны системд бүртгэсэн.'
     },
     {
       _id: generateId(),
       maintenanceId: 'MNT-1006',
       vehicle: vehicles[5]._id, // VEH-1006
       maintenanceType: 'Oil Change',
-      description: 'Transmission fluid flush and rear differential oil replacement',
-      serviceDate: new Date('2026-08-15T09:30:00Z').toISOString(),
-      nextServiceDate: new Date('2026-11-15T09:30:00Z').toISOString(),
-      cost: 7500,
-      serviceCenter: 'Eicher Motors Express Service, Sarkhej Ahmedabad',
+      description: 'Хурдны хайрцгийн шингэн цэвэрлэгээ, арын дифференциалын тос солилт',
+      serviceDate: iso('2026-08-15T09:30:00Z'),
+      nextServiceDate: iso('2026-11-15T09:30:00Z'),
+      cost: 450000,
+      serviceCenter: 'Hyundai автобусны үйлчилгээний төв, Улаанбаатар',
       status: 'Completed',
-      notes: 'Oil sample clean, zero metal fragments.'
+      notes: 'Тосны дээж цэвэр, металл хөлс илрээгүй.'
     },
     {
       _id: generateId(),
       maintenanceId: 'MNT-1007',
       vehicle: vehicles[7]._id, // VEH-1008
       maintenanceType: 'Repair',
-      description: 'Suspension leaf spring bushing replacement and shock absorber re-alignment',
-      serviceDate: new Date('2026-06-10T14:00:00Z').toISOString(),
-      nextServiceDate: new Date('2026-10-10T14:00:00Z').toISOString(), // Due soon!
-      cost: 9600,
-      serviceCenter: 'Force Motors Authorised Center, Howrah West Bengal',
+      description: 'Дүүжин пүршний бушинг солилт болон амортизаторын тохируулга',
+      serviceDate: iso('2026-06-10T14:00:00Z'),
+      nextServiceDate: iso('2026-10-10T14:00:00Z'), // Due soon!
+      cost: 900000,
+      serviceCenter: 'Toyota албан ёсны засварын төв, Улаанбаатар',
       status: 'Completed',
-      notes: 'Ride quality restored.'
+      notes: 'Унаачлалын тав тух сэргэсэн.'
     }
   ];
 
-  // 7. Expenses (14 records)
+  // 7. Expenses (11 records) - amounts in MNT; fuel/maintenance vouchers mirror their source records
   const expenses = [
     {
       _id: generateId(),
       expenseId: 'EXP-1001',
       vehicle: vehicles[0]._id,
       category: 'Fuel',
-      amount: 19712,
-      date: new Date('2026-09-22T09:30:00Z').toISOString(),
-      description: 'Fuel refill 220L (Diesel) at Indian Oil Highway Care',
+      amount: fuels[0].totalCost,
+      date: fuels[0].date,
+      description: 'Шатахуун дүүргэлт 140 л (дизель), Петровис',
       driver: drivers[0]._id,
       trip: trips[0]._id,
       paymentMethod: 'Fuel Card'
@@ -859,9 +871,9 @@ export async function seedFleetData() {
       expenseId: 'EXP-1002',
       vehicle: vehicles[3]._id,
       category: 'Fuel',
-      amount: 18040,
-      date: new Date('2026-09-23T07:15:00Z').toISOString(),
-      description: 'Fuel refill 200L (Diesel) at BPCL Khalapur Expressway',
+      amount: fuels[1].totalCost,
+      date: fuels[1].date,
+      description: 'Шатахуун дүүргэлт 130 л (дизель), Шунхлай Налайх зам',
       driver: drivers[2]._id,
       trip: trips[1]._id,
       paymentMethod: 'Fuel Card'
@@ -871,19 +883,20 @@ export async function seedFleetData() {
       expenseId: 'EXP-1003',
       vehicle: vehicles[4]._id,
       category: 'Maintenance',
-      amount: 24500,
-      date: new Date('2026-09-16T10:00:00Z').toISOString(),
-      description: 'Transmission overhaul & clutch plate replacement at Mahindra Gurgaon',
+      amount: maintenances[0].cost,
+      date: maintenances[0].serviceDate,
+      description: 'Хурдны хайрцгийн засвар, шүүрч дискний солилт, Hyundai төв',
       driver: null,
       paymentMethod: 'Company Card'
     },
     {
       _id: generateId(),
+      expenseId: 'EXP-1004',
       vehicle: vehicles[3]._id,
       category: 'Maintenance',
-      amount: 48000,
-      date: new Date('2026-08-01T10:00:00Z').toISOString(),
-      description: 'Radial tires replacement (4 units) at Apollo Chennai',
+      amount: maintenances[4].cost,
+      date: maintenances[4].serviceDate,
+      description: 'Радиал дугуй солилт (4 ширхэг), Дугуйн төв ХХК',
       driver: null,
       paymentMethod: 'Bank Transfer'
     },
@@ -892,9 +905,9 @@ export async function seedFleetData() {
       expenseId: 'EXP-1005',
       vehicle: vehicles[0]._id,
       category: 'Toll',
-      amount: 4200,
-      date: new Date('2026-09-22T14:00:00Z').toISOString(),
-      description: 'FASTag Interstate electronic highway toll plaza charges (Delhi - Gujarat corridor)',
+      amount: 45000,
+      date: iso('2026-09-22T14:00:00Z'),
+      description: 'Улаанбаатар–Замын-Үүд чиглэлийн замын хураамж',
       driver: drivers[0]._id,
       trip: trips[0]._id,
       paymentMethod: 'Company Card'
@@ -904,9 +917,9 @@ export async function seedFleetData() {
       expenseId: 'EXP-1006',
       vehicle: vehicles[3]._id,
       category: 'Toll',
-      amount: 3600,
-      date: new Date('2026-09-23T11:30:00Z').toISOString(),
-      description: 'FASTag Mumbai - Pune Expressway & NH-48 electronic tolls',
+      amount: 38000,
+      date: iso('2026-09-23T11:30:00Z'),
+      description: 'Улаанбаатар–Эрдэнэт чиглэлийн замын хураамж',
       driver: drivers[2]._id,
       trip: trips[1]._id,
       paymentMethod: 'Company Card'
@@ -916,9 +929,9 @@ export async function seedFleetData() {
       expenseId: 'EXP-1007',
       vehicle: vehicles[1]._id,
       category: 'Insurance',
-      amount: 42000,
-      date: new Date('2026-04-10T10:00:00Z').toISOString(),
-      description: 'Commercial fleet comprehensive insurance annual renewal premium (ICICI Lombard)',
+      amount: 1450000,
+      date: iso('2026-04-10T10:00:00Z'),
+      description: 'Парк тээврийн хэрэгслийн иж бүрэн даатгалын жилийн шинэчлэлт',
       driver: null,
       paymentMethod: 'Bank Transfer'
     },
@@ -927,21 +940,21 @@ export async function seedFleetData() {
       expenseId: 'EXP-1008',
       vehicle: vehicles[0]._id,
       category: 'Trip',
-      amount: 3500,
-      date: new Date('2026-09-22T20:00:00Z').toISOString(),
-      description: 'Driver per-diem road allowance, parking & state permit cess',
+      amount: 120000,
+      date: iso('2026-09-22T20:00:00Z'),
+      description: 'Жолоочийн өдрийн хоол, зогсоолын болон замын зөвшөөрлийн зардал',
       driver: drivers[0]._id,
       trip: trips[0]._id,
-      paymentMethod: 'UPI'
+      paymentMethod: 'Cash'
     },
     {
       _id: generateId(),
       expenseId: 'EXP-1009',
       vehicle: vehicles[5]._id,
       category: 'Fuel',
-      amount: 9900,
-      date: new Date('2026-09-19T16:00:00Z').toISOString(),
-      description: 'Fuel refill 110L (Diesel) for Eicher Skyline Pro',
+      amount: fuels[4].totalCost,
+      date: fuels[4].date,
+      description: 'Шатахуун дүүргэлт 60 л (дизель), Hyundai Universe автобус',
       driver: drivers[3]._id,
       paymentMethod: 'Fuel Card'
     },
@@ -950,9 +963,9 @@ export async function seedFleetData() {
       expenseId: 'EXP-1010',
       vehicle: vehicles[1]._id,
       category: 'Repair',
-      amount: 5400,
-      date: new Date('2026-08-18T14:30:00Z').toISOString(),
-      description: 'Air conditioning gas refill & blower motor brush replacement',
+      amount: 180000,
+      date: iso('2026-08-18T14:30:00Z'),
+      description: 'Кондиционерын хий нөхөлт болон сэнсний моторын сойз солилт',
       driver: drivers[1]._id,
       paymentMethod: 'Company Card'
     },
@@ -961,11 +974,11 @@ export async function seedFleetData() {
       expenseId: 'EXP-1011',
       vehicle: vehicles[7]._id,
       category: 'Other',
-      amount: 2800,
-      date: new Date('2026-09-05T10:00:00Z').toISOString(),
-      description: 'State pollution under control (PUC) & GPS AIS-140 fitness renewal certificates',
+      amount: 95000,
+      date: iso('2026-09-05T10:00:00Z'),
+      description: 'Техникийн хяналтын үзлэг болон GPS төхөөрөмжийн гэрчилгээ шинэчлэлт',
       driver: null,
-      paymentMethod: 'UPI'
+      paymentMethod: 'Cash'
     }
   ];
 
@@ -975,67 +988,67 @@ export async function seedFleetData() {
       _id: generateId(),
       user: null,
       type: 'maintenance_due',
-      title: 'Vehicle Service Scheduled',
-      message: 'Vehicle MH-12-RN-4402 (Ashok Leyland AVTR) scheduled for Brake Service at Pune on 28 Sep 2026.',
+      title: 'Тээврийн хэрэгслийн засвар товлогдлоо',
+      message: '4402 УБЕ (Shacman X3000) тээврийн хэрэгслийн тоормосны үйлчилгээ 2026 оны 9-р сарын 28-нд Налайх замын төвд товлогдсон.',
       isRead: false,
       relatedEntity: 'Vehicle',
       relatedEntityId: vehicles[1]._id,
-      createdAt: new Date('2026-09-24T05:00:00Z').toISOString()
+      createdAt: iso('2026-09-24T05:00:00Z')
     },
     {
       _id: generateId(),
       user: null,
       type: 'maintenance_overdue',
-      title: 'Maintenance Service Overdue',
-      message: 'Vehicle HR-26-DK-5544 scheduled maintenance service was due on 15 Sep 2026. Vehicle currently in workshop.',
+      title: 'Засварын хугацаа хэтэрсэн',
+      message: '5544 УБЯ тээврийн хэрэгслийн товлосон үйлчилгээ 2026 оны 9-р сарын 15-нд дуусах ёстой байсан. Одоогоор цехэд байна.',
       isRead: false,
       relatedEntity: 'Vehicle',
       relatedEntityId: vehicles[4]._id,
-      createdAt: new Date('2026-09-24T06:30:00Z').toISOString()
+      createdAt: iso('2026-09-24T06:30:00Z')
     },
     {
       _id: generateId(),
       user: null,
       type: 'insurance_expiry',
-      title: 'Vehicle Insurance Expiry Imminent',
-      message: 'Vehicle MH-12-RN-4402 insurance expires in 24 days (18 Oct 2026). Immediate renewal advised.',
+      title: 'Даатгалын хугацаа дуусахад ойртлоо',
+      message: '4402 УБЕ тээврийн хэрэгслийн даатгал 24 хоногийн дараа (2026-10-18) дуусна. Яаралтай сунгахыг зөвлөж байна.',
       isRead: false,
       relatedEntity: 'Vehicle',
       relatedEntityId: vehicles[1]._id,
-      createdAt: new Date('2026-09-24T07:15:00Z').toISOString()
+      createdAt: iso('2026-09-24T07:15:00Z')
     },
     {
       _id: generateId(),
       user: null,
       type: 'license_expiry',
-      title: 'Driver License Expiry Imminent',
-      message: 'Driver Suresh Patel commercial heavy vehicle license expires in 26 days (20 Oct 2026).',
+      title: 'Жолоочийн үнэмлэхийн хугацаа дуусахад ойртлоо',
+      message: 'Жолооч Н.Эрдэнэбатын мэргэжлийн жолооны үнэмлэх 26 хоногийн дараа (2026-10-20) дуусна.',
       isRead: false,
       relatedEntity: 'Driver',
       relatedEntityId: drivers[1]._id,
-      createdAt: new Date('2026-09-23T11:00:00Z').toISOString()
+      createdAt: iso('2026-09-23T11:00:00Z')
     },
     {
       _id: generateId(),
       user: null,
       type: 'trip_started',
-      title: 'Trip In Progress',
-      message: 'Trip TRIP-1001 departed: Tata Prima DL-01-AX-9920 on Delhi to Mundra Port route.',
+      title: 'Рейс явагдаж байна',
+      message: 'TRIP-1001 хөдөллөө: 8821 УБА (Sinotruk HOWO) Улаанбаатараас Замын-Үүд боомт руу.',
       isRead: true,
       relatedEntity: 'Trip',
       relatedEntityId: trips[0]._id,
-      createdAt: new Date('2026-09-22T08:05:00Z').toISOString()
+      createdAt: iso('2026-09-22T08:05:00Z')
     },
     {
       _id: generateId(),
       user: null,
       type: 'trip_completed',
-      title: 'Trip Completed Successfully',
-      message: 'Trip TRIP-1003 arrived at Chennai Oragadam Hub (1,180 km). Proof of Delivery verified.',
+      title: 'Рейс амжилттай дууслаа',
+      message: 'TRIP-1003 Улаанбаатарын Автозамын төвд (220 км) ирлээ. Хүргэлтийн баталгаа шалгагдсан.',
       isRead: true,
       relatedEntity: 'Trip',
       relatedEntityId: trips[2]._id,
-      createdAt: new Date('2026-09-18T17:35:00Z').toISOString()
+      createdAt: iso('2026-09-16T17:35:00Z')
     }
   ];
 
@@ -1050,7 +1063,11 @@ export async function seedFleetData() {
   store.notifications = notifications;
 
   saveLocalStore();
-  console.log('[FLEETNOVA] Successfully seeded: 3 Users, 5 Drivers, 10 Vehicles, 15 Trips, 10 Fuel logs, 7 Maintenance logs, 11 Expenses, 6 Notifications.');
+  console.log(
+    `[FLEETNOVA] Successfully seeded: ${users.length} Users, ${drivers.length} Drivers, ${vehicles.length} Vehicles, ` +
+    `${trips.length} Trips, ${fuels.length} Fuel logs, ${maintenances.length} Maintenance logs, ` +
+    `${expenses.length} Expenses, ${notifications.length} Notifications.`
+  );
 }
 
 // Allow direct execution via CLI `node seedData.js` or `npm run seed`

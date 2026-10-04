@@ -3,8 +3,10 @@ import { Settings as SettingsIcon, Users, Shield, Database, Sparkles, CheckCircl
 import { useAuth } from '../context/AuthContext.jsx';
 import { authApi } from '../services/api.js';
 import Loading from '../components/Loading.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Settings() {
+  const { tr } = useT();
   const { user, role } = useAuth();
   const isAdmin = role === 'admin';
 
@@ -15,7 +17,7 @@ export default function Settings() {
   // Settings State
   const [systemSettings, setSystemSettings] = useState({
     orgName: 'FLEETNOVA Enterprise Logistics Corp.',
-    currency: 'INR (₹)',
+    currency: 'MNT (₮)',
     speedLimit: 80,
     maintenanceAlertDays: 15,
     documentExpiryDays: 30,
@@ -53,7 +55,7 @@ export default function Settings() {
       await authApi.updateUserStatus(userId, { status: nextStatus });
       fetchUsers();
     } catch (err) {
-      alert(err.message || 'Failed to update user status');
+      alert(tr(err.message || 'Failed to update user status'));
     }
   };
 
@@ -61,9 +63,9 @@ export default function Settings() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', maxWidth: '1000px', margin: '0 auto' }}>
       {/* Header */}
       <div>
-        <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>System & Organization Settings</h2>
+        <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>{tr("System & Organization Settings")}</h2>
         <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
-          Enterprise parameters, regulatory document thresholds, and user access control
+          {tr("Enterprise parameters, regulatory document thresholds, and user access control")}
         </p>
       </div>
 
@@ -81,20 +83,20 @@ export default function Settings() {
             gap: '0.5rem'
           }}
         >
-          <CheckCircle2 size={18} /> System parameters saved successfully!
+          <CheckCircle2 size={18} /> {tr("System parameters saved successfully!")}
         </div>
       )}
 
       {/* Organization Parameters */}
       <div className="card">
         <h3 className="card-title" style={{ marginBottom: '1.25rem' }}>
-          <SettingsIcon size={18} color="var(--primary)" /> Fleet Operations Parameters
+          <SettingsIcon size={18} color="var(--primary)" /> {tr("Fleet Operations Parameters")}
         </h3>
 
         <form onSubmit={handleSaveSystemConfig}>
           <div className="grid-cols-2" style={{ gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Operating Enterprise Name</label>
+              <label className="form-label">{tr("Operating Enterprise Name")}</label>
               <input
                 type="text"
                 className="form-control"
@@ -104,7 +106,7 @@ export default function Settings() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Financial Accounting Currency</label>
+              <label className="form-label">{tr("Financial Accounting Currency")}</label>
               <input
                 type="text"
                 className="form-control"
@@ -116,7 +118,7 @@ export default function Settings() {
 
           <div className="grid-cols-3" style={{ gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Highway Speed Governor Limit (km/h)</label>
+              <label className="form-label">{tr("Highway Speed Governor Limit (km/h)")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -126,7 +128,7 @@ export default function Settings() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Maintenance Notice Lead (Days)</label>
+              <label className="form-label">{tr("Maintenance Notice Lead (Days)")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -136,7 +138,7 @@ export default function Settings() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Document Expiry Alert (Days)</label>
+              <label className="form-label">{tr("Document Expiry Alert (Days)")}</label>
               <input
                 type="number"
                 className="form-control"
@@ -148,7 +150,7 @@ export default function Settings() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
             <button type="submit" className="btn btn-primary">
-              Save Parameters
+              {tr("Save Parameters")}
             </button>
           </div>
         </form>
@@ -157,26 +159,26 @@ export default function Settings() {
       {/* FleetAI Architecture Specification */}
       <div className="card">
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>
-          <Sparkles size={18} color="var(--accent-cyan)" /> AI Engine Architecture & Security Boundary
+          <Sparkles size={18} color="var(--accent-cyan)" /> {tr("AI Engine Architecture & Security Boundary")}
         </h3>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', fontSize: '0.85rem' }}>
           <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>FOUNDATION MODEL</div>
-            <strong style={{ color: 'var(--accent-cyan)' }}>Google Gemini 3.8 Flash</strong>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>High-speed analytical reasoning</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("FOUNDATION MODEL")}</div>
+            <strong style={{ color: 'var(--accent-cyan)' }}>{tr("Google Gemini 3.8 Flash")}</strong>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{tr("High-speed analytical reasoning")}</div>
           </div>
 
           <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>INTEGRATION PROTOCOL</div>
-            <strong style={{ color: 'var(--accent-emerald)' }}>Express Server Proxy Route</strong>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Zero client-side API key exposure</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("INTEGRATION PROTOCOL")}</div>
+            <strong style={{ color: 'var(--accent-emerald)' }}>{tr("Express Server Proxy Route")}</strong>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{tr("Zero client-side API key exposure")}</div>
           </div>
 
           <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>DATABASE GROUNDING</div>
-            <strong style={{ color: 'var(--primary)' }}>Read-Only Context Injection</strong>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Answers strictly backed by Mongo records</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("DATABASE GROUNDING")}</div>
+            <strong style={{ color: 'var(--primary)' }}>{tr("Read-Only Context Injection")}</strong>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{tr("Answers strictly backed by Mongo records")}</div>
           </div>
         </div>
       </div>
@@ -186,22 +188,22 @@ export default function Settings() {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
-              <Users size={18} color="var(--primary)" /> Organization User Management (Admin Only)
+              <Users size={18} color="var(--primary)" /> {tr("Organization User Management (Admin Only)")}
             </h3>
           </div>
 
           {loadingUsers ? (
-            <Loading message="Fetching user directory..." />
+            <Loading message={tr("Fetching user directory...")} />
           ) : (
             <div className="table-responsive">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>User Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th>{tr("User Name")}</th>
+                    <th>{tr("Email")}</th>
+                    <th>{tr("Role")}</th>
+                    <th>{tr("Status")}</th>
+                    <th>{tr("Action")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -211,12 +213,12 @@ export default function Settings() {
                       <td>{u.email}</td>
                       <td>
                         <span className={`role-badge ${u.role}`}>
-                          {u.role === 'fleet_manager' ? 'Fleet Manager' : u.role}
+                          {u.role === 'fleet_manager' ? tr("Fleet Manager") : tr(u.role)}
                         </span>
                       </td>
                       <td>
                         <span className={`badge badge-${u.status}`}>
-                          {u.status}
+                          {tr(u.status)}
                         </span>
                       </td>
                       <td>
@@ -225,7 +227,7 @@ export default function Settings() {
                             className={`btn btn-sm ${u.status === 'active' ? 'btn-danger' : 'btn-secondary'}`}
                             onClick={() => handleToggleUserStatus(u._id, u.status)}
                           >
-                            {u.status === 'active' ? 'Deactivate' : 'Activate'}
+                            {u.status === 'active' ? tr("Deactivate") : tr("Activate")}
                           </button>
                         )}
                       </td>

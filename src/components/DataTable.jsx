@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import EmptyState from './EmptyState.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function DataTable({
   columns = [],
@@ -13,12 +14,13 @@ export default function DataTable({
   totalRecords = 0,
   onPageChange
 }) {
+  const { tr } = useT();
   if (loading) {
     return (
       <div className="table-responsive" style={{ minHeight: '280px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
           <div className="spinner spinner-lg"></div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Loading fleet records...</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{tr("Loading fleet records...")}</p>
         </div>
       </div>
     );
@@ -62,7 +64,7 @@ export default function DataTable({
       {totalPages > 1 && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 0.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Showing page <strong style={{ color: 'var(--text-primary)' }}>{page}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{totalPages}</strong> ({totalRecords} records)
+            {tr("Page")} <strong style={{ color: 'var(--text-primary)' }}>{page}</strong> / <strong style={{ color: 'var(--text-primary)' }}>{totalPages}</strong> ({totalRecords} {tr("records")})
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
@@ -70,14 +72,14 @@ export default function DataTable({
               disabled={page <= 1}
               onClick={() => onPageChange && onPageChange(page - 1)}
             >
-              <ChevronLeft size={16} /> Previous
+              <ChevronLeft size={16} /> {tr("Previous")}
             </button>
             <button
               className="btn btn-secondary btn-sm"
               disabled={page >= totalPages}
               onClick={() => onPageChange && onPageChange(page + 1)}
             >
-              Next <ChevronRight size={16} />
+              {tr("Next")} <ChevronRight size={16} />
             </button>
           </div>
         </div>

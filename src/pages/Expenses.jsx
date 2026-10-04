@@ -15,8 +15,10 @@ import Modal from '../components/Modal.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { expenseApi, vehicleApi, driverApi } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Expenses() {
+  const { tr } = useT();
   const { role } = useAuth();
   const canManage = role === 'admin' || role === 'fleet_manager';
 
@@ -120,13 +122,13 @@ export default function Expenses() {
       setDeleteId(null);
       fetchExpenses();
     } catch (err) {
-      alert(err.message || 'Failed to delete expense');
+      alert(tr(err.message || 'Failed to delete expense'));
     }
   };
 
   const columns = [
     {
-      header: 'Expense ID & Date',
+      header: tr("Expense ID & Date"),
       render: (e) => (
         <div>
           <strong style={{ color: 'var(--text-primary)' }}>{e.expenseId}</strong>
@@ -137,11 +139,11 @@ export default function Expenses() {
       )
     },
     {
-      header: 'Category & Details',
+      header: tr("Category & Details"),
       render: (e) => (
         <div>
           <span className="badge badge-ontrip" style={{ marginBottom: '2px' }}>
-            {e.category}
+            {tr(e.category)}
           </span>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
             {e.description}
@@ -150,36 +152,36 @@ export default function Expenses() {
       )
     },
     {
-      header: 'Vehicle & Driver',
+      header: tr("Vehicle & Driver"),
       render: (e) => (
         <div>
           <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-            {e.vehicle?.registrationNumber || 'Vehicle'}
+            {e.vehicle?.registrationNumber || tr("Vehicle")}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {e.driver?.name || 'Unassigned'}
+            {e.driver?.name || tr("Unassigned")}
           </div>
         </div>
       )
     },
     {
-      header: 'Payment Mode',
+      header: tr("Payment Mode"),
       render: (e) => (
         <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-          {e.paymentMethod}
+          {tr(e.paymentMethod)}
         </span>
       )
     },
     {
-      header: 'Amount',
+      header: tr("Amount"),
       render: (e) => (
         <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-          ₹{e.amount?.toLocaleString()}
+          ₮{e.amount?.toLocaleString()}
         </strong>
       )
     },
     {
-      header: 'Actions',
+      header: tr("Actions"),
       width: '80px',
       render: (e) => (
         canManage && (
@@ -189,7 +191,7 @@ export default function Expenses() {
               setDeleteId(e._id);
               setDeleteConfirmOpen(true);
             }}
-            title="Delete Expense"
+            title={tr("Delete Expense")}
           >
             <Trash2 size={13} />
           </button>
@@ -203,30 +205,30 @@ export default function Expenses() {
       {/* Metric Cards */}
       <div className="grid-cols-4">
         <StatCard
-          title="Gross Operating Expenses"
-          value={`₹${summary.totalAmount.toLocaleString()}`}
-          subtext="Fuel, tolls, insurance, parts"
+          title={tr("Gross Operating Expenses")}
+          value={`₮${summary.totalAmount.toLocaleString()}`}
+          subtext={tr("Fuel, tolls, insurance, parts")}
           icon={DollarSign}
           color="#8b5cf6"
         />
         <StatCard
-          title="Fuel Share"
-          value={`₹${(summary.categoryTotals?.Fuel || 0).toLocaleString()}`}
-          subtext="Pump dispense transactions"
+          title={tr("Fuel Share")}
+          value={`₮${(summary.categoryTotals?.Fuel || 0).toLocaleString()}`}
+          subtext={tr("Pump dispense transactions")}
           icon={Receipt}
           color="#06b6d4"
         />
         <StatCard
-          title="Maintenance Share"
-          value={`₹${((summary.categoryTotals?.Maintenance || 0) + (summary.categoryTotals?.Repair || 0)).toLocaleString()}`}
-          subtext="Workshop & spare parts"
+          title={tr("Maintenance Share")}
+          value={`₮${((summary.categoryTotals?.Maintenance || 0) + (summary.categoryTotals?.Repair || 0)).toLocaleString()}`}
+          subtext={tr("Workshop & spare parts")}
           icon={CreditCard}
           color="#f59e0b"
         />
         <StatCard
-          title="Total Vouchers"
+          title={tr("Total Vouchers")}
           value={summary.count}
-          subtext="Audited financial records"
+          subtext={tr("Audited financial records")}
           icon={PieChart}
           color="#10b981"
         />
@@ -236,15 +238,15 @@ export default function Expenses() {
       <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Fleet Operating Expenses</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{tr("Fleet Operating Expenses")}</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Real-time ledger tracking tolls, per-diem allowances, insurance premiums, and repairs
+              {tr("Real-time ledger tracking tolls, per-diem allowances, insurance premiums, and repairs")}
             </p>
           </div>
 
           {canManage && (
             <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-              <Plus size={16} /> Add Expense Voucher
+              <Plus size={16} /> {tr("Add Expense Voucher")}
             </button>
           )}
         </div>
@@ -256,7 +258,7 @@ export default function Expenses() {
               type="text"
               className="form-control"
               style={{ paddingLeft: '36px' }}
-              placeholder="Search description, rig, voucher ID..."
+              placeholder={tr("Search description, rig, voucher ID...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -271,14 +273,14 @@ export default function Expenses() {
               setPage(1);
             }}
           >
-            <option value="All">All Categories</option>
-            <option value="Fuel">Fuel</option>
-            <option value="Maintenance">Maintenance</option>
-            <option value="Repair">Repair</option>
-            <option value="Insurance">Insurance</option>
-            <option value="Toll">Toll</option>
-            <option value="Trip">Trip Allowance</option>
-            <option value="Other">Other</option>
+            <option value="All">{tr("All Categories")}</option>
+            <option value="Fuel">{tr("Fuel")}</option>
+            <option value="Maintenance">{tr("Maintenance")}</option>
+            <option value="Repair">{tr("Repair")}</option>
+            <option value="Insurance">{tr("Insurance")}</option>
+            <option value="Toll">{tr("Toll")}</option>
+            <option value="Trip">{tr("Trip Allowance")}</option>
+            <option value="Other">{tr("Other")}</option>
           </select>
 
           <select
@@ -290,10 +292,10 @@ export default function Expenses() {
               setPage(1);
             }}
           >
-            <option value="All">All Vehicles</option>
+            <option value="All">{tr("All Vehicles")}</option>
             {vehicles.map((v) => (
               <option key={v._id} value={v._id}>
-                {v.registrationNumber}
+                {tr(v.registrationNumber)}
               </option>
             ))}
           </select>
@@ -305,7 +307,7 @@ export default function Expenses() {
         columns={columns}
         data={expenses}
         loading={loading}
-        emptyMessage="No expenses recorded"
+        emptyMessage={tr("No expenses recorded")}
         emptySubtext="Add an operating expense voucher or clear active filters."
         page={page}
         totalPages={totalPages}
@@ -317,7 +319,7 @@ export default function Expenses() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Add Fleet Operating Expense Voucher"
+        title={tr("Add Fleet Operating Expense Voucher")}
       >
         {actionError && (
           <div style={{ padding: '0.75rem', backgroundColor: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', marginBottom: '1rem', borderRadius: 'var(--radius-md)' }}>
@@ -328,46 +330,46 @@ export default function Expenses() {
         <form onSubmit={handleFormSubmit}>
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Vehicle Rig *</label>
+              <label className="form-label">{tr("Vehicle Rig *")}</label>
               <select
                 className="form-control"
                 value={formData.vehicleId}
                 onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
                 required
               >
-                <option value="">-- Choose Rig --</option>
+                <option value="">{tr("-- Choose Rig --")}</option>
                 {vehicles.map((v) => (
                   <option key={v._id} value={v._id}>
-                    {v.registrationNumber} ({v.brand} {v.model})
+                    {tr(v.registrationNumber)} ({tr(v.brand)} {tr(v.model)})
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Expense Category *</label>
+              <label className="form-label">{tr("Expense Category *")}</label>
               <select
                 className="form-control"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               >
-                <option value="Toll">Toll (FASTag/Cash)</option>
-                <option value="Trip">Trip Allowance / Per-diem</option>
-                <option value="Fuel">Fuel Refill</option>
-                <option value="Maintenance">Maintenance Service</option>
-                <option value="Repair">Emergency Roadside Repair</option>
-                <option value="Insurance">Insurance Policy Premium</option>
-                <option value="Other">Fitness / Certificates / Other</option>
+                <option value="Toll">{tr("Toll (FASTag/Cash)")}</option>
+                <option value="Trip">{tr("Trip Allowance / Per-diem")}</option>
+                <option value="Fuel">{tr("Fuel Refill")}</option>
+                <option value="Maintenance">{tr("Maintenance Service")}</option>
+                <option value="Repair">{tr("Emergency Roadside Repair")}</option>
+                <option value="Insurance">{tr("Insurance Policy Premium")}</option>
+                <option value="Other">{tr("Fitness / Certificates / Other")}</option>
               </select>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Description / Purpose *</label>
+            <label className="form-label">{tr("Description / Purpose *")}</label>
             <input
               type="text"
               className="form-control"
-              placeholder="e.g. FASTag Electronic Toll Plaza Deductions (Delhi-Ahmedabad Highway)"
+              placeholder={tr("e.g. FASTag Electronic Toll Plaza Deductions (Delhi-Ahmedabad Highway)")}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
@@ -376,7 +378,7 @@ export default function Expenses() {
 
           <div className="grid-cols-3" style={{ gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">Amount (₹) *</label>
+              <label className="form-label">{tr("Amount (₮) *")}</label>
               <input
                 type="number"
                 step="0.01"
@@ -387,7 +389,7 @@ export default function Expenses() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Date *</label>
+              <label className="form-label">{tr("Date *")}</label>
               <input
                 type="date"
                 className="form-control"
@@ -397,32 +399,32 @@ export default function Expenses() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Payment Method</label>
+              <label className="form-label">{tr("Payment Method")}</label>
               <select
                 className="form-control"
                 value={formData.paymentMethod}
                 onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
               >
-                <option value="Company Card">Company Card</option>
-                <option value="Fuel Card">Fuel Card</option>
-                <option value="UPI">UPI</option>
-                <option value="Bank Transfer">Bank Transfer</option>
-                <option value="Cash">Cash</option>
+                <option value="Company Card">{tr("Company Card")}</option>
+                <option value="Fuel Card">{tr("Fuel Card")}</option>
+                <option value="UPI">{tr("UPI")}</option>
+                <option value="Bank Transfer">{tr("Bank Transfer")}</option>
+                <option value="Cash">{tr("Cash")}</option>
               </select>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Associated Driver (Optional)</label>
+            <label className="form-label">{tr("Associated Driver (Optional)")}</label>
             <select
               className="form-control"
               value={formData.driverId}
               onChange={(e) => setFormData({ ...formData, driverId: e.target.value })}
             >
-              <option value="">No Driver Associated</option>
+              <option value="">{tr("No Driver Associated")}</option>
               {drivers.map((d) => (
                 <option key={d._id} value={d._id}>
-                  {d.name} ({d.driverId})
+                  {tr(d.name)} ({tr(d.driverId)})
                 </option>
               ))}
             </select>
@@ -430,10 +432,10 @@ export default function Expenses() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button type="submit" className="btn btn-primary">
-              Post Expense
+              {tr("Post Expense")}
             </button>
           </div>
         </form>
@@ -443,19 +445,19 @@ export default function Expenses() {
       <Modal
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
-        title="Delete Expense Record"
+        title={tr("Delete Expense Record")}
         maxWidth="440px"
       >
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Are you sure you want to permanently delete this expense voucher?
+            {tr("Are you sure you want to permanently delete this expense voucher?")}
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
             <button className="btn btn-secondary" onClick={() => setDeleteConfirmOpen(false)}>
-              Cancel
+              {tr("Cancel")}
             </button>
             <button className="btn btn-danger" onClick={confirmDelete}>
-              Yes, Delete
+              {tr("Yes, Delete")}
             </button>
           </div>
         </div>
