@@ -104,5 +104,5 @@ export async function createOrganizationWithAdmin({ organizationName, plan = 'tr
 
 export const planLimits = (org) => {
   const plan = getPlan(org?.plan);
-  return { label: plan.label, maxVehicles: plan.maxVehicles, maxUsers: plan.maxUsers };
+  return { label: plan.label, maxVehicles: plan.maxVehicles, maxUsers: plan.maxUsers, maxDevices: plan.maxDevices };
 };

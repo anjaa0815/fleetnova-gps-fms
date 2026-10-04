@@ -21,7 +21,9 @@ let localStore = {
   fuels: [],
   maintenances: [],
   expenses: [],
-  notifications: []
+  notifications: [],
+  devices: [],
+  positions: []
 };
 
 // Load saved local data if available
@@ -30,18 +32,44 @@ if (fs.existsSync(DATA_FILE)) {
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
     localStore = JSON.parse(raw);
     if (!localStore.organizations) localStore.organizations = [];
+    if (!localStore.devices) localStore.devices = [];
+    if (!localStore.positions) localStore.positions = [];
   } catch (err) {
     console.warn('Could not parse local data store, starting fresh', err);
   }
 }
 
-export function saveLocalStore() {
+// Writes are coalesced (GPS ingestion can update the store many times per second) and always flushed
+// when the process exits.
+let saveTimer = null;
+
+export function flushLocalStore() {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(localStore, null, 2), 'utf-8');
   } catch (err) {
     console.error('Failed to save local store:', err);
   }
 }
+
+export function saveLocalStore() {
+  if (saveTimer) return;
+  saveTimer = setTimeout(flushLocalStore, 250);
+  saveTimer.unref?.();
+}
+
+process.on('exit', () => {
+  if (saveTimer) flushLocalStore();
+});
+['SIGINT', 'SIGTERM'].forEach((signal) =>
+  process.once(signal, () => {
+    flushLocalStore();
+    process.exit(0);
+  })
+);
 
 export function getLocalStore() {
   return localStore;

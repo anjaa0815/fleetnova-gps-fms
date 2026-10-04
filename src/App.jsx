@@ -24,6 +24,7 @@ import FleetAI from './pages/FleetAI.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
 import Organizations from './pages/Organizations.jsx';
+import Devices from './pages/Devices.jsx';
 import { useT } from './i18n/LanguageContext.jsx';
 import LanguageSwitch from './components/LanguageSwitch.jsx';
 
@@ -80,6 +81,7 @@ function MainApp() {
   // Titles mapping
   const titles = {
     organizations: tr('Platform Organizations'),
+    devices: tr('GPS Devices & Tracking'),
     dashboard: tr('Operations Dashboard'),
     vehicles: tr('Vehicles Fleet Registry'),
     'vehicle-details': tr('Vehicle Telematics & History'),
@@ -177,6 +179,12 @@ function MainApp() {
       {currentTab === 'organizations' && (
         <ProtectedRoute allowedRoles={['super_admin']}>
           <Organizations />
+        </ProtectedRoute>
+      )}
+
+      {currentTab === 'devices' && (
+        <ProtectedRoute allowedRoles={['admin', 'fleet_manager']}>
+          <Devices />
         </ProtectedRoute>
       )}
 

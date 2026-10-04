@@ -51,6 +51,20 @@ export const authApi = {
   updateUserStatus: (id, statusData) => apiRequest(`/auth/users/${id}/status`, 'PUT', statusData)
 };
 
+// GPS devices & tracking API
+export const deviceApi = {
+  getAll: () => apiRequest('/devices'),
+  create: (data) => apiRequest('/devices', 'POST', data),
+  update: (id, data) => apiRequest(`/devices/${id}`, 'PUT', data),
+  delete: (id) => apiRequest(`/devices/${id}`, 'DELETE'),
+  connectionInfo: () => apiRequest('/devices/connection-info')
+};
+
+export const trackingApi = {
+  live: () => apiRequest('/tracking/live'),
+  history: (params) => apiRequest(`/tracking/history?${params}`)
+};
+
 // Organization (tenant) API
 export const organizationApi = {
   get: () => apiRequest('/organization'),

@@ -19,6 +19,10 @@ import notificationRoutes from './server/routes/notificationRoutes.js';
 import dashboardRoutes from './server/routes/dashboardRoutes.js';
 import analyticsRoutes from './server/routes/analyticsRoutes.js';
 import aiRoutes from './server/routes/aiRoutes.js';
+import deviceRoutes from './server/routes/deviceRoutes.js';
+import trackingRoutes from './server/routes/trackingRoutes.js';
+import gpsRoutes from './server/routes/gpsRoutes.js';
+import { startGpsServers } from './server/gps/tcpServer.js';
 import organizationRoutes from './server/routes/organizationRoutes.js';
 import platformRoutes from './server/routes/platformRoutes.js';
 import publicRoutes from './server/routes/publicRoutes.js';
@@ -44,6 +48,9 @@ async function startServer() {
   app.use('/api/public', publicRoutes);
   app.use('/api/organization', organizationRoutes);
   app.use('/api/platform', platformRoutes);
+  app.use('/api/gps', gpsRoutes);
+  app.use('/api/devices', deviceRoutes);
+  app.use('/api/tracking', trackingRoutes);
   app.use('/api/vehicles', vehicleRoutes);
   app.use('/api/drivers', driverRoutes);
   app.use('/api/trips', tripRoutes);
@@ -107,6 +114,9 @@ async function startServer() {
     console.log(`FleetAI: http://localhost:${PORT}/api/ai/chat`);
     console.log('');
   });
+
+  // GPS tracker listeners (Teltonika TCP)
+  startGpsServers();
 }
 
 startServer().catch((err) => {

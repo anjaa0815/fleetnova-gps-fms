@@ -2,6 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard,
   Building2,
+  Radio,
   Truck,
   Users,
   Navigation,
@@ -31,6 +32,7 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
     { id: 'dashboard', label: tr("Dashboard"), icon: LayoutDashboard, roles: ['admin', 'fleet_manager', 'driver'] },
     { id: 'vehicles', label: tr("Vehicles"), icon: Truck, roles: ['admin', 'fleet_manager', 'driver'] },
     { id: 'drivers', label: tr("Drivers"), icon: Users, roles: ['admin', 'fleet_manager'] },
+    { id: 'devices', label: tr("GPS Devices"), icon: Radio, roles: ['admin', 'fleet_manager'] },
     { id: 'trips', label: tr("Trips"), icon: Navigation, roles: ['admin', 'fleet_manager', 'driver'] },
     { id: 'fuel', label: tr("Fuel Management"), icon: Fuel, roles: ['admin', 'fleet_manager'] },
     { id: 'maintenance', label: tr("Maintenance"), icon: Wrench, roles: ['admin', 'fleet_manager', 'driver'] },
