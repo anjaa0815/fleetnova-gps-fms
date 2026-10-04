@@ -61,6 +61,28 @@ export const deviceApi = {
   connectionInfo: () => apiRequest('/devices/connection-info')
 };
 
+// GPS reports
+export const gpsReportApi = {
+  get: (params) => apiRequest(`/reports/gps?${params}`),
+  // Downloads the CSV export (needs the auth header, so it cannot be a plain link)
+  downloadCsv: async (params, filename) => {
+    const token = localStorage.getItem('fleetnova_token');
+    const res = await fetch(`${BASE_URL}/reports/gps.csv?${params}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.message || `Request failed with status ${res.status}`);
+    }
+    const url = URL.createObjectURL(await res.blob());
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+};
+
 // Email / SMS alert delivery (organization admin)
 export const deliveryApi = {
   config: () => apiRequest('/delivery/config'),
