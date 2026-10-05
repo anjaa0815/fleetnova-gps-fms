@@ -182,7 +182,7 @@ export const createOrganization = async (req, res, next) => {
 // @route PUT /api/platform/organizations/:id
 export const updateOrganization = async (req, res, next) => {
   try {
-    const { status, plan, trialEndsAt } = req.body;
+    const { status, plan, trialEndsAt, planExpiresAt } = req.body;
     const update = {};
 
     if (status !== undefined) {
@@ -193,6 +193,16 @@ export const updateOrganization = async (req, res, next) => {
       if (!PLAN_IDS.includes(plan)) throw new ServiceError('Invalid plan');
       update.plan = plan;
       if (plan !== 'trial') update.trialEndsAt = null;
+      // a plan assigned by the platform owner has no end date unless one is given below
+      update.planExpiresAt = null;
+    }
+    if (planExpiresAt !== undefined) {
+      if (planExpiresAt === null || planExpiresAt === '') update.planExpiresAt = null;
+      else {
+        const date = new Date(planExpiresAt);
+        if (Number.isNaN(date.getTime())) throw new ServiceError('Invalid plan end date');
+        update.planExpiresAt = date.toISOString();
+      }
     }
     if (trialEndsAt !== undefined) {
       const date = new Date(trialEndsAt);

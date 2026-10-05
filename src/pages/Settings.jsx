@@ -191,6 +191,11 @@ export default function Settings() {
                   {tr("Trial Ends")}: {new Date(orgData.trialEndsAt).toLocaleDateString()}
                 </div>
               )}
+              {orgData.planExpiresAt && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  {tr("Plan active until")}: {new Date(orgData.planExpiresAt).toLocaleDateString()}
+                </div>
+              )}
             </div>
             <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{tr("Vehicles")}</div>

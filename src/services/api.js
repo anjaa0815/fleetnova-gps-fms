@@ -68,6 +68,16 @@ export const deviceApi = {
   connectionInfo: () => apiRequest('/devices/connection-info')
 };
 
+// Billing (QPay)
+export const billingApi = {
+  overview: () => apiRequest('/billing'),
+  createInvoice: (plan, months) => apiRequest('/billing/invoices', 'POST', { plan, months }),
+  getInvoice: (id) => apiRequest(`/billing/invoices/${id}`),
+  cancelInvoice: (id) => apiRequest(`/billing/invoices/${id}/cancel`, 'POST'),
+  simulatePay: (id) => apiRequest(`/billing/invoices/${id}/simulate-pay`, 'POST'),
+  platformInvoices: () => apiRequest('/platform/invoices')
+};
+
 // GPS reports
 export const gpsReportApi = {
   get: (params) => apiRequest(`/reports/gps?${params}`),

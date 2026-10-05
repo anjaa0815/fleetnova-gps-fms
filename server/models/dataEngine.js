@@ -8,6 +8,7 @@ import Fuel from './Fuel.js';
 import Maintenance from './Maintenance.js';
 import Expense from './Expense.js';
 import Notification from './Notification.js';
+import Invoice from './Invoice.js';
 import Organization from './Organization.js';
 import Device from './Device.js';
 import Position from './Position.js';
@@ -38,7 +39,8 @@ export const TENANT_COLLECTIONS = new Set([
   'devices',
   'positions',
   'geofences',
-  'deliveries'
+  'deliveries',
+  'invoices'
 ]);
 
 function forbidden(message) {
@@ -212,6 +214,7 @@ export const DataEngine = {
         case 'positions': return Position;
         case 'geofences': return Geofence;
         case 'deliveries': return Delivery;
+        case 'invoices': return Invoice;
         default: return null;
       }
     }
@@ -293,6 +296,7 @@ export const DataEngine = {
       const Model = await this.getCollection(collectionName);
       let query = Model.findOne({ _id: id, ...scope });
       if (options.lean) query = query.lean(); // plain object, no document hydration (hot paths)
+      if (options.select) query = query.select(options.select);
       const populate = scopePopulate(options.populate, scope);
       if (populate) query = query.populate(populate);
       return await query.exec();
@@ -302,6 +306,24 @@ export const DataEngine = {
     const items = store[collectionName] || [];
     const item = items.find((doc) => (doc._id === id || doc.id === id) && sameOrg(doc, scope));
     return item ? populateDoc(collectionName, item) : null;
+  },
+
+  // Atomic compare-and-set: applies `update` only when the document still matches `condition`
+  // (e.g. { status: 'pending' }). Returns the updated document, or null when it did not match.
+  // This is what makes "mark as paid" safe when a callback and a poll arrive together.
+  async updateIf(collectionName, id, condition, update) {
+    const scope = resolveScope(collectionName, 'write');
+    if (isDBConnected()) {
+      const Model = await this.getCollection(collectionName);
+      return await Model.findOneAndUpdate({ _id: id, ...scope, ...condition }, update, { new: true });
+    }
+    const store = getLocalStore();
+    const items = store[collectionName] || [];
+    const index = items.findIndex((doc) => (doc._id === id || doc.id === id) && sameOrg(doc, scope) && matchFilter(doc, condition));
+    if (index === -1) return null;
+    items[index] = { ...items[index], ...update, updatedAt: new Date().toISOString() };
+    saveLocalStore();
+    return items[index];
   },
 
   // Many device updates in one database operation: items = [{ id, orgId, update }]. Runs outside any tenant

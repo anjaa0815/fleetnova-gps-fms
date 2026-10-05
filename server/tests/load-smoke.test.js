@@ -8,8 +8,8 @@ import { promisify } from 'node:util';
 import { dbEnv } from './dbEnv.js';
 
 const run = promisify(execFile);
-const HTTP_PORT = 5100 + Math.floor(Math.random() * 90);
-const TCP_PORT = 5600 + Math.floor(Math.random() * 90);
+const HTTP_PORT = 7400 + Math.floor(Math.random() * 90);
+const TCP_PORT = 7500 + Math.floor(Math.random() * 90);
 const BASE = `http://127.0.0.1:${HTTP_PORT}`;
 const DATA_FILE = path.join(os.tmpdir(), `fleetnova-load-test-${process.pid}.json`);
 const ADMIN = { email: 'platform@load-smoke.example', password: 'platform-pass-1' };

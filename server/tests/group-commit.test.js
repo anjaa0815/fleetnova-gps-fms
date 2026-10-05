@@ -44,7 +44,7 @@ test('group commit: a full batch is flushed at once; delay 0 writes straight thr
 });
 
 // ---- tenant safety of the grouped writes: records of different organizations in the same batch ----
-const HTTP_PORT = 5300 + Math.floor(Math.random() * 90);
+const HTTP_PORT = 7600 + Math.floor(Math.random() * 90);
 const BASE = `http://127.0.0.1:${HTTP_PORT}/api`;
 const DATA_FILE = path.join(os.tmpdir(), `fleetnova-groupcommit-test-${process.pid}.json`);
 let server;

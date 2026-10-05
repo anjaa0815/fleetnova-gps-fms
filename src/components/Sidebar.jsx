@@ -16,6 +16,7 @@ import {
   Bell,
   Sparkles,
   Settings,
+  CreditCard,
   UserCheck,
   LogOut,
   X
@@ -45,6 +46,7 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
     { id: 'reports', label: tr("Reports"), icon: FileText, roles: ['admin', 'fleet_manager'] },
     { id: 'notifications', label: tr("Notifications"), icon: Bell, roles: ['admin', 'fleet_manager', 'driver'] },
     { id: 'fleet-ai', label: tr("FleetAI Assistant"), icon: Sparkles, roles: ['admin', 'fleet_manager'] },
+    { id: 'billing', label: tr("Billing"), icon: CreditCard, roles: ['admin'] },
     { id: 'settings', label: tr("Settings"), icon: Settings, roles: ['admin', 'fleet_manager'] },
     { id: 'profile', label: tr("My Profile"), icon: UserCheck, roles: ['super_admin', 'admin', 'fleet_manager', 'driver'] }
   ];

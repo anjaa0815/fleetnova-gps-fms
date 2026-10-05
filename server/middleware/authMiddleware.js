@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { DataEngine } from '../models/dataEngine.js';
 import { JWT_SECRET } from '../config/jwt.js';
 import { runWithTenant } from './tenantContext.js';
+import { GRACE_DAYS } from '../config/plans.js';
 
 const deny = (res, status, message) => res.status(status).json({ success: false, message });
 
@@ -31,14 +32,21 @@ export const protect = async (req, res, next) => {
       if (org.status === 'suspended') {
         return deny(res, 403, 'This organization is suspended. Please contact support.');
       }
-      // An expired trial keeps read access but blocks changes until a plan is chosen
-      if (
-        org.plan === 'trial' &&
-        org.trialEndsAt &&
-        new Date(org.trialEndsAt) < new Date() &&
-        !['GET', 'HEAD', 'OPTIONS'].includes(req.method)
-      ) {
-        return deny(res, 402, 'Your trial has expired. Please choose a plan to continue.');
+      // An expired trial or subscription keeps read access but blocks changes until a plan is paid for.
+      // Paying itself (/api/billing) must stay possible, of course.
+      const readOnly = ['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+      const paying = String(req.baseUrl || '').startsWith('/api/billing');
+      if (!readOnly && !paying) {
+        if (org.plan === 'trial' && org.trialEndsAt && new Date(org.trialEndsAt) < new Date()) {
+          return deny(res, 402, 'Your trial has expired. Please choose a plan to continue.');
+        }
+        if (
+          ['basic', 'pro'].includes(org.plan) &&
+          org.planExpiresAt &&
+          Date.now() > new Date(org.planExpiresAt).getTime() + GRACE_DAYS * 24 * 60 * 60 * 1000
+        ) {
+          return deny(res, 402, 'Your subscription has expired. Please renew your plan to continue.');
+        }
       }
     }
   } catch (error) {

@@ -7,7 +7,7 @@ import path from 'node:path';
 import { dbEnv } from './dbEnv.js';
 import { positionRetentionDays, PLANS } from '../config/plans.js';
 
-const HTTP_PORT = 4700 + Math.floor(Math.random() * 90);
+const HTTP_PORT = 7800 + Math.floor(Math.random() * 90);
 const BASE = `http://127.0.0.1:${HTTP_PORT}/api`;
 const DATA_FILE = path.join(os.tmpdir(), `fleetnova-retention-test-${process.pid}.json`);
 const SUPER = { email: 'platform@retention.example', password: 'platform-pass-1' };
