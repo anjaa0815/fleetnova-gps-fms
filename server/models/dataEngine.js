@@ -446,6 +446,45 @@ export const DataEngine = {
     return [...groups.values()];
   },
 
+  // Next human-readable identifier of an organization's collection ("VEH-1001", "VEH-1002", ...).
+  // A per-organization atomic counter: unlike "count + 1" it is safe under concurrent requests and after deletions.
+  // An existing collection is scanned once to continue after its highest number.
+  async nextId(collectionName, field, prefix) {
+    const ctx = getTenantContext();
+    if (!ctx || ctx.platform || !ctx.orgId) throw new Error('nextId needs an organization context');
+    const key = `${ctx.orgId}:${collectionName}`;
+    const pattern = new RegExp(`^${prefix}-(\\d+)$`);
+    const highest = async () => {
+      let max = 1000;
+      for await (const doc of this.stream(collectionName, {}, { select: [field] })) {
+        const match = pattern.exec(String(doc[field] || ''));
+        if (match) max = Math.max(max, Number(match[1]));
+      }
+      return max - 1000;
+    };
+
+    if (isDBConnected()) {
+      const counters = mongoose.connection.collection('counters');
+      if (!(await counters.findOne({ _id: key }))) {
+        await counters.updateOne({ _id: key }, { $max: { seq: await highest() } }, { upsert: true });
+      }
+      const updated = await counters.findOneAndUpdate({ _id: key }, { $inc: { seq: 1 } }, { returnDocument: 'after' });
+      const seq = (updated?.value ?? updated).seq;
+      return `${prefix}-${1000 + seq}`;
+    }
+
+    const store = getLocalStore();
+    if (!store.counters) store.counters = {};
+    if (!(key in store.counters)) {
+      const start = await highest();
+      // no await between the max and the increment below: concurrent first uses cannot get the same number
+      store.counters[key] = Math.max(store.counters[key] ?? 0, start);
+    }
+    store.counters[key] += 1;
+    saveLocalStore();
+    return `${prefix}-${1000 + store.counters[key]}`;
+  },
+
   // Deletes every matching document inside the caller's scope. Returns how many were removed.
   async deleteMany(collectionName, filter = {}) {
     const scope = resolveScope(collectionName, 'write');

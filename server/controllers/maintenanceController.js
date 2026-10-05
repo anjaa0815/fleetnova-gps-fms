@@ -108,8 +108,7 @@ export const createMaintenanceRecord = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Vehicle not found' });
     }
 
-    const count = await DataEngine.countDocuments('maintenances');
-    const maintenanceId = `MNT-${1000 + count + 1}`;
+    const maintenanceId = await DataEngine.nextId('maintenances', 'maintenanceId', 'MNT');
 
     const newRecord = await DataEngine.create('maintenances', {
       maintenanceId,
@@ -134,9 +133,9 @@ export const createMaintenanceRecord = async (req, res, next) => {
     }
 
     // Automatically record in Expenses
-    const expCount = await DataEngine.countDocuments('expenses');
+    const expenseId = await DataEngine.nextId('expenses', 'expenseId', 'EXP');
     await DataEngine.create('expenses', {
-      expenseId: `EXP-${1000 + expCount + 1}`,
+      expenseId,
       vehicle: vehicle._id,
       category: 'Maintenance',
       amount: Number(cost) || 0,

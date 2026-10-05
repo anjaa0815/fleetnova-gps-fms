@@ -97,8 +97,7 @@ export const createExpense = async (req, res, next) => {
     const missing = await findMissingRef([['drivers', driverId, 'Driver'], ['trips', tripId, 'Trip']]);
     if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
 
-    const count = await DataEngine.countDocuments('expenses');
-    const expenseId = `EXP-${1000 + count + 1}`;
+    const expenseId = await DataEngine.nextId('expenses', 'expenseId', 'EXP');
 
     const newExpense = await DataEngine.create('expenses', {
       expenseId,

@@ -260,6 +260,27 @@ Positions are deleted once they are older than the organization's plan allows: *
 
 Trips and stops come from an incremental analyzer (`createAnalyzer`) fed by a database cursor, one vehicle at a time (`DataEngine.stream`, index organization + vehicle + time), and fuel / alert totals are summed by the database (`DataEngine.group`, a `$group` on MongoDB). Measured on MongoDB 7 with 800 000 positions (40 vehicles, 20 days): 31.7 s and 3.0 GB peak memory before, 7.9 s and 315 MB after, identical results (also checked on 3 000 random point sequences against the previous implementation). The trip / stop logic itself is deliberately not a pure aggregation pipeline: it is stateful (gaps, GPS glitches, drift, pauses), and a second implementation would drift from this one.
 
+## 📈 Load testing
+
+`npm run load-test -- --admin-email <platform admin> --admin-password <pw> [--base URL] [--tcp-port P] [--devices N] [--rate R] [--batch B] [--duration S] [--protocol teltonika|osmand] [--readers C]` drives a **running** server: it creates its own organization (enterprise plan), N vehicles and trackers (concurrently), lets the trackers send R packets per second (Teltonika over TCP or OsmAnd over HTTP, B records per packet) while C API clients read the live map, route history and the GPS report, then prints ingest and read latencies and checks that **every acknowledged record was stored**. Start the server with `RATE_LIMIT_DISABLED=true` and a throw-away database. A short version runs in the test suite (`server/tests/load-smoke.test.js`).
+
+Measured on one 4-core / 16 GB container shared by the app (one Node process), MongoDB 7 and the load generator, so treat it as a lower bound for the app process, not a capacity promise:
+
+| Scenario | Throughput | Ingest p95 | Notes |
+|---|---|---|---|
+| 100 trackers x 1 packet/s + 3 readers | 85-100 rec/s | 32 ms | GPS report p50 0.18 s |
+| 300 trackers x 1/s, no readers | 254 rec/s | 16 ms | server CPU 94 % of one core |
+| 300 trackers x 1/s + 3 readers | 254 rec/s | 211 ms | GPS report p50 2.3 s, p95 5.2 s |
+| 500 / 800 trackers x 1/s | saturates at ~330 rec/s | 1.2 s / 1.8 s | latency grows (queueing), 0 errors, 0 lost |
+| 200 trackers, 10 records per packet | 1 693 rec/s | 60 ms | batching is ~5x cheaper per record |
+| 200 OsmAnd (HTTP) trackers x 1/s | 177 rec/s | 24 ms | |
+
+Server memory stayed at 180-360 MB. Findings:
+
+- One app process saturates at roughly **330 single-record packets per second** (about 3 ms of CPU per record, mostly Mongoose document hydration and driver work). Past that, latency grows but nothing fails and nothing is lost. Run several processes behind a load balancer (the TCP listener needs an L4 balancer or one process per port) for more.
+- **Heavy API reads compete with ingestion**: with the same 254 rec/s, three readers raise ingest p95 from 16 ms to 211 ms, mostly because of the GPS report (it runs on the same event loop). Run the report on a separate process or read replica when fleets are large.
+- Found by the first run: identifiers (`VEH-1001`, ...) were generated as "count + 1" and collided under concurrent creates, and after any deletion the next record failed with a 500. They now come from an atomic per-organization counter (`DataEngine.nextId`).
+
 ## 🧪 Tests
 
 `npm test` runs the integration tests against the local JSON store. Set `TEST_MONGODB_URI` (for example `mongodb://127.0.0.1:27017`) to run the same tests on a real MongoDB: every spawned server gets its own throw-away database, and `REQUIRE_MONGODB=true` (set automatically) makes a failed connection fatal instead of silently falling back to the JSON store. CI runs both. `REQUIRE_MONGODB=true` is also a sensible production setting.

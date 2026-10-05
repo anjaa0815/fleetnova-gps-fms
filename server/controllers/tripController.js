@@ -164,8 +164,7 @@ export const createTrip = async (req, res, next) => {
       });
     }
 
-    const count = await DataEngine.countDocuments('trips');
-    const tripId = `TRIP-${1000 + count + 1}`;
+    const tripId = await DataEngine.nextId('trips', 'tripId', 'TRIP');
 
     const newTrip = await DataEngine.create('trips', {
       tripId,

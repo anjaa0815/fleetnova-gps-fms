@@ -146,8 +146,7 @@ export const createDriver = async (req, res, next) => {
       });
     }
 
-    const count = await DataEngine.countDocuments('drivers');
-    const driverId = `DRV-${1000 + count + 1}`;
+    const driverId = await DataEngine.nextId('drivers', 'driverId', 'DRV');
 
     const newDriver = await DataEngine.create('drivers', {
       driverId,
