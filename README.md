@@ -256,7 +256,9 @@ Positions are deleted once they are older than the organization's plan allows: *
 - `POSITION_PURGE_INTERVAL_MS`, `POSITION_PURGE_DELAY_MS` tune the worker.
 - Implemented as a worker instead of a MongoDB TTL index because the retention differs per organization and a TTL index has one value for the whole collection. Run several app instances and each purges (harmless, just redundant). Trips, reports and the live view only see data inside the retention window. Notifications and delivery logs are not purged yet.
 
-Report memory use: trips and stops come from an incremental analyzer (`createAnalyzer`) fed by a database cursor, one vehicle at a time (`DataEngine.stream`, index organization + vehicle + time), and fuel / alert totals are summed by the database (`DataEngine.group`, a `$group` on MongoDB). Measured on MongoDB 7 with 800 000 positions (40 vehicles, 20 days): 31.7 s and 3.0 GB peak memory before, 7.9 s and 315 MB after, identical results (also checked on 3 000 random point sequences against the previous implementation). The trip / stop logic itself is deliberately not a pure aggregation pipeline: it is stateful (gaps, GPS glitches, drift, pauses), and a second implementation would drift from this one.
+## 📊 GPS report performance
+
+Trips and stops come from an incremental analyzer (`createAnalyzer`) fed by a database cursor, one vehicle at a time (`DataEngine.stream`, index organization + vehicle + time), and fuel / alert totals are summed by the database (`DataEngine.group`, a `$group` on MongoDB). Measured on MongoDB 7 with 800 000 positions (40 vehicles, 20 days): 31.7 s and 3.0 GB peak memory before, 7.9 s and 315 MB after, identical results (also checked on 3 000 random point sequences against the previous implementation). The trip / stop logic itself is deliberately not a pure aggregation pipeline: it is stateful (gaps, GPS glitches, drift, pauses), and a second implementation would drift from this one.
 
 ## 🧪 Tests
 
