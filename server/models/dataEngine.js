@@ -385,6 +385,28 @@ export const DataEngine = {
     return removed;
   },
 
+  // Deletes every matching document inside the caller's scope. Returns how many were removed.
+  async deleteMany(collectionName, filter = {}) {
+    const scope = resolveScope(collectionName, 'write');
+    const scopedFilter = { ...filter, ...scope };
+
+    if (isDBConnected()) {
+      const Model = await this.getCollection(collectionName);
+      const result = await Model.deleteMany(scopedFilter);
+      return result.deletedCount || 0;
+    }
+
+    const store = getLocalStore();
+    const items = store[collectionName] || [];
+    const kept = items.filter((doc) => !matchFilter(doc, scopedFilter));
+    const removed = items.length - kept.length;
+    if (removed > 0) {
+      store[collectionName] = kept;
+      saveLocalStore();
+    }
+    return removed;
+  },
+
   async countDocuments(collectionName, filter = {}) {
     const scope = resolveScope(collectionName, 'count');
     const scopedFilter = { ...filter, ...scope };

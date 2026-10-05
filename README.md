@@ -248,6 +248,14 @@ Other tracker brands (Queclink, Ruptela, Meitrack, ...) are not implemented yet:
 
 ---
 
+## 🗄️ GPS position retention
+
+Positions are deleted once they are older than the organization's plan allows: **trial 30 days, basic 90, pro 365, enterprise 730** (`positionRetentionDays` in `server/config/plans.js`, shown in the organization's plan limits). A background worker purges per organization (also suspended ones): first run one minute after start, then every 6 hours.
+
+- `POSITION_RETENTION_DAYS=<n>` overrides every plan (`-1` keeps everything; `0`, fractions and non-numbers are ignored so a typo cannot wipe the data).
+- `POSITION_PURGE_INTERVAL_MS`, `POSITION_PURGE_DELAY_MS` tune the worker.
+- Implemented as a worker instead of a MongoDB TTL index because the retention differs per organization and a TTL index has one value for the whole collection. Run several app instances and each purges (harmless, just redundant). Trips, reports and the live view only see data inside the retention window. Notifications and delivery logs are not purged yet.
+
 ## 🧪 Tests
 
 `npm test` runs the integration tests against the local JSON store. Set `TEST_MONGODB_URI` (for example `mongodb://127.0.0.1:27017`) to run the same tests on a real MongoDB: every spawned server gets its own throw-away database, and `REQUIRE_MONGODB=true` (set automatically) makes a failed connection fatal instead of silently falling back to the JSON store. CI runs both. `REQUIRE_MONGODB=true` is also a sensible production setting.

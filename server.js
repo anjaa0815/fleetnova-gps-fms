@@ -22,6 +22,7 @@ import aiRoutes from './server/routes/aiRoutes.js';
 import deviceRoutes from './server/routes/deviceRoutes.js';
 import deliveryRoutes from './server/routes/deliveryRoutes.js';
 import { startDeliveryWorker } from './server/notify/worker.js';
+import { startRetentionWorker } from './server/gps/retention.js';
 import gpsReportRoutes from './server/routes/gpsReportRoutes.js';
 import geofenceRoutes from './server/routes/geofenceRoutes.js';
 import trackingRoutes from './server/routes/trackingRoutes.js';
@@ -132,6 +133,7 @@ async function startServer() {
   startGpsServers();
   // Email / SMS delivery of alerts (queue worker)
   startDeliveryWorker();
+  startRetentionWorker();
 }
 
 startServer().catch((err) => {
