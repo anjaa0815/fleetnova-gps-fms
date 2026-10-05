@@ -1,8 +1,10 @@
 import { DataEngine } from '../models/dataEngine.js';
-import { runWithTenant } from '../middleware/tenantContext.js';
+import { runWithTenant, runAsSystem } from '../middleware/tenantContext.js';
+import { createGroupCommit } from './groupCommit.js';
 import { getLocalStore, isDBConnected } from '../config/db.js';
 import { IO } from './protocols/teltonika.js';
 import { evaluateAlerts } from './alerts.js';
+import { getCachedOrganization } from './lookupCache.js';
 
 const MAX_PAST_MS = 365 * 24 * 60 * 60 * 1000; // buffered offline records can be old
 const MAX_FUTURE_MS = 24 * 60 * 60 * 1000;
@@ -18,9 +20,11 @@ const isActive = (org) => org && org.status === 'active';
 
 // Resolves a device that is allowed to send data right now (exists and its organization is active)
 export async function loadActiveDevice(deviceId) {
-  const device = await DataEngine.findById('devices', deviceId);
+  // The device is read every time (its alert state and last position change with every batch, and a removed
+  // device must be cut off at once); the organization comes from a short-lived cache.
+  const device = await DataEngine.findById('devices', deviceId, { lean: true });
   if (!device) return null;
-  const org = await DataEngine.findById('organizations', device.orgId);
+  const org = await getCachedOrganization(device.orgId);
   return isActive(org) ? device : null;
 }
 
@@ -34,15 +38,15 @@ export async function markDeviceSeen(device) {
   const fresh = await loadActiveDevice(device._id);
   if (!fresh) return;
   await runWithTenant({ orgId: String(fresh.orgId) }, () =>
-    DataEngine.findByIdAndUpdate('devices', fresh._id, { lastSeenAt: new Date(now).toISOString() })
+    DataEngine.updateById('devices', fresh._id, { lastSeenAt: new Date(now).toISOString() })
   );
 }
 
 // Authenticates by the identifier a tracker sends (IMEI / id). Returns the device or null.
 export async function findActiveDeviceByImei(imei) {
-  const device = await DataEngine.findOne('devices', { imei: String(imei) });
+  const device = await DataEngine.findOne('devices', { imei: String(imei) }, { lean: true });
   if (!device) return null;
-  const org = await DataEngine.findById('organizations', device.orgId);
+  const org = await getCachedOrganization(device.orgId);
   return isActive(org) ? device : null;
 }
 
@@ -58,6 +62,13 @@ export function validateRecord(record, now = Date.now()) {
   return true;
 }
 
+// Writes of many trackers are grouped into one database operation each (see groupCommit.js). The flush runs
+// outside any tenant context on purpose: every document / item carries its own orgId.
+const positionWrites = createGroupCommit((lists) =>
+  runAsSystem(() => DataEngine.createMany('positions', lists.flat(), { raw: true }))
+);
+const deviceWrites = createGroupCommit((items) => runAsSystem(() => DataEngine.bulkUpdateById('devices', items)));
+
 function toPosition(device, record) {
   const io = record.io || {};
   const attributes = {};
@@ -67,6 +78,7 @@ function toPosition(device, record) {
       attributes[`io${key}`] = value;
     });
   return {
+    orgId: device.orgId,
     device: device._id,
     vehicle: device.vehicle?._id || device.vehicle || null,
     lat: record.lat,
@@ -110,7 +122,16 @@ export async function ingestRecords(device, records) {
     }
     recentTimestamps.set(String(fresh._id), seen);
 
-    if (docs.length) await DataEngine.createMany('positions', docs);
+    // grouped raw insert: the records were validated above and toPosition() sets every field
+    if (docs.length) {
+      try {
+        await positionWrites.add(docs);
+      } catch (error) {
+        // not stored: the tracker will send them again, so they must not look like duplicates then
+        accepted.forEach((record) => seen.delete(record.timestamp.getTime()));
+        throw error;
+      }
+    }
 
     const update = { lastSeenAt: new Date(now).toISOString() };
     const previous = fresh.lastPosition?.timestamp ? new Date(fresh.lastPosition.timestamp).getTime() : 0;
@@ -130,14 +151,14 @@ export async function ingestRecords(device, records) {
     // Geofence / speed alerts for the new live records. A failure here must never lose the positions.
     if (accepted.length) {
       try {
-        const org = await DataEngine.findById('organizations', fresh.orgId);
+        const org = await getCachedOrganization(fresh.orgId);
         update.alertState = await evaluateAlerts({ device: fresh, org, records: accepted, previousTimestamp: previous });
       } catch (error) {
         console.error(`[GPS] Alert evaluation failed: ${error.message}`);
       }
     }
 
-    await DataEngine.findByIdAndUpdate('devices', fresh._id, update);
+    await deviceWrites.add({ id: fresh._id, orgId: fresh.orgId, update });
 
     if (!isDBConnected()) pruneLocalPositions();
     return records.length;
