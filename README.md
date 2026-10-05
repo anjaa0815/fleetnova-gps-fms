@@ -264,22 +264,26 @@ Trips and stops come from an incremental analyzer (`createAnalyzer`) fed by a da
 
 `npm run load-test -- --admin-email <platform admin> --admin-password <pw> [--base URL] [--tcp-port P] [--devices N] [--rate R] [--batch B] [--duration S] [--protocol teltonika|osmand] [--readers C]` drives a **running** server: it creates its own organization (enterprise plan), N vehicles and trackers (concurrently), lets the trackers send R packets per second (Teltonika over TCP or OsmAnd over HTTP, B records per packet) while C API clients read the live map, route history and the GPS report, then prints ingest and read latencies and checks that **every acknowledged record was stored**. Start the server with `RATE_LIMIT_DISABLED=true` and a throw-away database. A short version runs in the test suite (`server/tests/load-smoke.test.js`).
 
-Measured on one 4-core / 16 GB container shared by the app (one Node process), MongoDB 7 and the load generator, so treat it as a lower bound for the app process, not a capacity promise:
+Measured on one 4-core / 16 GB container shared by the app (one Node process), MongoDB 7 and the load generator, so treat it as a lower bound for the app process, not a capacity promise. Before = the code before the ingestion optimisation, same machine, same day:
 
-| Scenario | Throughput | Ingest p95 | Notes |
-|---|---|---|---|
-| 100 trackers x 1 packet/s + 3 readers | 85-100 rec/s | 32 ms | GPS report p50 0.18 s |
-| 300 trackers x 1/s, no readers | 254 rec/s | 16 ms | server CPU 94 % of one core |
-| 300 trackers x 1/s + 3 readers | 254 rec/s | 211 ms | GPS report p50 2.3 s, p95 5.2 s |
-| 500 / 800 trackers x 1/s | saturates at ~330 rec/s | 1.2 s / 1.8 s | latency grows (queueing), 0 errors, 0 lost |
-| 200 trackers, 10 records per packet | 1 693 rec/s | 60 ms | batching is ~5x cheaper per record |
-| 200 OsmAnd (HTTP) trackers x 1/s | 177 rec/s | 24 ms | |
+| Scenario (1 packet = 1 record unless noted) | Before | After |
+|---|---|---|
+| 300 trackers x 1/s: server CPU, ingest p95 | 95 % of a core, 41 ms | 67 % of a core, 27 ms |
+| Where one process saturates | ~340 rec/s (800 trackers: p95 1.6 s) | ~1 900 rec/s (2 500 trackers: p95 0.75 s); 1 500 trackers: p95 33 ms |
+| 300 trackers + 3 API readers: ingest p95 | 395 ms | 76 ms |
+| ... GPS report p50 / p95 | 3.5 s / 8.4 s | 0.47 s / 0.66 s |
+| 400 trackers x 10 records per packet | 2 432 rec/s, p95 1.2 s (saturated) | 3 243 rec/s, p95 28 ms, 70 % CPU (not saturated) |
+| 200 OsmAnd (HTTP) trackers x 1/s | 177 rec/s, p95 24 ms | not re-measured |
 
-Server memory stayed at 180-360 MB. Findings:
+Every run: 0 errors, every acknowledged record stored, server memory 170-440 MB. What changed (all in the ingestion path, `server/gps/ingestion.js`):
 
-- One app process saturates at roughly **330 single-record packets per second** (about 3 ms of CPU per record, mostly Mongoose document hydration and driver work). Past that, latency grows but nothing fails and nothing is lost. Run several processes behind a load balancer (the TCP listener needs an L4 balancer or one process per port) for more.
-- **Heavy API reads compete with ingestion**: with the same 254 rec/s, three readers raise ingest p95 from 16 ms to 211 ms, mostly because of the GPS report (it runs on the same event loop). Run the report on a separate process or read replica when fleets are large.
-- Found by the first run: identifiers (`VEH-1001`, ...) were generated as "count + 1" and collided under concurrent creates, and after any deletion the next record failed with a 500. They now come from an atomic per-organization counter (`DataEngine.nextId`).
+- The device is read as a plain object (`lean`), the organization comes from a short-lived cache (`GPS_ORG_CACHE_MS`, default 5000; changes made through this server invalidate it at once, another app instance sees a change after at most that long), and the device update returns no document.
+- **Group commit** (`server/gps/groupCommit.js`): writes of many trackers arriving within `GPS_BATCH_MS` (default 10, 0 = off) become one `insertMany` for positions and one `bulkWrite` for device state. A tracker is still acknowledged only after its own records are stored; a failed batch fails all of its callers, and their timestamps are forgotten so the retransmission is not dropped as a duplicate. The grouped flush runs outside any tenant context and every document carries its own organization (tested with two organizations in the same batch).
+- Positions are inserted without building Mongoose documents (`createMany(..., { raw: true })`; ObjectId / Date fields are cast from the schema).
+
+Remaining limits: a single process still tops out at roughly 2 000 single-record packets per second here; the next step is several processes behind an L4 balancer (the TCP listener needs one process per port or a balancer). The GPS report runs on the same event loop as ingestion, so very heavy report use still slows the live path (much less than before). The plan-limit check (count, then create) can still overshoot a limit under heavy concurrency.
+
+Found by the first load run: identifiers (`VEH-1001`, ...) were generated as "count + 1" and collided under concurrent creates, and after any deletion the next record failed with a 500. They now come from an atomic per-organization counter (`DataEngine.nextId`).
 
 ## 🧪 Tests
 

@@ -168,6 +168,33 @@ function matchFilter(doc, filter = {}) {
   return true;
 }
 
+// Casts top-level ObjectId / Date fields of a plain object the way the schema would (for raw inserts)
+const casters = new Map();
+function rawCaster(Model) {
+  let caster = casters.get(Model.modelName);
+  if (!caster) {
+    const objectIds = [];
+    const dates = [];
+    Object.entries(Model.schema.paths).forEach(([path, type]) => {
+      if (path.includes('.')) return;
+      if (type.instance === 'ObjectId' || type.instance === 'ObjectID') objectIds.push(path);
+      if (type.instance === 'Date') dates.push(path);
+    });
+    const createdAt = Model.schema.options.timestamps?.createdAt;
+    const createdKey = createdAt === undefined ? (Model.schema.options.timestamps ? 'createdAt' : null) : createdAt === false ? null : createdAt === true ? 'createdAt' : createdAt;
+    const ObjectId = mongoose.Types.ObjectId;
+    caster = (doc) => {
+      const out = { ...doc };
+      for (const path of objectIds) if (out[path] != null && !(out[path] instanceof ObjectId)) out[path] = new ObjectId(String(out[path]));
+      for (const path of dates) if (out[path] != null && !(out[path] instanceof Date)) out[path] = new Date(out[path]);
+      if (createdKey && out[createdKey] == null) out[createdKey] = new Date();
+      return out;
+    };
+    casters.set(Model.modelName, caster);
+  }
+  return caster;
+}
+
 export const DataEngine = {
   async getCollection(name) {
     if (isDBConnected()) {
@@ -246,6 +273,7 @@ export const DataEngine = {
     if (isDBConnected()) {
       const Model = await this.getCollection(collectionName);
       let query = Model.findOne(scopedFilter);
+      if (options.lean) query = query.lean();
       if (options.select) query = query.select(options.select);
       const populate = scopePopulate(options.populate, scope);
       if (populate) query = query.populate(populate);
@@ -264,6 +292,7 @@ export const DataEngine = {
     if (isDBConnected()) {
       const Model = await this.getCollection(collectionName);
       let query = Model.findOne({ _id: id, ...scope });
+      if (options.lean) query = query.lean(); // plain object, no document hydration (hot paths)
       const populate = scopePopulate(options.populate, scope);
       if (populate) query = query.populate(populate);
       return await query.exec();
@@ -273,6 +302,51 @@ export const DataEngine = {
     const items = store[collectionName] || [];
     const item = items.find((doc) => (doc._id === id || doc.id === id) && sameOrg(doc, scope));
     return item ? populateDoc(collectionName, item) : null;
+  },
+
+  // Many device updates in one database operation: items = [{ id, orgId, update }]. Runs outside any tenant
+  // context, so each item must name its organization, and it only matches a document of that organization.
+  async bulkUpdateById(collectionName, items) {
+    if (items.some((item) => !item.orgId)) throw new Error('bulkUpdateById needs an orgId for every item');
+    if (isDBConnected()) {
+      const Model = await this.getCollection(collectionName);
+      await Model.bulkWrite(
+        items.map(({ id, orgId, update }) => ({ updateOne: { filter: { _id: id, orgId }, update: { $set: update } } })),
+        { ordered: true }
+      );
+      return;
+    }
+    const docs = getLocalStore()[collectionName] || [];
+    for (const { id, orgId, update } of items) {
+      const index = docs.findIndex((doc) => (doc._id === String(id) || doc.id === String(id)) && String(doc.orgId) === String(orgId));
+      if (index !== -1) docs[index] = { ...docs[index], ...update, updatedAt: new Date().toISOString() };
+    }
+    saveLocalStore();
+  },
+
+  // Like findByIdAndUpdate but returns nothing (no document is built): for hot paths that ignore the result.
+  // Returns true when a document matched.
+  async updateById(collectionName, id, updateData) {
+    const scope = resolveScope(collectionName, 'write');
+    const safeUpdate = { ...updateData };
+    if (getTenantContext()) {
+      delete safeUpdate.orgId;
+      delete safeUpdate._id;
+    }
+
+    if (isDBConnected()) {
+      const Model = await this.getCollection(collectionName);
+      const result = await Model.updateOne({ _id: id, ...scope }, safeUpdate);
+      return result.matchedCount > 0;
+    }
+
+    const store = getLocalStore();
+    const items = store[collectionName] || [];
+    const index = items.findIndex((doc) => (doc._id === id || doc.id === id) && sameOrg(doc, scope));
+    if (index === -1) return false;
+    items[index] = { ...items[index], ...safeUpdate, updatedAt: new Date().toISOString() };
+    saveLocalStore();
+    return true;
   },
 
   async create(collectionName, data) {
@@ -309,7 +383,10 @@ export const DataEngine = {
   },
 
   // Bulk insert for high-volume data (GPS positions). Same tenant rules as create().
-  async createMany(collectionName, docs) {
+  // options.raw (MongoDB only): insert plain documents straight through the driver, without building and
+  // validating Mongoose documents. ObjectId and Date fields declared in the schema are cast here; the caller
+  // must send valid data and every field it needs (schema defaults and validators are not applied).
+  async createMany(collectionName, docs, options = {}) {
     if (!docs.length) return [];
     const ctx = getTenantContext();
     const payloads = docs.map((data) => {
@@ -326,6 +403,11 @@ export const DataEngine = {
 
     if (isDBConnected()) {
       const Model = await this.getCollection(collectionName);
+      if (options.raw) {
+        const cast = rawCaster(Model);
+        await Model.collection.insertMany(payloads.map(cast));
+        return payloads.length;
+      }
       return await Model.insertMany(payloads);
     }
 

@@ -1,3 +1,4 @@
+import { invalidateOrganization } from '../gps/lookupCache.js';
 import { DataEngine } from '../models/dataEngine.js';
 import { PLAN_IDS, ORG_STATUSES } from '../config/plans.js';
 import {
@@ -111,6 +112,7 @@ export const updateMyOrganization = async (req, res, next) => {
     }
 
     const org = await DataEngine.findByIdAndUpdate('organizations', req.org._id, update);
+    invalidateOrganization(req.org._id);
     return res.status(200).json({
       success: true,
       message: 'Organization updated successfully',
@@ -199,6 +201,7 @@ export const updateOrganization = async (req, res, next) => {
     }
 
     const org = await DataEngine.findByIdAndUpdate('organizations', req.params.id, update);
+    invalidateOrganization(req.params.id);
     if (!org) return res.status(404).json({ success: false, message: 'Organization not found' });
 
     return res.status(200).json({
