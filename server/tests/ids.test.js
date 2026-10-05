@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { dbEnv } from './dbEnv.js';
 
-const HTTP_PORT = 4900 + Math.floor(Math.random() * 90);
+const HTTP_PORT = 7700 + Math.floor(Math.random() * 90);
 const BASE = `http://127.0.0.1:${HTTP_PORT}/api`;
 const DATA_FILE = path.join(os.tmpdir(), `fleetnova-ids-test-${process.pid}.json`);
 let server;

@@ -9,9 +9,10 @@ import path from 'node:path';
 import { dbEnv } from './dbEnv.js';
 import { addMonths } from '../services/billing.js';
 
-const HTTP_PORT = 5400 + Math.floor(Math.random() * 90);
-const MOCK_PORT = 5600 + Math.floor(Math.random() * 90);
-const SMTP_PORT = 5800 + Math.floor(Math.random() * 90);
+// port bands of the newer test files are separate from every other file (the runner runs files in parallel)
+const HTTP_PORT = 7000 + Math.floor(Math.random() * 90);
+const MOCK_PORT = 7200 + Math.floor(Math.random() * 90);
+const SMTP_PORT = 7300 + Math.floor(Math.random() * 90);
 const BASE = `http://127.0.0.1:${HTTP_PORT}`;
 const API = `${BASE}/api`;
 const DATA_FILE = path.join(os.tmpdir(), `fleetnova-billing-test-${process.pid}.json`);
@@ -440,14 +441,14 @@ test('the platform owner sees every invoice with the organization name', async (
 
 // ---- modes without QPay credentials ----------------------------------------------------------------------
 test('without QPay credentials: simulated outside production, disabled in production', async () => {
-  const devPort = HTTP_PORT + 200;
-  const prodPort = HTTP_PORT + 201;
+  const devPort = HTTP_PORT + 100;
+  const prodPort = HTTP_PORT + 101;
   const devFile = `${DATA_FILE}.dev`;
   const prodFile = `${DATA_FILE}.prod`;
   fs.rmSync(devFile, { force: true });
   fs.rmSync(prodFile, { force: true });
   const common = { QPAY_USERNAME: '', QPAY_PASSWORD: '', QPAY_INVOICE_CODE: '', PLAN_PRICE_BASIC: '50000' };
-  const exposedPort = HTTP_PORT + 202;
+  const exposedPort = HTTP_PORT + 102;
   const exposedFile = `${DATA_FILE}.exposed`;
   fs.rmSync(exposedFile, { force: true });
   // a server that forgot NODE_ENV=production but listens on all interfaces must not offer the free "mark as paid"
