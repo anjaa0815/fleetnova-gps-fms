@@ -1,12 +1,11 @@
 import { DataEngine } from '../models/dataEngine.js';
-import { analyzePoints, dayKey } from '../reports/gpsAnalysis.js';
+import { createAnalyzer, dayKey } from '../reports/gpsAnalysis.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_RANGE_MS = 31 * DAY_MS;
 const ALERT_TYPES = ['speeding', 'geofence_enter', 'geofence_exit'];
 
 const round = (n, d = 1) => Math.round(n * 10 ** d) / 10 ** d;
-const idOf = (ref) => String(ref?._id || ref || '');
 
 function parseRange(query) {
   const to = query.to ? new Date(query.to) : new Date();
@@ -20,49 +19,43 @@ function parseRange(query) {
 export async function buildGpsReport({ from, to, vehicleId }) {
   const vehicles = vehicleId ? [await DataEngine.findById('vehicles', vehicleId)].filter(Boolean) : await DataEngine.find('vehicles');
 
-  const positionFilter = { timestamp: { $gte: from, $lte: to } };
-  if (vehicleId) positionFilter.vehicle = String(vehicleId);
-  const positions = await DataEngine.find('positions', positionFilter, { sort: { timestamp: 1 } });
-
-  const byVehicle = new Map();
-  for (const p of positions) {
-    const id = idOf(p.vehicle);
-    if (!id) continue; // positions of trackers that were not linked to a vehicle
-    if (!byVehicle.has(id)) byVehicle.set(id, []);
-    byVehicle.get(id).push({
-      lat: p.lat,
-      lng: p.lng,
-      speed: p.speed || 0,
-      ignition: p.ignition,
-      timestamp: new Date(p.timestamp).getTime()
-    });
+  // Positions are streamed one vehicle at a time (index: organization + vehicle + time) into the incremental
+  // analyzer, so memory use depends on the number of trips and stops, not on the number of points.
+  const analysisByVehicle = new Map();
+  for (const vehicle of vehicles) {
+    const analyzer = createAnalyzer();
+    const stream = DataEngine.stream(
+      'positions',
+      { vehicle: String(vehicle._id), timestamp: { $gte: from, $lte: to } },
+      { sort: { timestamp: 1 }, select: ['lat', 'lng', 'speed', 'ignition', 'timestamp'] }
+    );
+    // eslint-disable-next-line no-await-in-loop
+    for await (const p of stream) {
+      analyzer.push({ lat: p.lat, lng: p.lng, speed: p.speed || 0, ignition: p.ignition, timestamp: new Date(p.timestamp).getTime() });
+    }
+    analysisByVehicle.set(String(vehicle._id), analyzer.finish());
   }
 
-  // fuel purchases and alerts in the same period, per vehicle
-  const fuels = await DataEngine.find('fuels', { date: { $gte: from, $lte: to } });
+  // fuel purchases and alerts in the same period, per vehicle: summed by the database
   const fuelByVehicle = new Map();
-  fuels.forEach((f) => {
-    const id = idOf(f.vehicle);
-    const entry = fuelByVehicle.get(id) || { liters: 0, cost: 0 };
-    entry.liters += f.quantity || 0;
-    entry.cost += f.totalCost || 0;
-    fuelByVehicle.set(id, entry);
-  });
+  (await DataEngine.group('fuels', { date: { $gte: from, $lte: to } }, { by: ['vehicle'], sum: { liters: 'quantity', cost: 'totalCost' } }))
+    .forEach((g) => fuelByVehicle.set(g.key.vehicle, { liters: g.liters, cost: g.cost }));
 
-  const alerts = await DataEngine.find('notifications', { createdAt: { $gte: from, $lte: to } });
   const alertsByVehicle = new Map();
-  alerts
-    .filter((n) => ALERT_TYPES.includes(n.type))
-    .forEach((n) => {
-      const entry = alertsByVehicle.get(String(n.relatedEntityId)) || { speeding: 0, geofence: 0 };
-      if (n.type === 'speeding') entry.speeding += 1;
-      else entry.geofence += 1;
-      alertsByVehicle.set(String(n.relatedEntityId), entry);
-    });
+  (await DataEngine.group(
+    'notifications',
+    { createdAt: { $gte: from, $lte: to }, type: { $in: ALERT_TYPES } },
+    { by: ['relatedEntityId', 'type'] }
+  )).forEach((g) => {
+    const entry = alertsByVehicle.get(g.key.relatedEntityId) || { speeding: 0, geofence: 0 };
+    if (g.key.type === 'speeding') entry.speeding += g.count;
+    else entry.geofence += g.count;
+    alertsByVehicle.set(g.key.relatedEntityId, entry);
+  });
 
   const rows = vehicles.map((vehicle) => {
     const id = String(vehicle._id);
-    const analysis = analyzePoints(byVehicle.get(id) || []);
+    const analysis = analysisByVehicle.get(id);
     const fuel = fuelByVehicle.get(id) || { liters: 0, cost: 0 };
     const alertCounts = alertsByVehicle.get(id) || { speeding: 0, geofence: 0 };
     return {

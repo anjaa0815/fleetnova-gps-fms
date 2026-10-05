@@ -6,7 +6,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { encodeAvlPacket, encodeLogin } from '../gps/protocols/teltonika.js';
-import { analyzePoints } from '../reports/gpsAnalysis.js';
+import { analyzePoints, createAnalyzer } from '../reports/gpsAnalysis.js';
 import { dbEnv } from './dbEnv.js';
 
 const HTTP_PORT = 3500 + Math.floor(Math.random() * 90);
@@ -31,6 +31,24 @@ const scenario = () => [
   ...Array.from({ length: 11 }, (_, i) => pt(7 + i, 47.94, 0)), // minutes 7..17 stationary
   pt(18, 47.95, 50), pt(19, 47.96, 50)
 ];
+
+test('streaming analyzer gives the same result as analyzing the whole list, glitches inside a pause included', () => {
+  const T0 = Date.UTC(2026, 0, 1);
+  const q = (min, lat, speed, ignition) => ({ lat, lng: 106.9, speed, ignition, timestamp: T0 + min * 60000 });
+  // moving, a 12 minute pause with the engine on (one glitch reading "ignition off" in the middle), moving again
+  const points = [q(0, 47.90, 50, true), q(1, 47.91, 50, true), q(2, 47.91, 0, true), q(4, 47.91, 0, true), q(5, 60.0, 0, false),
+    q(7, 47.91, 0, true), q(9, 47.91, 0, true), q(14, 47.91, 0, true), q(15, 47.92, 50, true)];
+  const whole = analyzePoints(points);
+  assert.equal(whole.stops.length, 1);
+  assert.equal(whole.stops[0].durationMin, 12);
+  assert.equal(whole.stops[0].idle, true);
+  assert.equal(whole.pointCount, 9); // the glitch is a received point, only its position is ignored
+
+  const analyzer = createAnalyzer();
+  points.forEach((p) => analyzer.push(p));
+  assert.deepEqual(analyzer.finish(), whole);
+  assert.deepEqual(createAnalyzer().finish(), analyzePoints([]));
+});
 
 test('trips, stops and distance', () => {
   const r = analyzePoints(scenario());
