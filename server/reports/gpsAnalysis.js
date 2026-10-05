@@ -20,17 +20,24 @@ export const dayKey = (ms) => dayFormatter.format(new Date(ms));
 const iso = (ms) => new Date(ms).toISOString();
 const round = (n, digits = 1) => Math.round(n * 10 ** digits) / 10 ** digits;
 
-// points: [{ lat, lng, speed, ignition, timestamp: <ms> }] sorted ascending
-export function analyzePoints(points) {
+// Incremental analyzer: feed time-ordered points one by one with push() and read the result with finish().
+// Memory use is proportional to the number of trips and stops, not to the number of points, so a vehicle can be
+// streamed from the database. point: { lat, lng, speed, ignition, timestamp: <ms> }
+export function createAnalyzer() {
   const trips = [];
   const stops = [];
-  const daily = new Map(); // day -> km
+  const daily = new Map(); // day -> metres
   let distanceM = 0;
   let drivingMs = 0;
   let maxSpeed = 0;
+  let pointCount = 0;
+  let firstTs = null;
+  let lastTs = null;
 
   let trip = null; // open trip
-  let stopStart = null; // index of the first stationary point of the current pause
+  let stopFirst = null; // first stationary point of the current pause
+  let votes = { known: 0, on: 0 }; // ignition readings of every point since stopFirst
+  let votesAtPrev = { known: 0, on: 0 }; // the same, as of the last accepted point
   let prev = null;
 
   const addDistance = (meters, ms) => {
@@ -61,51 +68,59 @@ export function analyzePoints(points) {
     trip = null;
   };
 
-  const recordStop = (fromIdx, toPoint) => {
-    const first = points[fromIdx];
-    const durationMs = toPoint.timestamp - first.timestamp;
+  // The pause lasted from stopFirst to the last accepted point (`prev`)
+  const recordStop = () => {
+    const first = stopFirst;
+    const durationMs = prev.timestamp - first.timestamp;
     if (durationMs < MIN_STOP_MS) return;
-    const slice = points.filter((p) => p.timestamp >= first.timestamp && p.timestamp <= toPoint.timestamp);
-    const known = slice.filter((p) => p.ignition === true || p.ignition === false);
-    const ignitionOn = known.length > 0 && known.filter((p) => p.ignition).length / known.length > 0.5;
+    const { known, on } = votesAtPrev;
+    const ignitionOn = known > 0 && on / known > 0.5;
     stops.push({
       start: iso(first.timestamp),
-      end: iso(toPoint.timestamp),
+      end: iso(prev.timestamp),
       durationMin: round(durationMs / 60000, 1),
       lat: first.lat,
       lng: first.lng,
-      ignition: known.length > 0 ? ignitionOn : null,
+      ignition: known > 0 ? ignitionOn : null,
       idle: ignitionOn
     });
   };
 
-  for (let i = 0; i < points.length; i += 1) {
-    const p = points[i];
+  const push = (p) => {
+    pointCount += 1;
+    if (firstTs === null) firstTs = p.timestamp;
+    lastTs = p.timestamp;
+
     const dt = prev ? p.timestamp - prev.timestamp : 0;
     const gap = prev && dt > MAX_GAP_MS;
 
     if (gap) {
       // unknown time: end the trip / pause where the data stops
       closeTrip(prev);
-      if (stopStart !== null) recordStop(stopStart, prev);
-      stopStart = null;
+      if (stopFirst !== null) recordStop();
+      stopFirst = null;
       prev = null;
+    }
+
+    if (stopFirst !== null && (p.ignition === true || p.ignition === false)) {
+      votes.known += 1;
+      if (p.ignition) votes.on += 1;
     }
 
     let meters = 0;
     if (prev && dt > 0) {
       meters = haversineMeters(prev.lat, prev.lng, p.lat, p.lng);
-      if ((meters / 1000) / (dt / 3600000) > MAX_JUMP_KMH) continue; // GPS glitch: drop the point
+      if ((meters / 1000) / (dt / 3600000) > MAX_JUMP_KMH) return; // GPS glitch: drop the point
     }
 
     const moving = p.speed >= MOVING_KMH;
     if (p.speed > maxSpeed) maxSpeed = p.speed;
 
     if (moving) {
-      if (stopStart !== null) {
+      if (stopFirst !== null) {
         // the pause ended when the vehicle moved again (it was last stationary at `prev`)
-        if (prev) recordStop(stopStart, prev);
-        stopStart = null;
+        if (prev) recordStop();
+        stopFirst = null;
       }
       if (!trip) {
         const origin = prev && prev.speed < MOVING_KMH ? prev : p;
@@ -119,35 +134,55 @@ export function analyzePoints(points) {
     if (prev && (moving || prev.speed >= MOVING_KMH)) addDistance(meters, p.timestamp);
 
     if (!moving) {
-      if (stopStart === null) stopStart = i;
-      if (trip && p.timestamp - points[stopStart].timestamp >= MIN_STOP_MS) closeTrip(points[stopStart]);
+      if (stopFirst === null) {
+        stopFirst = p;
+        votes = { known: 0, on: 0 };
+        if (p.ignition === true || p.ignition === false) {
+          votes.known = 1;
+          if (p.ignition) votes.on = 1;
+        }
+      }
+      if (trip && p.timestamp - stopFirst.timestamp >= MIN_STOP_MS) closeTrip(stopFirst);
     }
 
     prev = p;
-  }
-
-  if (prev) {
-    closeTrip(prev);
-    if (stopStart !== null) recordStop(stopStart, prev);
-  }
-
-  const idleMs = stops.filter((s) => s.idle).reduce((sum, s) => sum + s.durationMin * 60000, 0);
-  const stopMs = stops.reduce((sum, s) => sum + s.durationMin * 60000, 0);
-  const km = distanceM / 1000;
-
-  return {
-    distanceKm: round(km, 1),
-    tripCount: trips.length,
-    drivingMin: Math.round(drivingMs / 60000),
-    stopMin: Math.round(stopMs / 60000),
-    idleMin: Math.round(idleMs / 60000),
-    maxSpeed,
-    avgSpeed: drivingMs > 0 ? round(km / (drivingMs / 3600000), 1) : 0,
-    pointCount: points.length,
-    firstSeen: points.length ? iso(points[0].timestamp) : null,
-    lastSeen: points.length ? iso(points[points.length - 1].timestamp) : null,
-    trips,
-    stops,
-    daily: [...daily.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([date, m]) => ({ date, distanceKm: round(m / 1000, 1) }))
+    votesAtPrev = { ...votes };
   };
+
+  const finish = () => {
+    if (prev) {
+      closeTrip(prev);
+      if (stopFirst !== null) recordStop();
+      stopFirst = null;
+    }
+
+    const idleMs = stops.filter((s) => s.idle).reduce((sum, s) => sum + s.durationMin * 60000, 0);
+    const stopMs = stops.reduce((sum, s) => sum + s.durationMin * 60000, 0);
+    const km = distanceM / 1000;
+
+    return {
+      distanceKm: round(km, 1),
+      tripCount: trips.length,
+      drivingMin: Math.round(drivingMs / 60000),
+      stopMin: Math.round(stopMs / 60000),
+      idleMin: Math.round(idleMs / 60000),
+      maxSpeed,
+      avgSpeed: drivingMs > 0 ? round(km / (drivingMs / 3600000), 1) : 0,
+      pointCount,
+      firstSeen: firstTs !== null ? iso(firstTs) : null,
+      lastSeen: lastTs !== null ? iso(lastTs) : null,
+      trips,
+      stops,
+      daily: [...daily.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([date, m]) => ({ date, distanceKm: round(m / 1000, 1) }))
+    };
+  };
+
+  return { push, finish };
+}
+
+// points: [{ lat, lng, speed, ignition, timestamp: <ms> }] sorted ascending
+export function analyzePoints(points) {
+  const analyzer = createAnalyzer();
+  for (const p of points) analyzer.push(p);
+  return analyzer.finish();
 }

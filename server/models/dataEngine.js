@@ -385,6 +385,67 @@ export const DataEngine = {
     return removed;
   },
 
+  // Streams matching documents one at a time, so large result sets never sit in memory at once.
+  // options: { sort, select: ['field', ...] }. Documents are plain objects holding only the selected fields.
+  async *stream(collectionName, filter = {}, options = {}) {
+    const scope = resolveScope(collectionName, 'read');
+    const scopedFilter = { ...filter, ...scope };
+    const fields = options.select || null;
+
+    if (isDBConnected()) {
+      const Model = await this.getCollection(collectionName);
+      let query = Model.find(scopedFilter).lean();
+      if (fields) query = query.select(fields.join(' '));
+      if (options.sort) query = query.sort(options.sort);
+      for await (const doc of query.cursor()) yield doc;
+      return;
+    }
+
+    const [field, direction] = Object.entries(options.sort || {})[0] || [];
+    const dir = direction === -1 || direction === 'desc' ? -1 : 1;
+    const items = (getLocalStore()[collectionName] || []).filter((doc) => matchFilter(doc, scopedFilter));
+    if (field) items.sort((a, b) => (a[field] < b[field] ? -1 * dir : a[field] > b[field] ? 1 * dir : 0));
+    for (const doc of items) {
+      if (!fields) { yield doc; continue; }
+      yield Object.fromEntries(fields.map((f) => [f, doc[f]]));
+    }
+  },
+
+  // Group + sum inside the caller's scope (a MongoDB $group; a plain reduce on the JSON store).
+  //   by:  fields to group on                       e.g. ['vehicle']
+  //   sum: { resultName: 'fieldToSum' }             e.g. { liters: 'quantity' }
+  // Returns [{ key: { vehicle: '<id>' }, count, liters }]; key values are strings.
+  async group(collectionName, filter = {}, { by = [], sum = {} } = {}) {
+    const scope = resolveScope(collectionName, 'read');
+    const scopedFilter = { ...filter, ...scope };
+
+    if (isDBConnected()) {
+      const Model = await this.getCollection(collectionName);
+      // aggregate() does not cast like find(): cast ids and dates the same way find() would
+      const match = Model.find(scopedFilter).cast(Model, scopedFilter);
+      const id = Object.fromEntries(by.map((f) => [f, `$${f}`]));
+      const sums = Object.fromEntries(Object.entries(sum).map(([name, field]) => [name, { $sum: `$${field}` }]));
+      const rows = await Model.aggregate([{ $match: match }, { $group: { _id: id, count: { $sum: 1 }, ...sums } }]);
+      return rows.map(({ _id, count, ...rest }) => ({
+        key: Object.fromEntries(by.map((f) => [f, _id?.[f] == null ? '' : String(_id[f])])),
+        count,
+        ...rest
+      }));
+    }
+
+    const groups = new Map();
+    for (const doc of getLocalStore()[collectionName] || []) {
+      if (!matchFilter(doc, scopedFilter)) continue;
+      const key = Object.fromEntries(by.map((f) => [f, doc[f] == null ? '' : String(doc[f]?._id || doc[f])]));
+      const mapKey = JSON.stringify(key);
+      if (!groups.has(mapKey)) groups.set(mapKey, { key, count: 0, ...Object.fromEntries(Object.keys(sum).map((n) => [n, 0])) });
+      const row = groups.get(mapKey);
+      row.count += 1;
+      for (const [name, field] of Object.entries(sum)) row[name] += Number(doc[field]) || 0;
+    }
+    return [...groups.values()];
+  },
+
   // Deletes every matching document inside the caller's scope. Returns how many were removed.
   async deleteMany(collectionName, filter = {}) {
     const scope = resolveScope(collectionName, 'write');
