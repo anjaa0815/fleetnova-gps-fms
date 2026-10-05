@@ -274,6 +274,17 @@ Trips and stops come from an incremental analyzer (`createAnalyzer`) fed by a da
 - `docker-compose.traccar.yml` + `deploy/traccar/traccar.xml` run both together (set `GPS_TCP_PORT=0` / `GT06_TCP_PORT=0` so Traccar owns the tracker ports). Change the placeholder token and use PostgreSQL / MySQL for Traccar in production.
 - Not verified here: a real Traccar server or tracker (tests use a mock Traccar API and forwarded JSON as documented by Traccar), and the exact `forward.*` keys of your Traccar version. Speed is converted from knots; Traccar keeps its own copy of the positions, so plan the storage twice.
 
+## 🛰️ GpsGate as the GPS source (optional)
+
+If the trackers already report to a [GpsGate](https://gpsgate.com) server, FLEETNOVA can pull their positions from the GpsGate REST API instead of receiving them directly. Each new fix goes through the same ingestion as the other protocols (geofences, speed alerts, trips, reports).
+
+- Enable it with `GPSGATE_URL` (the REST root, e.g. `https://gps.example.com/comGpsGate/api/v.1`), `GPSGATE_APP_ID`, `GPSGATE_USERNAME` and `GPSGATE_PASSWORD`. Keep them in the server environment only. `GPSGATE_POLL_SEC` (default 30) sets how often `usersstatus` is polled.
+- Register devices with protocol **"From GpsGate server"** and the IMEI GpsGate knows the tracker by (from the GpsGate user's device; the GpsGate username when no IMEI is set). Only devices of that protocol accept GpsGate data.
+- `GPSGATE_AUTO_REGISTER_ORG=<organization slug>` registers every GpsGate unit nobody has registered yet as a device of that organization, named after the GpsGate user. Identifiers that another device already uses are left alone.
+- `GPSGATE_SPEED_UNIT` is `ms` (default), `kmh` or `knots`: the unit of `velocity.groundSpeed` on your GpsGate server. Check one moving vehicle against GpsGate after enabling.
+- Ignition is read from a GpsGate variable named like `Ignition` / `DIN1`. The connection info on the Devices page shows the last poll and its error, if any.
+- Polling gives the latest fix per unit, so points between two polls are not stored; lower `GPSGATE_POLL_SEC` for denser tracks. Not verified here against a real GpsGate server (tests use a mock of the documented REST API).
+
 ## 🔐 Sign-up security: email confirmation and rate limits
 
 **Email confirmation.** New self-service accounts must confirm their email address before the first sign-in (the
@@ -343,6 +354,13 @@ GEMINI_API_KEY=your_google_gemini_api_key
 # GPS tracker listener (0 = disabled)
 GPS_TCP_PORT=5027
 GT06_TCP_PORT=5023
+
+# Pull positions from a GpsGate server (see "GpsGate as the GPS source")
+GPSGATE_URL=https://gps.example.com/comGpsGate/api/v.1
+GPSGATE_APP_ID=
+GPSGATE_USERNAME=
+GPSGATE_PASSWORD=
+GPSGATE_AUTO_REGISTER_ORG=
 
 # Sign-up security (see "Sign-up security")
 APP_BASE_URL=https://fleet.example.com

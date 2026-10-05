@@ -4,10 +4,12 @@ import { runAsSystem } from '../middleware/tenantContext.js';
 import { getPlan, isWithinLimit } from '../config/plans.js';
 import { findMissingRef } from '../utils/refs.js';
 import { registerTraccarDevice, removeTraccarDevice, traccarConfigured } from '../services/traccarClient.js';
+import { gpsgateState } from '../gps/gpsgatePoller.js';
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 const TELTONIKA_IMEI = /^\d{15}$/;
 const OSMAND_ID = /^[A-Za-z0-9_-]{6,32}$/;
+const GPSGATE_ID = /^[A-Za-z0-9_.:@-]{3,64}$/;
 
 export const isOnline = (device) =>
   Boolean(device.lastSeenAt) && Date.now() - new Date(device.lastSeenAt).getTime() < ONLINE_WINDOW_MS;
@@ -51,6 +53,12 @@ export const getConnectionInfo = (req, res) => {
       teltonika: { enabled: tcpPort > 0, port: tcpPort > 0 ? tcpPort : null, codecs: ['8', '8E'] },
       gt06: { enabled: gt06Port > 0, port: gt06Port > 0 ? gt06Port : null },
       traccar: { enabled: Boolean(process.env.TRACCAR_FORWARD_TOKEN), path: '/api/gps/traccar', synced: traccarConfigured() },
+      gpsgate: {
+        enabled: gpsgateState.enabled,
+        lastPollAt: gpsgateState.lastPollAt,
+        lastError: gpsgateState.lastError,
+        units: gpsgateState.units
+      },
       osmand: { path: '/api/gps/osmand', parameters: 'id, key, lat, lon, timestamp, speed (knots), bearing, altitude' }
     }
   });
@@ -74,7 +82,7 @@ export const createDevice = async (req, res, next) => {
     if (!name || typeof name !== 'string' || !imei) {
       return res.status(400).json({ success: false, message: 'Device name and IMEI are required' });
     }
-    if (!['teltonika', 'osmand', 'gt06', 'traccar'].includes(protocol)) {
+    if (!['teltonika', 'osmand', 'gt06', 'traccar', 'gpsgate'].includes(protocol)) {
       return res.status(400).json({ success: false, message: 'Invalid protocol' });
     }
     const id = String(imei).trim();
@@ -86,6 +94,9 @@ export const createDevice = async (req, res, next) => {
     }
     if ((protocol === 'osmand' || protocol === 'traccar') && !OSMAND_ID.test(id)) {
       return res.status(400).json({ success: false, message: 'Device id must be 6-32 letters, digits, - or _' });
+    }
+    if (protocol === 'gpsgate' && !GPSGATE_ID.test(id)) {
+      return res.status(400).json({ success: false, message: 'GpsGate device id must be 3-64 letters, digits or - _ . : @' });
     }
 
     const count = await DataEngine.countDocuments('devices');

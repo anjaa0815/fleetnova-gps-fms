@@ -6,11 +6,12 @@ const deviceSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     // The IMEI is what a tracker identifies itself with, so it is unique across the whole platform
     imei: { type: String, required: true, unique: true, trim: true },
-    protocol: { type: String, enum: ['teltonika', 'osmand', 'gt06', 'traccar'], default: 'teltonika' },
+    protocol: { type: String, enum: ['teltonika', 'osmand', 'gt06', 'traccar', 'gpsgate'], default: 'teltonika' },
     vehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', default: null },
     simNumber: { type: String, default: '', trim: true },
     // Shared secret for HTTP (OsmAnd) devices; Teltonika trackers identify with the IMEI only. Traccar-received
-    // devices (protocol 'traccar') use Traccar's uniqueId as the identifier and need no secret here.
+    // devices (protocol 'traccar') use Traccar's uniqueId as the identifier and need no secret here; GpsGate-polled devices (protocol 'gpsgate') use
+    // the IMEI GpsGate knows the tracker by.
     secret: { type: String, default: undefined },
     lastSeenAt: { type: Date, default: null },
     // Alert engine state: geofences the device is currently inside, consecutive over-limit reports

@@ -169,6 +169,15 @@ export default function Devices() {
               </div>
             </div>
             <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>GPSGATE</div>
+              <strong>{info.gpsgate?.enabled ? tr('Enabled') : tr('Disabled on this server')}</strong>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                {info.gpsgate?.lastError
+                  ? tr('Last GpsGate poll failed: {error}', { error: info.gpsgate.lastError })
+                  : tr('Positions are pulled from the GpsGate server; register the device here with its IMEI in GpsGate.')}
+              </div>
+            </div>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>HTTP (OSMAND / TRACCAR CLIENT)</div>
               <strong>{window.location.origin}{info.osmand.path}</strong>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -252,10 +261,11 @@ export default function Devices() {
                 <option value="gt06">GT06 / Concox (TCP)</option>
                 <option value="osmand">OsmAnd / Traccar Client (HTTP)</option>
                 <option value="traccar">{tr('Via Traccar server (other protocols)')}</option>
+                <option value="gpsgate">{tr('From GpsGate server')}</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">{form.protocol === 'osmand' || form.protocol === 'traccar' ? tr('Device ID *') : tr('IMEI (15 digits) *')}</label>
+              <label className="form-label">{['osmand', 'traccar', 'gpsgate'].includes(form.protocol) ? tr('Device ID *') : tr('IMEI (15 digits) *')}</label>
               <input className="form-control" required disabled={Boolean(editing)} value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value.trim() })} />
             </div>
             <div className="form-group">
@@ -296,6 +306,8 @@ export default function Devices() {
                   <Copy size={14} /> {tr('Copy')}
                 </button>
               </>
+            ) : created.protocol === 'gpsgate' ? (
+              <p>{tr('The tracker stays connected to GpsGate; its positions appear here after the next GpsGate poll.')}</p>
             ) : created.protocol === 'traccar' ? (
               <>
                 <p>{tr('Point the tracker to your Traccar server (its protocol port). Traccar forwards the positions here.')}</p>

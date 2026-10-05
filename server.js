@@ -28,6 +28,7 @@ import geofenceRoutes from './server/routes/geofenceRoutes.js';
 import trackingRoutes from './server/routes/trackingRoutes.js';
 import gpsRoutes from './server/routes/gpsRoutes.js';
 import { startGpsServers } from './server/gps/tcpServer.js';
+import { startGpsgatePoller } from './server/gps/gpsgatePoller.js';
 import organizationRoutes from './server/routes/organizationRoutes.js';
 import platformRoutes from './server/routes/platformRoutes.js';
 import publicRoutes from './server/routes/publicRoutes.js';
@@ -131,6 +132,8 @@ async function startServer() {
 
   // GPS tracker listeners (Teltonika TCP)
   startGpsServers();
+  // Positions pulled from a GpsGate server (enabled by GPSGATE_URL / _APP_ID / _USERNAME / _PASSWORD)
+  startGpsgatePoller();
   // Email / SMS delivery of alerts (queue worker)
   startDeliveryWorker();
   startRetentionWorker();
