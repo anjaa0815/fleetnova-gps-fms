@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { DataEngine } from '../models/dataEngine.js';
-import { PLANS, PLAN_IDS, getPlan } from '../config/plans.js';
+import { PLANS, PLAN_IDS, getPlan, positionRetentionDays } from '../config/plans.js';
 import { slugify, RESERVED_SLUGS } from '../utils/slug.js';
 import { passwordError } from './passwordReset.js';
 
@@ -125,6 +125,7 @@ export const planLimits = (org) => {
   const plan = getPlan(org?.plan);
   return { label: plan.label, maxVehicles: plan.maxVehicles, maxUsers: plan.maxUsers, maxDevices: plan.maxDevices,
     maxEmailsPerDay: plan.maxEmailsPerDay,
-    maxSmsPerDay: plan.maxSmsPerDay
+    maxSmsPerDay: plan.maxSmsPerDay,
+    positionRetentionDays: positionRetentionDays(org?.plan)
   };
 };
