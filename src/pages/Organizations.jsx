@@ -144,7 +144,7 @@ export default function Organizations() {
                   </td>
                   <td>{limitText(org.usage.users, org.limits.maxUsers)}</td>
                   <td>{limitText(org.usage.vehicles, org.limits.maxVehicles)}</td>
-                  <td>{org.trialEndsAt ? new Date(org.trialEndsAt).toLocaleDateString() : '—'}</td>
+                  <td>{org.planExpiresAt ? new Date(org.planExpiresAt).toLocaleDateString() : org.trialEndsAt ? new Date(org.trialEndsAt).toLocaleDateString() : '—'}</td>
                   <td>
                     <button
                       className={`btn btn-sm ${org.status === 'active' ? 'btn-danger' : 'btn-secondary'}`}

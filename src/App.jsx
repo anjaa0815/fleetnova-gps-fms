@@ -29,6 +29,7 @@ import VerifyEmail from './pages/VerifyEmail.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 import Geofences from './pages/Geofences.jsx';
 import GpsReports from './pages/GpsReports.jsx';
+import Billing from './pages/Billing.jsx';
 import { useT } from './i18n/LanguageContext.jsx';
 import LanguageSwitch from './components/LanguageSwitch.jsx';
 
@@ -115,6 +116,7 @@ function MainApp() {
     reports: tr('Audit & Compliance Reports'),
     notifications: tr('Notifications & Alerts'),
     'fleet-ai': tr('FleetAI Operations Co-Pilot'),
+    billing: tr('Plan & Billing'),
     settings: tr('System & Organization Settings'),
     profile: tr('User Profile Settings')
   };
@@ -225,6 +227,12 @@ function MainApp() {
       {currentTab === 'fleet-ai' && (
         <ProtectedRoute allowedRoles={['admin', 'fleet_manager']}>
           <FleetAI />
+        </ProtectedRoute>
+      )}
+
+      {currentTab === 'billing' && (
+        <ProtectedRoute allowedRoles={['admin']}>
+          <Billing />
         </ProtectedRoute>
       )}
 

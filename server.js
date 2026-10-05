@@ -23,6 +23,7 @@ import deviceRoutes from './server/routes/deviceRoutes.js';
 import deliveryRoutes from './server/routes/deliveryRoutes.js';
 import { startDeliveryWorker } from './server/notify/worker.js';
 import { startRetentionWorker } from './server/gps/retention.js';
+import { startBillingWorker } from './server/services/billing.js';
 import gpsReportRoutes from './server/routes/gpsReportRoutes.js';
 import geofenceRoutes from './server/routes/geofenceRoutes.js';
 import trackingRoutes from './server/routes/trackingRoutes.js';
@@ -30,6 +31,7 @@ import gpsRoutes from './server/routes/gpsRoutes.js';
 import { startGpsServers } from './server/gps/tcpServer.js';
 import organizationRoutes from './server/routes/organizationRoutes.js';
 import platformRoutes from './server/routes/platformRoutes.js';
+import billingRoutes from './server/routes/billingRoutes.js';
 import publicRoutes from './server/routes/publicRoutes.js';
 import { apiLimiter, rateLimitDisabled, trustProxySetting } from './server/middleware/rateLimit.js';
 import { errorHandler, notFound } from './server/middleware/errorMiddleware.js';
@@ -59,6 +61,7 @@ async function startServer() {
   app.use('/api/public', publicRoutes);
   app.use('/api/organization', organizationRoutes);
   app.use('/api/platform', platformRoutes);
+  app.use('/api/billing', billingRoutes);
   app.use('/api/gps', gpsRoutes);
   app.use('/api/devices', deviceRoutes);
   app.use('/api/tracking', trackingRoutes);
@@ -134,6 +137,8 @@ async function startServer() {
   // Email / SMS delivery of alerts (queue worker)
   startDeliveryWorker();
   startRetentionWorker();
+  // Re-checks open QPay invoices and finishes interrupted payments
+  startBillingWorker();
 }
 
 startServer().catch((err) => {

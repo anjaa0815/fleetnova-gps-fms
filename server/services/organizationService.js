@@ -31,6 +31,7 @@ export const serializeOrg = (org) =>
     status: org.status,
     plan: org.plan,
     trialEndsAt: org.trialEndsAt || null,
+    planExpiresAt: org.planExpiresAt || null,
     contactEmail: org.contactEmail || '',
     contactPhone: org.contactPhone || '',
     address: org.address || '',
