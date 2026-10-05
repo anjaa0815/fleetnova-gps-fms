@@ -93,8 +93,7 @@ export const createFuelRecord = async (req, res, next) => {
     if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
 
     const calculatedCost = Math.round(Number(quantity) * Number(pricePerLiter) * 100) / 100;
-    const count = await DataEngine.countDocuments('fuels');
-    const fuelRecordId = `FUEL-${1000 + count + 1}`;
+    const fuelRecordId = await DataEngine.nextId('fuels', 'fuelRecordId', 'FUEL');
 
     const newRecord = await DataEngine.create('fuels', {
       fuelRecordId,
@@ -118,9 +117,9 @@ export const createFuelRecord = async (req, res, next) => {
     }
 
     // Automatically sync as Expense under 'Fuel'
-    const expCount = await DataEngine.countDocuments('expenses');
+    const expenseId = await DataEngine.nextId('expenses', 'expenseId', 'EXP');
     await DataEngine.create('expenses', {
-      expenseId: `EXP-${1000 + expCount + 1}`,
+      expenseId,
       vehicle: vehicle._id,
       category: 'Fuel',
       amount: calculatedCost,

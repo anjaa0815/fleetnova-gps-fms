@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "seed": "node server/seed/seedData.js",
     "test": "node --test server/tests/*.test.js",
-    "simulate": "node scripts/simulate-device.js"
+    "simulate": "node scripts/simulate-device.js",
+    "load-test": "node scripts/load-test.js"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

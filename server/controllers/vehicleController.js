@@ -192,8 +192,7 @@ export const createVehicle = async (req, res, next) => {
       });
     }
 
-    const count = await DataEngine.countDocuments('vehicles');
-    const vehicleId = `VEH-${1000 + count + 1}`;
+    const vehicleId = await DataEngine.nextId('vehicles', 'vehicleId', 'VEH');
 
     const newVehicle = await DataEngine.create('vehicles', {
       vehicleId,
