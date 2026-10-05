@@ -2,6 +2,8 @@
 
 **FLEETNOVA** is an enterprise-grade, centralized commercial fleet management web application built on the **MERN** stack (MongoDB, Express.js, React.js, Node.js) with intelligent AI operations telemetry powered by **Google Gemini API**.
 
+**📘 Монгол хэл дээрх дэлгэрэнгүй заавар (ажиллуулах, байрлуулах, GPS холбох): [docs/GUIDE.mn.md](docs/GUIDE.mn.md)**
+
 ---
 
 ## 🚀 Key Highlights & Architectural Strengths

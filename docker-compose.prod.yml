@@ -1,0 +1,43 @@
+# Production on one server: app + MongoDB + Caddy (automatic HTTPS).
+#   cp .env.production.example .env.production   # then edit it
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+# Trackers connect straight to the app's TCP ports (5027 Teltonika, 5023 GT06); the web UI goes through Caddy.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/fleetnova
+      REQUIRE_MONGODB: "true"
+      TRUST_PROXY: "1"
+    depends_on:
+      - mongo
+    ports:
+      - "5027:5027"   # Teltonika trackers (TCP)
+      - "5023:5023"   # GT06 / Concox trackers (TCP)
+    expose:
+      - "3000"        # web UI + API: only Caddy reaches it
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    # no "ports": MongoDB is reachable from the app only, never from the internet
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    env_file: .env.production
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+volumes:
+  mongo-data:
+  caddy-data:
+  caddy-config:
