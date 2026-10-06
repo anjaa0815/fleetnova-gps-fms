@@ -15,7 +15,9 @@ export const PROTOCOL = {
   HEARTBEAT: 0x13,
   ALARM: 0x16,
   LOCATION_4G: 0x22,
-  ALARM_4G: 0x26
+  ALARM_4G: 0x26,
+  COMMAND: 0x80, // server -> tracker text command
+  COMMAND_RESPONSE: 0x15 // tracker -> server answer
 };
 
 const LOCATION_PROTOCOLS = new Set([PROTOCOL.LOCATION, PROTOCOL.LOCATION_4G, PROTOCOL.ALARM, PROTOCOL.ALARM_4G]);
@@ -149,6 +151,14 @@ export class Gt06Parser {
       return { type: 'location', protocol, serial, record: fixed ? record : null, ack: ACK_PROTOCOLS.has(protocol) };
     }
 
+    if (protocol === PROTOCOL.COMMAND_RESPONSE) {
+      // length of command (1), server flag (4), answer text, language (2)
+      if (content.length < 5) throw new Error('Truncated GT06 command response');
+      const textLength = Math.max(0, Math.min(content[0] - 4, content.length - 7));
+      const text = content.subarray(5, 5 + textLength).toString('ascii').replace(/[^\x20-\x7e]/g, '?');
+      return { type: 'command-response', serverFlag: content.readUInt32BE(1), text, serial };
+    }
+
     return { type: 'unknown', protocol, serial };
   }
 }
@@ -202,4 +212,21 @@ export function encodeLocation(record, { protocol = PROTOCOL.LOCATION, serial = 
   content.writeUInt16BE(0x0112, 18); // MCC 274
   if (protocol === PROTOCOL.LOCATION_4G) content[26] = record.ignition === false ? 0 : 1; // ACC; rest: upload mode, re-upload, mileage
   return encodePacket(protocol, content, serial, { extended });
+}
+
+// Server -> tracker text command (protocol 0x80): length of command (= server flag + text), server flag (4),
+// the command text, language (2). `flag` comes back in the tracker's answer so the answer can be matched.
+export function encodeCommand(text, flag, serial = 1) {
+  const body = Buffer.from(String(text), 'ascii');
+  const flagBytes = Buffer.alloc(4);
+  flagBytes.writeUInt32BE(flag >>> 0);
+  return encodePacket(PROTOCOL.COMMAND, Buffer.concat([Buffer.from([4 + body.length]), flagBytes, body, Buffer.from([0x00, 0x01])]), serial);
+}
+
+// Tracker -> server answer (protocol 0x15); used by the tests and the simulator
+export function encodeCommandResponse(text, flag, serial = 1) {
+  const body = Buffer.from(String(text), 'ascii');
+  const flagBytes = Buffer.alloc(4);
+  flagBytes.writeUInt32BE(flag >>> 0);
+  return encodePacket(PROTOCOL.COMMAND_RESPONSE, Buffer.concat([Buffer.from([4 + body.length]), flagBytes, body, Buffer.from([0x00, 0x02])]), serial);
 }

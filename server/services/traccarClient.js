@@ -59,3 +59,17 @@ export async function removeTraccarDevice(uniqueId) {
     return 'failed';
   }
 }
+
+// Traccar's own command names for ours
+const TRACCAR_COMMAND = { locate: 'positionSingle', reboot: 'rebootDevice', engine_stop: 'engineStop', engine_resume: 'engineResume' };
+
+// Asks Traccar to send a command to the device with this unique id. Returns 'sent' (Traccar accepted it: it is
+// delivered now or queued by Traccar until the device connects); throws when Traccar refuses or cannot be reached.
+export async function sendTraccarCommand(uniqueId, type) {
+  const traccarType = TRACCAR_COMMAND[type];
+  if (!traccarType) throw new Error(`Traccar cannot send "${type}"`);
+  const device = await findByUniqueId(uniqueId);
+  if (!device) throw new Error('The device is not registered in Traccar');
+  await call('POST', '/commands/send', { deviceId: device.id, type: traccarType, attributes: {} });
+  return 'sent';
+}

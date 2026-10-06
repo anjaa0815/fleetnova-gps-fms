@@ -1,6 +1,8 @@
 import net from 'net';
 import { Gt06Parser, encodeAck, PROTOCOL } from './protocols/gt06.js';
 import { findActiveDeviceByImei, ingestRecords, markDeviceSeen } from './ingestion.js';
+import { registerConnection, unregisterConnection } from './connections.js';
+import { deliverPendingForDevice, handleCommandResponse } from '../services/deviceCommands.js';
 
 const LOGIN_TIMEOUT_MS = 10 * 1000;
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // trackers send a heartbeat every few minutes
@@ -12,8 +14,13 @@ export function createGt06Server() {
     let device = null;
     let chain = Promise.resolve();
 
+    let connection = null;
+    let serial = 0x4000; // serial numbers of the packets we initiate (commands)
+
     const write = (buffer) => {
-      if (!socket.destroyed && socket.writable) socket.write(buffer);
+      if (socket.destroyed || !socket.writable) return false;
+      socket.write(buffer);
+      return true;
     };
 
     const loginTimer = setTimeout(() => socket.destroy(), LOGIN_TIMEOUT_MS);
@@ -32,12 +39,24 @@ export function createGt06Server() {
         }
         write(encodeAck(PROTOCOL.LOGIN, event.serial));
         await markDeviceSeen(device);
+        connection = registerConnection(device._id, {
+          protocol: 'gt06',
+          send: write,
+          nextSerial: () => { serial = (serial + 1) & 0xffff; return serial; },
+          inflight: null
+        });
+        deliverPendingForDevice(device).catch((error) => console.warn(`[GPS] Pending commands: ${error.message}`));
         return;
       }
 
       if (event.type === 'bad-crc') return; // corrupted frame: the tracker re-sends what it did not see acknowledged
       if (!device) {
         socket.destroy(); // data before a valid login
+        return;
+      }
+
+      if (event.type === 'command-response') {
+        await handleCommandResponse(device, { text: event.text, flag: event.serverFlag });
         return;
       }
 
@@ -75,6 +94,9 @@ export function createGt06Server() {
     });
 
     socket.on('error', () => {});
-    socket.on('close', () => clearTimeout(loginTimer));
+    socket.on('close', () => {
+      clearTimeout(loginTimer);
+      if (connection) unregisterConnection(device._id, connection);
+    });
   });
 }

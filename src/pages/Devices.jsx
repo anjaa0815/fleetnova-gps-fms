@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Radio, Plus, Pencil, Trash2, Route as RouteIcon, Copy } from 'lucide-react';
+import { Radio, Plus, Pencil, Trash2, Route as RouteIcon, Copy, Terminal } from 'lucide-react';
 import Modal from '../components/Modal.jsx';
 import Loading from '../components/Loading.jsx';
 import TrackHistoryModal from '../components/TrackHistoryModal.jsx';
+import DeviceCommandsModal from '../components/DeviceCommandsModal.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { deviceApi, vehicleApi } from '../services/api.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
-const emptyForm = { name: '', imei: '', protocol: 'teltonika', vehicle: '', simNumber: '' };
+const emptyForm = { name: '', imei: '', protocol: 'teltonika', vehicle: '', simNumber: '', immobilizer: false };
 
 const box = (extra = {}) => ({ padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', ...extra });
 
 export default function Devices() {
   const { tr } = useT();
+  const { role } = useAuth();
   const [devices, setDevices] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [info, setInfo] = useState(null);
@@ -25,6 +28,7 @@ export default function Devices() {
   const [saving, setSaving] = useState(false);
   const [created, setCreated] = useState(null); // freshly created device (shows connection details)
   const [historyDevice, setHistoryDevice] = useState(null);
+  const [commandDevice, setCommandDevice] = useState(null);
 
   const load = async () => {
     try {
@@ -64,7 +68,8 @@ export default function Devices() {
       imei: device.imei,
       protocol: device.protocol,
       vehicle: device.vehicle?._id || '',
-      simNumber: device.simNumber || ''
+      simNumber: device.simNumber || '',
+      immobilizer: Boolean(device.immobilizer)
     });
     setFormError(null);
     setIsFormOpen(true);
@@ -76,7 +81,9 @@ export default function Devices() {
     setFormError(null);
     try {
       if (editing) {
-        await deviceApi.update(editing._id, { name: form.name, vehicle: form.vehicle || null, simNumber: form.simNumber });
+        const update = { name: form.name, vehicle: form.vehicle || null, simNumber: form.simNumber };
+        if (role === 'admin' && form.immobilizer !== Boolean(editing.immobilizer)) update.immobilizer = form.immobilizer;
+        await deviceApi.update(editing._id, update);
       } else {
         const res = await deviceApi.create({ ...form, vehicle: form.vehicle || null });
         setCreated({ ...res.data, traccarSync: res.traccarSync });
@@ -217,6 +224,11 @@ export default function Devices() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        {d.commandsSupported && (
+                          <button className="btn btn-secondary btn-sm" title={tr('Device commands')} onClick={() => setCommandDevice(d)}>
+                            <Terminal size={14} />
+                          </button>
+                        )}
                         <button className="btn btn-secondary btn-sm" title={tr('Route history')} onClick={() => setHistoryDevice(d)}>
                           <RouteIcon size={14} />
                         </button>
@@ -271,6 +283,19 @@ export default function Devices() {
               <label className="form-label">{tr('SIM Number')}</label>
               <input className="form-control" value={form.simNumber} onChange={(e) => setForm({ ...form, simNumber: e.target.value })} />
             </div>
+            {editing && role === 'admin' && editing.commandsSupported && (
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', fontSize: '0.85rem' }}>
+                  <input type="checkbox" checked={form.immobilizer} onChange={(e) => setForm({ ...form, immobilizer: e.target.checked })} style={{ marginTop: 3 }} />
+                  <span>
+                    <strong>{tr('Engine relay (immobilizer) is installed and tested')}</strong>
+                    <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                      {tr('Allows stopping and restoring the engine from here. Switch it on only after the relay is wired, the tracker is configured for it and it has been tested on the vehicle.')}
+                    </span>
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsFormOpen(false)}>{tr('Cancel')}</button>
@@ -315,6 +340,7 @@ export default function Devices() {
         )}
       </Modal>
 
+      {commandDevice && <DeviceCommandsModal device={commandDevice} onClose={() => setCommandDevice(null)} />}
       {historyDevice && <TrackHistoryModal device={historyDevice} onClose={() => setHistoryDevice(null)} />}
     </div>
   );

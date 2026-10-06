@@ -12,6 +12,8 @@ const deviceSchema = new mongoose.Schema(
     // Shared secret for HTTP (OsmAnd) devices; Teltonika trackers identify with the IMEI only. Traccar-received
     // devices (protocol 'traccar') use Traccar's uniqueId as the identifier and need no secret here.
     secret: { type: String, default: undefined },
+    // The vehicle has a relay that can cut the engine, wired and tested: only then engine commands are accepted
+    immobilizer: { type: Boolean, default: false },
     lastSeenAt: { type: Date, default: null },
     // Alert engine state: geofences the device is currently inside, consecutive over-limit reports
     alertState: {

@@ -65,7 +65,10 @@ export const deviceApi = {
   create: (data) => apiRequest('/devices', 'POST', data),
   update: (id, data) => apiRequest(`/devices/${id}`, 'PUT', data),
   delete: (id) => apiRequest(`/devices/${id}`, 'DELETE'),
-  connectionInfo: () => apiRequest('/devices/connection-info')
+  connectionInfo: () => apiRequest('/devices/connection-info'),
+  commands: (id) => apiRequest(`/devices/${id}/commands`),
+  sendCommand: (id, data) => apiRequest(`/devices/${id}/commands`, 'POST', data),
+  cancelCommand: (id, commandId) => apiRequest(`/devices/${id}/commands/${commandId}/cancel`, 'POST')
 };
 
 // Billing (QPay)

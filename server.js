@@ -24,6 +24,7 @@ import deliveryRoutes from './server/routes/deliveryRoutes.js';
 import { startDeliveryWorker } from './server/notify/worker.js';
 import { startRetentionWorker } from './server/gps/retention.js';
 import { startBillingWorker } from './server/services/billing.js';
+import { startCommandWorker } from './server/services/deviceCommands.js';
 import gpsReportRoutes from './server/routes/gpsReportRoutes.js';
 import geofenceRoutes from './server/routes/geofenceRoutes.js';
 import trackingRoutes from './server/routes/trackingRoutes.js';
@@ -139,6 +140,8 @@ async function startServer() {
   startRetentionWorker();
   // Re-checks open QPay invoices and finishes interrupted payments
   startBillingWorker();
+  // Delivers commands to trackers that are connected to this process
+  startCommandWorker();
 }
 
 startServer().catch((err) => {
