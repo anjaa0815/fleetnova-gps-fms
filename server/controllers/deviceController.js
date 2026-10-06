@@ -4,6 +4,7 @@ import { runAsSystem } from '../middleware/tenantContext.js';
 import { getPlan, isWithinLimit } from '../config/plans.js';
 import { findMissingRef } from '../utils/refs.js';
 import { registerTraccarDevice, removeTraccarDevice, traccarConfigured } from '../services/traccarClient.js';
+import { commandsSupported } from '../services/deviceCommands.js';
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 const TELTONIKA_IMEI = /^\d{15}$/;
@@ -31,6 +32,8 @@ export const serializeDevice = (device) => ({
   protocol: device.protocol,
   vehicle: vehicleSummary(device.vehicle),
   simNumber: device.simNumber || '',
+  immobilizer: Boolean(device.immobilizer),
+  commandsSupported: commandsSupported(device.protocol),
   lastSeenAt: device.lastSeenAt || null,
   lastPosition: device.lastPosition || null,
   online: isOnline(device),
@@ -145,6 +148,14 @@ export const updateDevice = async (req, res, next) => {
       update.name = String(req.body.name).trim();
     }
     if (req.body.simNumber !== undefined) update.simNumber = String(req.body.simNumber).trim();
+    if (req.body.immobilizer !== undefined) {
+      // switches the engine commands on: only an administrator, who confirms the relay is installed and tested
+      if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Only an administrator can change this' });
+      update.immobilizer = req.body.immobilizer === true;
+      if (update.immobilizer !== Boolean(existing.immobilizer)) {
+        console.log(`[Commands] Engine commands ${update.immobilizer ? 'enabled' : 'disabled'} for device ${existing._id} by ${req.user.email}`);
+      }
+    }
 
     if (req.body.vehicle !== undefined) {
       const vehicle = req.body.vehicle || null;

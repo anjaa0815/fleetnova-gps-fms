@@ -5,6 +5,8 @@ import {
   dataResponse
 } from './protocols/teltonika.js';
 import { findActiveDeviceByImei, ingestRecords } from './ingestion.js';
+import { registerConnection, unregisterConnection } from './connections.js';
+import { deliverPendingForDevice, handleCommandResponse } from '../services/deviceCommands.js';
 import { createGt06Server } from './gt06Server.js';
 
 const LOGIN_TIMEOUT_MS = 10 * 1000;
@@ -17,8 +19,12 @@ export function createTeltonikaServer() {
     let device = null;
     let chain = Promise.resolve();
 
+    let connection = null; // this tracker in the connection registry (commands are written through it)
+
     const write = (buffer) => {
-      if (!socket.destroyed && socket.writable) socket.write(buffer);
+      if (socket.destroyed || !socket.writable) return false;
+      socket.write(buffer);
+      return true;
     };
 
     // A tracker must identify itself quickly and must keep talking (it sends data or a keep-alive)
@@ -37,11 +43,18 @@ export function createTeltonikaServer() {
           return;
         }
         write(loginResponse(true));
+        connection = registerConnection(device._id, { protocol: 'teltonika', send: write, nextSerial: () => 0, inflight: null });
+        // commands that were waiting for this tracker to connect
+        deliverPendingForDevice(device).catch((error) => console.warn(`[GPS] Pending commands: ${error.message}`));
         return;
       }
 
       if (!device) {
         socket.destroy();
+        return;
+      }
+      if (event.type === 'command-response') {
+        await handleCommandResponse(device, { text: event.text });
         return;
       }
       if (!event.crcOk) {
@@ -73,7 +86,10 @@ export function createTeltonikaServer() {
     });
 
     socket.on('error', () => {});
-    socket.on('close', () => clearTimeout(loginTimer));
+    socket.on('close', () => {
+      clearTimeout(loginTimer);
+      if (connection) unregisterConnection(device._id, connection);
+    });
   });
 }
 

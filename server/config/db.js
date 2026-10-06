@@ -26,7 +26,8 @@ let localStore = {
   positions: [],
   geofences: [],
   deliveries: [],
-  invoices: []
+  invoices: [],
+  commands: []
 };
 
 // Load saved local data if available
@@ -40,6 +41,7 @@ if (fs.existsSync(DATA_FILE)) {
     if (!localStore.geofences) localStore.geofences = [];
     if (!localStore.deliveries) localStore.deliveries = [];
     if (!localStore.invoices) localStore.invoices = [];
+    if (!localStore.commands) localStore.commands = [];
   } catch (err) {
     console.warn('Could not parse local data store, starting fresh', err);
   }

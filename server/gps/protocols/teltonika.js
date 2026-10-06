@@ -8,6 +8,7 @@
 
 export const CODEC_8 = 0x08;
 export const CODEC_8_EXTENDED = 0x8e;
+export const CODEC_12 = 0x0c; // GPRS commands: the server sends a text command, the tracker answers with text
 
 const MAX_PACKET_BYTES = 64 * 1024;
 
@@ -112,9 +113,20 @@ export function parseAvlData(data) {
   return { codec, records };
 }
 
+// Codec 12 data field: codec id, quantity, type (0x05 command / 0x06 response), size (4), text, quantity
+export function parseCodec12(data) {
+  if (data.length < 8 || data[0] !== CODEC_12) throw new Error('Not a Codec 12 message');
+  const quantity = data[1];
+  const type = data[2];
+  const size = data.readUInt32BE(3);
+  if (quantity !== 1 || size > data.length - 8 || data[7 + size] !== quantity) throw new Error('Malformed Codec 12 message');
+  return { messageType: type, text: data.subarray(7, 7 + size).toString('ascii').replace(/[^\x20-\x7e]/g, '?') };
+}
+
 // Incremental parser for a TCP byte stream. push() returns the events found in the new bytes:
 //   { type: 'login', imei }                       - only valid as the first message
 //   { type: 'data', codec, records, crcOk }       - an AVL packet (records is [] when the CRC is wrong)
+//   { type: 'command-response', messageType, text } - the tracker's answer to a Codec 12 command
 // Throws on malformed input; the caller should drop the connection.
 export class TeltonikaParser {
   constructor() {
@@ -154,6 +166,11 @@ export class TeltonikaParser {
 
       if (crc !== crc16Ibm(data)) {
         events.push({ type: 'data', codec: null, records: [], crcOk: false });
+        continue;
+      }
+      if (data[0] === CODEC_12) {
+        // the tracker's answer to a command we sent (type 0x06 = response)
+        events.push({ type: 'command-response', ...parseCodec12(data) });
         continue;
       }
       const { codec, records } = parseAvlData(data);
@@ -233,3 +250,24 @@ export function encodeAvlPacket(records, { extended = false } = {}) {
   crc.writeUInt32BE(crc16Ibm(data));
   return Buffer.concat([header, data, crc]);
 }
+
+// ---------------------------------------------------------------------------
+// Codec 12 (commands to the tracker)
+// ---------------------------------------------------------------------------
+
+function codec12Packet(type, text) {
+  const body = Buffer.from(String(text), 'ascii');
+  const size = Buffer.alloc(4);
+  size.writeUInt32BE(body.length);
+  const data = Buffer.concat([Buffer.from([CODEC_12, 0x01, type]), size, body, Buffer.from([0x01])]);
+  const header = Buffer.alloc(8);
+  header.writeUInt32BE(data.length, 4);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc16Ibm(data));
+  return Buffer.concat([header, data, crc]);
+}
+
+// Server -> tracker: a text command such as "getinfo" or "setdigout 1" (type 0x05)
+export const encodeCodec12Command = (text) => codec12Packet(0x05, text);
+// Tracker -> server: the answer (type 0x06); used by the tests and the simulator
+export const encodeCodec12Response = (text) => codec12Packet(0x06, text);

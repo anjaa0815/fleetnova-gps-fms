@@ -287,6 +287,28 @@ Remaining limits: a single process still tops out at roughly 2 000 single-record
 
 Found by the first load run: identifiers (`VEH-1001`, ...) were generated as "count + 1" and collided under concurrent creates, and after any deletion the next record failed with a 500. They now come from an atomic per-organization counter (`DataEngine.nextId`).
 
+## 🎛️ Commands to trackers (locate, restart, engine stop / restore)
+
+On **GPS Devices** the terminal button opens the commands window of a device (administrators and managers; the device list shows it for Teltonika, GT06 / Concox and Traccar devices, not for OsmAnd phones).
+
+| Command | Teltonika (Codec 12) | GT06 / Concox (0x80) | Traccar | Who |
+|---|---|---|---|---|
+| Request position now | `getgps` | `WHERE#` | `positionSingle` | administrator, manager |
+| Restart the device | `cpureset` | `RESET#` | `rebootDevice` | administrator, manager |
+| Stop the engine | `setdigout 1` | `RELAY,1#` | `engineStop` | **administrator** |
+| Restore the engine | `setdigout 0` | `RELAY,0#` | `engineResume` | **administrator** |
+
+- **Lifecycle** (kept as an audit trail, never deleted): queued (waiting for the device) -> sent -> done (the tracker answered; its answer is stored), or unconfirmed (sent, no answer: many relays never answer, the command may still have worked), failed, expired, cancelled. A command for an offline tracker waits and is sent when the tracker connects, but only for a while (`COMMAND_TTL_MS`, 30 min; engine commands `COMMAND_ENGINE_TTL_MS`, 10 min): a stale engine command must not fire hours later.
+- **Engine commands are guarded**, because stopping an engine can cause an accident:
+  - the device must be marked **"engine relay (immobilizer) is installed and tested"** (administrator, in the device settings); off by default;
+  - the administrator must **type the vehicle's registration number**; the device must be linked to a vehicle;
+  - **engine stop is refused unless the vehicle is known to stand still**: last speed below 5 km/h and a position not older than 10 minutes. The same check is repeated at the moment the command is really sent (a command that waited behind another one, or for the tracker to connect, is not sent if the vehicle started moving: it fails with "Not sent: the vehicle was moving"). Restoring the engine is never blocked;
+  - one engine command at a time per device; rate limited; every request is logged on the server with the user.
+- **Delivery**: commands are written to the tracker's open TCP connection, so they are delivered by the app process that holds that connection (a worker polls every second, `COMMAND_POLL_MS`, which also makes several app instances work: each delivers the commands of its own trackers; claiming a command is an atomic compare-and-set so nothing is sent twice). Traccar devices go through Traccar's `/api/commands/send`.
+- **The command texts depend on the tracker model and on how the relay is wired**, so the engine ones can be changed: `TELTONIKA_ENGINE_STOP_COMMAND`, `TELTONIKA_ENGINE_RESUME_COMMAND`, `GT06_ENGINE_STOP_COMMAND`, `GT06_ENGINE_RESUME_COMMAND`. On Teltonika the digital output that drives the relay and whether "on" cuts or keeps the engine depends on the installation: check with your installer; the GT06 relay commands also differ between models (some use `DYD,000000#` / `HFYD,000000#`).
+
+**Verified**: the Codec 12 packet equals Teltonika's documented `getinfo` example byte for byte; the whole flow (queue, offline delivery, answers, expiry, unconfirmed, interlocks, roles, tenancy, Traccar) is tested with mock trackers on TCP, and a mutation check shows each safety rule is covered by a test. **Not verified: any real tracker or relay**. The GT06 0x80 / 0x15 frames follow the protocol documentation as I know it. Test with one vehicle on a stand before using it on a fleet, and make sure you are allowed to immobilize vehicles (contract, local rules). Also not covered: custom command text, scheduling a command for later, waiting for the vehicle to stop (instead of refusing), SMS fallback for trackers that are offline.
+
 ## 💳 Billing: paying for a plan with QPay
 
 An organization administrator opens **Billing** (sidebar), picks **Basic** or **Pro** and a period (1 / 3 / 6 / 12 months) and pays the QPay QR code or a bank-app link; the window updates by itself, the plan starts, and a receipt is e-mailed. Enterprise is agreed with the platform owner (who can still set any plan and end date by hand under **Organizations**).

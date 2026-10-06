@@ -9,6 +9,7 @@ import Maintenance from './Maintenance.js';
 import Expense from './Expense.js';
 import Notification from './Notification.js';
 import Invoice from './Invoice.js';
+import Command from './Command.js';
 import Organization from './Organization.js';
 import Device from './Device.js';
 import Position from './Position.js';
@@ -40,7 +41,8 @@ export const TENANT_COLLECTIONS = new Set([
   'positions',
   'geofences',
   'deliveries',
-  'invoices'
+  'invoices',
+  'commands'
 ]);
 
 function forbidden(message) {
@@ -215,6 +217,7 @@ export const DataEngine = {
         case 'geofences': return Geofence;
         case 'deliveries': return Delivery;
         case 'invoices': return Invoice;
+        case 'commands': return Command;
         default: return null;
       }
     }
