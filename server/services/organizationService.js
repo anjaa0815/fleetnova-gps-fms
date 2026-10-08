@@ -13,6 +13,9 @@ export class ServiceError extends Error {
   }
 }
 
+// Roles of an organization's own users (the platform owner, super_admin, is not part of any organization)
+export const ORG_ROLES = ['admin', 'fleet_manager', 'driver'];
+
 export const DELIVERY_TYPES = ['speeding', 'geofence_enter', 'geofence_exit'];
 
 export const deliverySettings = (org) => ({

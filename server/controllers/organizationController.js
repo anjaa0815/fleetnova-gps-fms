@@ -182,8 +182,15 @@ export const createOrganization = async (req, res, next) => {
 // @route PUT /api/platform/organizations/:id
 export const updateOrganization = async (req, res, next) => {
   try {
-    const { status, plan, trialEndsAt, planExpiresAt } = req.body;
+    const { name, status, plan, trialEndsAt, planExpiresAt } = req.body;
     const update = {};
+
+    // renaming keeps the slug, so the organization's login address (?org=...) does not change
+    if (name !== undefined) {
+      const trimmed = typeof name === 'string' ? name.trim() : '';
+      if (trimmed.length < 2 || trimmed.length > 100) throw new ServiceError('Organization name must be between 2 and 100 characters');
+      update.name = trimmed;
+    }
 
     if (status !== undefined) {
       if (!ORG_STATUSES.includes(status)) throw new ServiceError('Invalid status');
