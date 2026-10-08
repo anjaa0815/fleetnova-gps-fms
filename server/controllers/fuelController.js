@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { sameId } from '../utils/ids.js';
 import { findMissingRef } from '../utils/refs.js';
 
 // @desc Get all fuel records with filter & pagination
@@ -12,7 +13,7 @@ export const getFuelRecords = async (req, res, next) => {
     });
 
     if (vehicle && vehicle !== 'All') {
-      records = records.filter(r => (r.vehicle?._id || r.vehicle) === vehicle);
+      records = records.filter(r => sameId(r.vehicle, vehicle));
     }
 
     if (fuelType && fuelType !== 'All') {

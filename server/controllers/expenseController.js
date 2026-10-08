@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { sameId } from '../utils/ids.js';
 import { findMissingRef } from '../utils/refs.js';
 
 // @desc Get all expenses with filtering, search, pagination, and breakdowns
@@ -16,11 +17,11 @@ export const getExpenses = async (req, res, next) => {
     }
 
     if (vehicle && vehicle !== 'All') {
-      expenses = expenses.filter(e => (e.vehicle?._id || e.vehicle) === vehicle);
+      expenses = expenses.filter(e => sameId(e.vehicle, vehicle));
     }
 
     if (driver && driver !== 'All') {
-      expenses = expenses.filter(e => (e.driver?._id || e.driver) === driver);
+      expenses = expenses.filter(e => sameId(e.driver, driver));
     }
 
     if (search && search.trim() !== '') {
