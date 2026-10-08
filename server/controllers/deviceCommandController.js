@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { runAsSystem } from '../middleware/tenantContext.js';
 import { COMMAND_TYPES, cancelCommand, commandsSupported, createCommand, serializeCommand } from '../services/deviceCommands.js';
 
 const OBJECT_ID = /^[0-9a-f]{24}$/;
@@ -21,7 +22,7 @@ export const sendCommand = async (req, res, next) => {
     if (!device) return;
     const type = String(req.body.type || '');
     if (!COMMAND_TYPES[type]) return res.status(400).json({ success: false, message: 'Unknown command' });
-    const user = await DataEngine.findById('users', req.user._id);
+    const user = await runAsSystem(() => DataEngine.findById('users', req.user._id));
     const command = await createCommand({ user: user || req.user, device, type, confirmRegistration: req.body.confirmRegistration });
     if (COMMAND_TYPES[type].engine) {
       console.log(`[Commands] ${type} on device ${device._id} requested by ${req.user.email} (org ${req.user.orgId})`);

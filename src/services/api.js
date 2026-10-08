@@ -2,11 +2,19 @@
 
 const BASE_URL = '/api';
 
+// While the platform owner works inside a customer organization, every request names it (see AuthContext)
+export const ACT_AS_KEY = 'fleetnova_act_org';
+const actAsHeader = () => {
+  const orgId = localStorage.getItem(ACT_AS_KEY);
+  return orgId ? { 'X-Act-As-Org': orgId } : {};
+};
+
 export async function apiRequest(endpoint, method = 'GET', data = null, customHeaders = {}) {
   const token = localStorage.getItem('fleetnova_token');
 
   const headers = {
     'Content-Type': 'application/json',
+    ...actAsHeader(),
     ...customHeaders
   };
 
@@ -87,7 +95,7 @@ export const gpsReportApi = {
   // Downloads the CSV export (needs the auth header, so it cannot be a plain link)
   downloadCsv: async (params, filename, lang) => {
     const token = localStorage.getItem('fleetnova_token');
-    const res = await fetch(`${BASE_URL}/reports/gps.csv?${params}${lang ? `&lang=${lang}` : ''}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    const res = await fetch(`${BASE_URL}/reports/gps.csv?${params}${lang ? `&lang=${lang}` : ''}`, { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...actAsHeader() } });
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
       throw new Error(json.message || `Request failed with status ${res.status}`);
@@ -135,7 +143,8 @@ export const platformApi = {
   updateOrganization: (id, data) => apiRequest(`/platform/organizations/${id}`, 'PUT', data),
   listUsers: (orgId) => apiRequest(`/platform/organizations/${orgId}/users`),
   createUser: (orgId, data) => apiRequest(`/platform/organizations/${orgId}/users`, 'POST', data),
-  updateUser: (orgId, userId, data) => apiRequest(`/platform/organizations/${orgId}/users/${userId}`, 'PUT', data)
+  updateUser: (orgId, userId, data) => apiRequest(`/platform/organizations/${orgId}/users/${userId}`, 'PUT', data),
+  auditLog: (orgId) => apiRequest(`/platform/audit?limit=200${orgId ? `&orgId=${orgId}` : ''}`)
 };
 
 // Public (unauthenticated) API used for per-organization login pages

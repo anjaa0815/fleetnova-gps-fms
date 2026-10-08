@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Plus, Link as LinkIcon, Pencil, Users as UsersIcon } from 'lucide-react';
+import { Building2, Plus, Link as LinkIcon, Pencil, Users as UsersIcon, LogIn, History } from 'lucide-react';
 import Modal from '../components/Modal.jsx';
 import OrgUsersModal from '../components/OrgUsersModal.jsx';
+import OrgAuditModal from '../components/OrgAuditModal.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import Loading from '../components/Loading.jsx';
 import { platformApi } from '../services/api.js';
 import { useT } from '../i18n/LanguageContext.jsx';
@@ -21,6 +23,7 @@ const limitText = (used, max) => `${used} / ${max < 0 ? '∞' : max}`;
 
 export default function Organizations() {
   const { tr } = useT();
+  const { enterOrganization } = useAuth();
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,6 +32,7 @@ export default function Organizations() {
   const [formError, setFormError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [usersOf, setUsersOf] = useState(null); // organization whose users are being managed
+  const [auditOf, setAuditOf] = useState(null); // organization whose activity log is shown
   const [renaming, setRenaming] = useState(null); // { org, name, error }
 
   const loadOrgs = async () => {
@@ -68,6 +72,11 @@ export default function Organizations() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEnter = async (org) => {
+    const res = await enterOrganization(org._id);
+    if (!res.success) alert(tr(res.message || 'Failed to enter the organization'));
   };
 
   const handleCreate = async (e) => {
@@ -173,6 +182,12 @@ export default function Organizations() {
                   <td>{org.planExpiresAt ? new Date(org.planExpiresAt).toLocaleDateString() : org.trialEndsAt ? new Date(org.trialEndsAt).toLocaleDateString() : '—'}</td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <button className="btn btn-primary btn-sm" onClick={() => handleEnter(org)}>
+                      <LogIn size={13} /> {tr('Enter organization')}
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setAuditOf(org)}>
+                      <History size={13} /> {tr('Activity log')}
+                    </button>
                     <button className="btn btn-secondary btn-sm" onClick={() => setUsersOf(org)}>
                       <UsersIcon size={13} /> {tr('Users')}
                     </button>
@@ -192,6 +207,7 @@ export default function Organizations() {
       </div>
 
       {usersOf && <OrgUsersModal org={usersOf} onClose={() => setUsersOf(null)} onChanged={loadOrgs} />}
+      {auditOf && <OrgAuditModal org={auditOf} onClose={() => setAuditOf(null)} />}
 
       <Modal isOpen={Boolean(renaming)} onClose={() => setRenaming(null)} title={tr('Rename organization')} maxWidth="480px">
         {renaming && (

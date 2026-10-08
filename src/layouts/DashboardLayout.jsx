@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar.jsx';
 import Navbar from '../components/Navbar.jsx';
 import FleetAIChat from '../components/FleetAIChat.jsx';
 import TrialBanner from '../components/TrialBanner.jsx';
+import ActingBanner from '../components/ActingBanner.jsx';
 import { Sparkles } from 'lucide-react';
 import { useT } from '../i18n/LanguageContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -33,6 +34,7 @@ export default function DashboardLayout({ currentTab, onSelectTab, currentTitle,
           onOpenFleetAI={() => setIsAIChatOpen(true)}
         />
 
+        <ActingBanner />
         <TrialBanner onNavigate={onSelectTab} />
 
         <main className="page-body">

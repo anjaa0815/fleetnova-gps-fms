@@ -4,6 +4,8 @@ import { JWT_SECRET } from '../config/jwt.js';
 import { runWithTenant } from './tenantContext.js';
 import { GRACE_DAYS } from '../config/plans.js';
 
+export const ACT_AS_HEADER = 'x-act-as-org';
+
 const deny = (res, status, message) => res.status(status).json({ success: false, message });
 
 export const protect = async (req, res, next) => {
@@ -13,6 +15,7 @@ export const protect = async (req, res, next) => {
 
   let user;
   let org = null;
+  let acting = false;
 
   try {
     const token = req.headers.authorization.split(' ')[1];
@@ -26,7 +29,15 @@ export const protect = async (req, res, next) => {
       return deny(res, 403, 'Account is deactivated. Please contact your Fleet Administrator.');
     }
 
-    if (user.role !== 'super_admin') {
+    // The platform owner can work inside any organization ("acting as" it): the request then runs in that
+    // organization's context with administrator rights, whatever its status or plan. Every change is logged.
+    // The header means nothing to anyone else.
+    const actAs = user.role === 'super_admin' ? req.headers[ACT_AS_HEADER] : null;
+    if (actAs) {
+      org = await DataEngine.findById('organizations', String(actAs));
+      if (!org) return deny(res, 404, 'Organization not found');
+      acting = true;
+    } else if (user.role !== 'super_admin') {
       org = user.orgId ? await DataEngine.findById('organizations', user.orgId) : null;
       if (!org) return deny(res, 403, 'Your account is not linked to an organization');
       if (org.status === 'suspended') {
@@ -50,6 +61,8 @@ export const protect = async (req, res, next) => {
       }
     }
   } catch (error) {
+    // a malformed organization id in the header is "not found", like anywhere else
+    if (error.name === 'CastError' && error.path === '_id') return deny(res, 404, 'Organization not found');
     return deny(res, 401, 'Not authorized, token failed or expired');
   }
 
@@ -57,14 +70,31 @@ export const protect = async (req, res, next) => {
     _id: user._id,
     name: user.name,
     email: user.email,
-    role: user.role,
+    role: acting ? 'admin' : user.role,
     phone: user.phone,
     status: user.status,
-    orgId: user.orgId || null
+    orgId: acting ? org._id : user.orgId || null
   };
   req.org = org;
+  req.acting = acting;
+
+  if (acting && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    const entry = {
+      actor: user._id,
+      actorEmail: user.email,
+      orgId: org._id,
+      orgName: org.name,
+      method: req.method,
+      path: String(req.originalUrl || req.url).split('?')[0].slice(0, 300),
+      ip: String(req.ip || '')
+    };
+    // written once the answer is known, so the row carries the result; a failure to log never breaks the request
+    res.on('finish', () => {
+      DataEngine.create('auditLogs', { ...entry, status: res.statusCode }).catch((err) => console.error(`[Audit] Could not write the audit log: ${err.message}`));
+    });
+  }
 
   // Everything after this point runs inside the caller's tenant context
-  const context = user.role === 'super_admin' ? { platform: true } : { orgId: String(user.orgId) };
+  const context = acting ? { orgId: String(org._id) } : user.role === 'super_admin' ? { platform: true } : { orgId: String(user.orgId) };
   return runWithTenant(context, () => next());
 };

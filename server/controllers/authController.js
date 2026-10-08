@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { JWT_SECRET } from '../config/jwt.js';
 import { DataEngine } from '../models/dataEngine.js';
+import { runAsSystem } from '../middleware/tenantContext.js';
 import { getPlan, isWithinLimit } from '../config/plans.js';
 import {
   findUserByResetToken,
@@ -198,7 +199,7 @@ export const loginUser = async (req, res, next) => {
 // @route GET /api/auth/me
 export const getMe = async (req, res, next) => {
   try {
-    const user = await DataEngine.findById('users', req.user._id);
+    const user = await runAsSystem(() => DataEngine.findById('users', req.user._id));
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -210,6 +211,9 @@ export const getMe = async (req, res, next) => {
       success: true,
       data: {
         ...serializeUser(user),
+        // the platform owner working inside an organization is an administrator of it (see protect)
+        role: req.user.role,
+        acting: Boolean(req.acting),
         organization: serializeOrg(req.org)
       }
     });
@@ -225,7 +229,7 @@ export const updateProfile = async (req, res, next) => {
     const { name, phone, password, alertChannels } = req.body;
     const updateData = {};
     if (alertChannels && typeof alertChannels === 'object') {
-      const current = (await DataEngine.findById('users', req.user._id))?.alertChannels || {};
+      const current = (await runAsSystem(() => DataEngine.findById('users', req.user._id)))?.alertChannels || {};
       updateData.alertChannels = {
         email: typeof alertChannels.email === 'boolean' ? alertChannels.email : Boolean(current.email),
         sms: typeof alertChannels.sms === 'boolean' ? alertChannels.sms : Boolean(current.sms)
@@ -246,11 +250,11 @@ export const updateProfile = async (req, res, next) => {
       const salt = await bcrypt.genSalt(10);
       updateData.password = await bcrypt.hash(password, salt);
       // other devices are signed out; this session continues with a fresh token (returned below)
-      updateData.tokenVersion = ((await DataEngine.findById('users', req.user._id))?.tokenVersion || 0) + 1;
+      updateData.tokenVersion = ((await runAsSystem(() => DataEngine.findById('users', req.user._id)))?.tokenVersion || 0) + 1;
       passwordChanged = true;
     }
 
-    const updatedUser = await DataEngine.findByIdAndUpdate('users', req.user._id, updateData);
+    const updatedUser = await runAsSystem(() => DataEngine.findByIdAndUpdate('users', req.user._id, updateData));
 
     if (passwordChanged) {
       sendPasswordChangedEmail({ user: updatedUser, lang: updatedUser.language === 'en' ? 'en' : 'mn' }).catch((error) =>

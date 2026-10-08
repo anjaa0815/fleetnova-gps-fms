@@ -126,3 +126,21 @@ export const updateOrgUser = async (req, res, next) => {
     return next(error);
   }
 };
+
+// @route GET /api/platform/audit?orgId=&limit=   what the platform owner changed inside organizations
+export const listAuditLog = async (req, res, next) => {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 500);
+    const filter = req.query.orgId ? { orgId: String(req.query.orgId) } : {};
+    const rows = await DataEngine.find('auditLogs', filter);
+    rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return res.status(200).json({
+      success: true,
+      data: rows.slice(0, limit).map((r) => ({
+        _id: r._id, at: r.createdAt, actorEmail: r.actorEmail, orgId: r.orgId, orgName: r.orgName, method: r.method, path: r.path, status: r.status
+      }))
+    });
+  } catch (error) {
+    return next(error);
+  }
+};

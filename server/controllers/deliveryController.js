@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { runAsSystem } from '../middleware/tenantContext.js';
 import { getPlan } from '../config/plans.js';
 import { deliverySettings } from '../services/organizationService.js';
 import { getProvider, providerStatus } from '../notify/providers.js';
@@ -69,7 +70,7 @@ export const sendTestMessage = async (req, res, next) => {
     }
     recentTests.set(key, Date.now());
 
-    const user = await DataEngine.findById('users', req.user._id);
+    const user = await runAsSystem(() => DataEngine.findById('users', req.user._id));
     const to = channel === 'email' ? user.email : normalizePhone(user.phone);
     if (!to) {
       return res.status(400).json({ success: false, message: 'Your profile has no valid phone number' });
