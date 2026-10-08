@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { plain } from '../utils/ids.js';
 
 // @desc Get comprehensive live dashboard data
 // @route GET /api/dashboard
@@ -56,7 +57,7 @@ export const getDashboardData = async (req, res, next) => {
         const isOverdue = m.nextServiceDate ? new Date(m.nextServiceDate) < now : false;
         const isDueSoon = m.nextServiceDate ? (new Date(m.nextServiceDate) >= now && new Date(m.nextServiceDate) <= new Date(now.getTime() + 15 * 86400000)) : false;
         return {
-          ...m,
+          ...plain(m),
           isOverdue,
           isDueSoon
         };

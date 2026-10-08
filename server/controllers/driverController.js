@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { plain, sameId } from '../utils/ids.js';
 import { findMissingRef } from '../utils/refs.js';
 
 // @desc Get all drivers with filtering, search, pagination
@@ -67,7 +68,7 @@ export const getDriverById = async (req, res, next) => {
 
     // Related trips
     const allTrips = await DataEngine.find('trips');
-    const driverTrips = allTrips.filter(t => (t.driver?._id || t.driver) === driverId);
+    const driverTrips = allTrips.filter(t => sameId(t.driver, driverId));
 
     // Performance metrics
     const completedTrips = driverTrips.filter(t => t.status === 'Completed');
@@ -92,7 +93,7 @@ export const getDriverById = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: {
-        ...driver,
+        ...plain(driver),
         trips: driverTrips,
         activeTrip: activeTrip || null,
         performance: {

@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { plain, sameId } from '../utils/ids.js';
 import { findMissingRef } from '../utils/refs.js';
 import { getPlan, isWithinLimit } from '../config/plans.js';
 
@@ -71,16 +72,16 @@ export const getVehicleById = async (req, res, next) => {
 
     // Fetch related records
     const allTrips = await DataEngine.find('trips');
-    const vehicleTrips = allTrips.filter(t => (t.vehicle?._id || t.vehicle) === vehicleId);
+    const vehicleTrips = allTrips.filter(t => sameId(t.vehicle, vehicleId));
 
     const allFuels = await DataEngine.find('fuels');
-    const vehicleFuels = allFuels.filter(f => (f.vehicle?._id || f.vehicle) === vehicleId);
+    const vehicleFuels = allFuels.filter(f => sameId(f.vehicle, vehicleId));
 
     const allMaint = await DataEngine.find('maintenances');
-    const vehicleMaintenance = allMaint.filter(m => (m.vehicle?._id || m.vehicle) === vehicleId);
+    const vehicleMaintenance = allMaint.filter(m => sameId(m.vehicle, vehicleId));
 
     const allExp = await DataEngine.find('expenses');
-    const vehicleExpenses = allExp.filter(e => (e.vehicle?._id || e.vehicle) === vehicleId);
+    const vehicleExpenses = allExp.filter(e => sameId(e.vehicle, vehicleId));
 
     // Compute warnings
     const warnings = [];
@@ -124,7 +125,7 @@ export const getVehicleById = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: {
-        ...vehicle,
+        ...plain(vehicle),
         trips: vehicleTrips,
         fuels: vehicleFuels,
         maintenance: vehicleMaintenance,
@@ -258,7 +259,7 @@ export const updateVehicle = async (req, res, next) => {
 
     const updated = await DataEngine.findByIdAndUpdate('vehicles', req.params.id, updateData);
 
-    if (updateData.assignedDriver && updateData.assignedDriver !== existing.assignedDriver?._id) {
+    if (updateData.assignedDriver && !sameId(updateData.assignedDriver, existing.assignedDriver)) {
       await DataEngine.findByIdAndUpdate('drivers', updateData.assignedDriver, {
         assignedVehicle: updated._id
       });

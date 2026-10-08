@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { sameId } from '../utils/ids.js';
 
 // Auto-check document expiries and generate notifications
 async function checkDocumentExpiries() {
@@ -20,7 +21,7 @@ async function checkDocumentExpiries() {
             ? `Vehicle ${v.registrationNumber} insurance expired ${Math.abs(days)} days ago!`
             : `Vehicle ${v.registrationNumber} insurance expires in ${days} days.`;
 
-          const already = existingNotifications.some(n => n.relatedEntityId === v._id && n.type === 'insurance_expiry' && !n.isRead);
+          const already = existingNotifications.some(n => sameId(n.relatedEntityId, v._id) && n.type === 'insurance_expiry' && !n.isRead);
           if (!already) {
             await DataEngine.create('notifications', {
               type: 'insurance_expiry',
@@ -42,7 +43,7 @@ async function checkDocumentExpiries() {
             ? `Vehicle ${v.registrationNumber} RC expired ${Math.abs(days)} days ago!`
             : `Vehicle ${v.registrationNumber} registration expires in ${days} days.`;
 
-          const already = existingNotifications.some(n => n.relatedEntityId === v._id && n.type === 'registration_expiry' && !n.isRead);
+          const already = existingNotifications.some(n => sameId(n.relatedEntityId, v._id) && n.type === 'registration_expiry' && !n.isRead);
           if (!already) {
             await DataEngine.create('notifications', {
               type: 'registration_expiry',
@@ -66,7 +67,7 @@ async function checkDocumentExpiries() {
             ? `Driver ${d.name} (${d.licenseNumber}) commercial license expired ${Math.abs(days)} days ago!`
             : `Driver ${d.name} (${d.licenseNumber}) commercial license expires in ${days} days.`;
 
-          const already = existingNotifications.some(n => n.relatedEntityId === d._id && n.type === 'license_expiry' && !n.isRead);
+          const already = existingNotifications.some(n => sameId(n.relatedEntityId, d._id) && n.type === 'license_expiry' && !n.isRead);
           if (!already) {
             await DataEngine.create('notifications', {
               type: 'license_expiry',

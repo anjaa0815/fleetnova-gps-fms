@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { sameId } from '../utils/ids.js';
 import { findMissingRef } from '../utils/refs.js';
 
 // @desc Get all maintenance records with filters & pagination
@@ -12,7 +13,7 @@ export const getMaintenanceRecords = async (req, res, next) => {
     });
 
     if (vehicle && vehicle !== 'All') {
-      records = records.filter(m => (m.vehicle?._id || m.vehicle) === vehicle);
+      records = records.filter(m => sameId(m.vehicle, vehicle));
     }
 
     if (status && status !== 'All') {
@@ -226,7 +227,7 @@ export const deleteMaintenanceRecord = async (req, res, next) => {
     if (vehicleId) {
       const allMaint = await DataEngine.find('maintenances');
       const otherActive = allMaint.find(
-        m => (m.vehicle?._id || m.vehicle) === vehicleId && m.status !== 'Completed' && m._id !== record._id
+        m => sameId(m.vehicle, vehicleId) && m.status !== 'Completed' && !sameId(m._id, record._id)
       );
       if (!otherActive) {
         await DataEngine.findByIdAndUpdate('vehicles', vehicleId, { status: 'Available' });

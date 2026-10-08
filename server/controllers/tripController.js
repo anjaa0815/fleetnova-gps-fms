@@ -1,4 +1,5 @@
 import { DataEngine } from '../models/dataEngine.js';
+import { sameId } from '../utils/ids.js';
 import { findMissingRef } from '../utils/refs.js';
 
 // @desc Get all trips with filtering, search, pagination
@@ -19,16 +20,16 @@ export const getTrips = async (req, res, next) => {
       const allDrivers = await DataEngine.find('drivers');
       const driverProfile = allDrivers.find(d => d.email === req.user.email);
       if (driverProfile) {
-        trips = trips.filter(t => (t.driver?._id || t.driver) === driverProfile._id);
+        trips = trips.filter(t => sameId(t.driver, driverProfile._id));
       }
     }
 
     if (vehicle && vehicle !== 'All') {
-      trips = trips.filter(t => (t.vehicle?._id || t.vehicle) === vehicle);
+      trips = trips.filter(t => sameId(t.vehicle, vehicle));
     }
 
     if (driver && driver !== 'All') {
-      trips = trips.filter(t => (t.driver?._id || t.driver) === driver);
+      trips = trips.filter(t => sameId(t.driver, driver));
     }
 
     if (search && search.trim() !== '') {
@@ -154,7 +155,7 @@ export const createTrip = async (req, res, next) => {
     // Check if driver is already on an active trip
     const allTrips = await DataEngine.find('trips');
     const driverActiveTrip = allTrips.find(
-      t => (t.driver?._id || t.driver) === driverId && (t.status === 'In Progress' || t.status === 'Scheduled')
+      t => sameId(t.driver, driverId) && (t.status === 'In Progress' || t.status === 'Scheduled')
     );
 
     if (driver.status === 'On Trip' || driverActiveTrip) {
