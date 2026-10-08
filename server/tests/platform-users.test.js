@@ -146,6 +146,9 @@ test('only the platform owner can use these routes, and only on users of that or
     assert.equal((await api(method, route, { body })).status, 401, `${method} ${route} without a token`);
   }
 
+  // a malformed id is simply not found (on MongoDB it used to be a 500)
+  assert.equal((await api('GET', '/vehicles/not-an-id', { token: adminA.token })).status, 404);
+
   // a user of organization B is not reachable through organization A
   const token = a.token;
   assert.equal((await api('PUT', `/platform/organizations/${a.org._id}/users/${adminB._id}`, { token, body: { status: 'inactive' } })).status, 404);

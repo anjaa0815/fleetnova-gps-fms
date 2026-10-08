@@ -635,6 +635,7 @@ export default {
   "Not authorized, token failed or expired": "Эрхгүй: токен буруу эсвэл хугацаа нь дууссан",
   "Not authorized, user no longer exists": "Эрхгүй: хэрэглэгч байхгүй болсон",
   "Not available": "Боломжгүй",
+  "Not found": "Олдсонгүй",
   "Not sent: engine commands were switched off for this device": "Илгээгээгүй: энэ төхөөрөмжид хөдөлгүүрийн команд унтраагдсан",
   "Not sent: the vehicle was moving or its position was unknown": "Илгээгээгүй: машин хөдөлж байсан эсвэл байршил тодорхойгүй байсан",
   "Notes / Receipt Reference": "Тэмдэглэл / баримтын дугаар",
