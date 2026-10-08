@@ -11,6 +11,8 @@ import {
   DollarSign
 } from 'lucide-react';
 import Loading from '../components/Loading.jsx';
+import PrintHeader from '../components/PrintHeader.jsx';
+import { downloadCsv } from '../utils/csv.js';
 import {
   vehicleApi,
   driverApi,
@@ -20,6 +22,104 @@ import {
   expenseApi
 } from '../services/api.js';
 import { useT } from '../i18n/LanguageContext.jsx';
+
+const statusBadge = (tr, status) => (
+  <span className={`badge badge-${status?.toLowerCase().replace(' ', '-')}`}>{tr(status)}</span>
+);
+
+// One definition per report column: `label` is the column title (also the CSV title unless `csvLabel` is given),
+// `cell` is what the table shows, `csv` is what the CSV file gets (plain text / numbers, so Excel can sum them).
+function reportColumns(type, tr, day) {
+  const iso = (value) => (value ? new Date(value).toISOString().slice(0, 10) : '');
+  const rig = (r) => r.vehicle?.registrationNumber || tr('Vehicle');
+  const status = { label: tr('Status'), text: (r) => tr(r.status), render: (r) => statusBadge(tr, r.status) };
+  const col = (label, text, extra = {}) => ({ label, text, ...extra });
+
+  if (type === 'trip') {
+    return [
+      col(tr('Trip ID'), (r) => r.tripId, { bold: true }),
+      col(tr('Rig'), rig),
+      col(tr('Operator'), (r) => r.driver?.name || tr('Driver')),
+      col(tr('Origin ➔ Destination'), (r) => `${r.source} → ${r.destination}`),
+      col(tr('Distance'), (r) => `${r.distance} ${tr('km')}`, { csvLabel: tr('Distance (km)'), csv: (r) => r.distance }),
+      col(tr('Start Date'), (r) => day(r.startDate), { csv: (r) => iso(r.startDate) }),
+      status
+    ].map(normalize);
+  }
+  if (type === 'fuel') {
+    return [
+      col(tr('Record ID'), (r) => r.fuelRecordId, { bold: true }),
+      col(tr('Rig'), rig),
+      col(tr('Date'), (r) => day(r.date), { csv: (r) => iso(r.date) }),
+      col(tr('Type'), (r) => tr(r.fuelType)),
+      col(tr('Quantity'), (r) => `${r.quantity} L`, { csvLabel: tr('Quantity (L)'), csv: (r) => r.quantity }),
+      col(tr('Rate'), (r) => `₮${r.pricePerLiter}`, { csvLabel: tr('Rate (₮/L)'), csv: (r) => r.pricePerLiter }),
+      col(tr('Total Cost'), (r) => `₮${r.totalCost?.toLocaleString()}`, { bold: true, csvLabel: tr('Total Cost (₮)'), csv: (r) => r.totalCost }),
+      col(tr('Station'), (r) => r.fuelStation)
+    ].map(normalize);
+  }
+  if (type === 'maintenance') {
+    return [
+      col(tr('Job ID'), (r) => r.maintenanceId, { bold: true }),
+      col(tr('Rig'), rig),
+      col(tr('Type'), (r) => tr(r.maintenanceType)),
+      col(tr('Scope / Description'), (r) => r.description),
+      col(tr('Service Date'), (r) => day(r.serviceDate), { csv: (r) => iso(r.serviceDate) }),
+      col(tr('Workshop'), (r) => r.serviceCenter),
+      col(tr('Cost'), (r) => `₮${r.cost?.toLocaleString()}`, { bold: true, csvLabel: tr('Cost (₮)'), csv: (r) => r.cost }),
+      status
+    ].map(normalize);
+  }
+  if (type === 'expense') {
+    return [
+      col(tr('Voucher ID'), (r) => r.expenseId, { bold: true }),
+      col(tr('Rig'), rig),
+      col(tr('Category'), (r) => tr(r.category), { render: (r) => <span className="badge badge-ontrip">{tr(r.category)}</span> }),
+      col(tr('Description'), (r) => r.description),
+      col(tr('Date'), (r) => day(r.date), { csv: (r) => iso(r.date) }),
+      col(tr('Amount'), (r) => `₮${r.amount?.toLocaleString()}`, { bold: true, csvLabel: tr('Amount (₮)'), csv: (r) => r.amount }),
+      col(tr('Method'), (r) => tr(r.paymentMethod))
+    ].map(normalize);
+  }
+  if (type === 'vehicle') {
+    return [
+      col(tr('Rig ID'), (r) => r.vehicleId, { bold: true }),
+      col(tr('Reg Number'), (r) => r.registrationNumber),
+      col(tr('Type'), (r) => tr(r.vehicleType)),
+      col(tr('Brand & Model'), (r) => `${r.brand} ${r.model}`),
+      col(tr('Fuel'), (r) => tr(r.fuelType)),
+      col(tr('Odometer'), (r) => `${r.currentMileage?.toLocaleString()} ${tr('km')}`, { csvLabel: tr('Odometer (km)'), csv: (r) => r.currentMileage }),
+      status
+    ].map(normalize);
+  }
+  return [
+    col(tr('Driver ID'), (r) => r.driverId, { bold: true }),
+    col(tr('Name'), (r) => r.name),
+    col(tr('Phone'), (r) => r.phone),
+    col(tr('License Number'), (r) => r.licenseNumber),
+    col(tr('License Expiry'), (r) => day(r.licenseExpiry), { csv: (r) => iso(r.licenseExpiry) }),
+    status
+  ].map(normalize);
+}
+
+// fills in what a column definition leaves out
+function normalize(column) {
+  return {
+    ...column,
+    csvLabel: column.csvLabel || column.label,
+    csv: column.csv || column.text,
+    render: column.render || ((r) => (column.bold ? <strong>{column.text(r)}</strong> : column.text(r)))
+  };
+}
+
+const REPORT_TITLES = {
+  trip: 'Trip Logistics Summary',
+  fuel: 'Fuel Consumption & Costs',
+  maintenance: 'Maintenance Workshop History',
+  expense: 'Operating Expense Ledger',
+  vehicle: 'Vehicle Inventory Status',
+  driver: 'Driver Personnel Roster'
+};
 
 export default function Reports() {
   const { tr } = useT();
@@ -99,30 +199,16 @@ export default function Reports() {
     generateReport();
   }, [reportType, selectedVehicle]);
 
+  const day = (value) => (value ? new Date(value).toLocaleDateString() : '—');
+  const columns = reportColumns(reportType, tr, day);
+
   const handleExportCSV = () => {
     if (records.length === 0) return;
-    const headers = Object.keys(records[0]).filter(k => !k.startsWith('_')).join(',');
-    const rows = records.map(r =>
-      Object.keys(records[0])
-        .filter(k => !k.startsWith('_'))
-        .map(k => {
-          let val = r[k];
-          if (typeof val === 'object' && val !== null) {
-            val = val.registrationNumber || val.name || JSON.stringify(val);
-          }
-          return `"${String(val || '').replace(/"/g, '""')}"`;
-        })
-        .join(',')
+    downloadCsv(
+      `FLEETNOVA_${reportType.toUpperCase()}_REPORT_${new Date().toISOString().split('T')[0]}.csv`,
+      columns.map((c) => c.csvLabel),
+      records.map((r) => columns.map((c) => c.csv(r)))
     );
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers, ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `FLEETNOVA_${reportType.toUpperCase()}_REPORT_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const handlePrint = () => {
@@ -174,8 +260,16 @@ export default function Reports() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <PrintHeader
+        title={tr(REPORT_TITLES[reportType])}
+        lines={[
+          `${tr('From Date')}: ${startDate} — ${tr('To Date')}: ${endDate}`,
+          selectedVehicle !== 'All' ? `${tr('Filter Rig')}: ${vehicles.find((v) => v._id === selectedVehicle)?.registrationNumber || ''}` : null
+        ]}
+      />
+
       {/* Configuration Header */}
-      <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <div className="card no-print" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>{tr("Audit & Analytical Reports")}</h2>
@@ -283,145 +377,17 @@ export default function Reports() {
             <table className="data-table">
               <thead>
                 <tr>
-                  {reportType === 'trip' && (
-                    <>
-                      <th>{tr("Trip ID")}</th>
-                      <th>{tr("Rig")}</th>
-                      <th>{tr("Operator")}</th>
-                      <th>{tr("Origin ➔ Destination")}</th>
-                      <th>{tr("Distance")}</th>
-                      <th>{tr("Start Date")}</th>
-                      <th>{tr("Status")}</th>
-                    </>
-                  )}
-                  {reportType === 'fuel' && (
-                    <>
-                      <th>{tr("Record ID")}</th>
-                      <th>{tr("Rig")}</th>
-                      <th>{tr("Date")}</th>
-                      <th>{tr("Type")}</th>
-                      <th>{tr("Quantity")}</th>
-                      <th>{tr("Rate")}</th>
-                      <th>{tr("Total Cost")}</th>
-                      <th>{tr("Station")}</th>
-                    </>
-                  )}
-                  {reportType === 'maintenance' && (
-                    <>
-                      <th>{tr("Job ID")}</th>
-                      <th>{tr("Rig")}</th>
-                      <th>{tr("Type")}</th>
-                      <th>{tr("Scope / Description")}</th>
-                      <th>{tr("Service Date")}</th>
-                      <th>{tr("Workshop")}</th>
-                      <th>{tr("Cost")}</th>
-                      <th>{tr("Status")}</th>
-                    </>
-                  )}
-                  {reportType === 'expense' && (
-                    <>
-                      <th>{tr("Voucher ID")}</th>
-                      <th>{tr("Rig")}</th>
-                      <th>{tr("Category")}</th>
-                      <th>{tr("Description")}</th>
-                      <th>{tr("Date")}</th>
-                      <th>{tr("Amount")}</th>
-                      <th>{tr("Method")}</th>
-                    </>
-                  )}
-                  {reportType === 'vehicle' && (
-                    <>
-                      <th>{tr("Rig ID")}</th>
-                      <th>{tr("Reg Number")}</th>
-                      <th>{tr("Type")}</th>
-                      <th>{tr("Brand & Model")}</th>
-                      <th>{tr("Fuel")}</th>
-                      <th>{tr("Odometer")}</th>
-                      <th>{tr("Status")}</th>
-                    </>
-                  )}
-                  {reportType === 'driver' && (
-                    <>
-                      <th>{tr("Driver ID")}</th>
-                      <th>{tr("Name")}</th>
-                      <th>{tr("Phone")}</th>
-                      <th>{tr("License Number")}</th>
-                      <th>{tr("License Expiry")}</th>
-                      <th>{tr("Status")}</th>
-                    </>
-                  )}
+                  {columns.map((c) => (
+                    <th key={c.label}>{c.label}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {records.map((r, idx) => (
                   <tr key={r._id || idx}>
-                    {reportType === 'trip' && (
-                      <>
-                        <td><strong>{r.tripId}</strong></td>
-                        <td>{r.vehicle?.registrationNumber || tr("Vehicle")}</td>
-                        <td>{r.driver?.name || tr("Driver")}</td>
-                        <td>{r.source} ➔ {r.destination}</td>
-                        <td>{r.distance} {tr("km")}</td>
-                        <td>{new Date(r.startDate).toLocaleDateString()}</td>
-                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{tr(r.status)}</span></td>
-                      </>
-                    )}
-                    {reportType === 'fuel' && (
-                      <>
-                        <td><strong>{r.fuelRecordId}</strong></td>
-                        <td>{r.vehicle?.registrationNumber || tr("Vehicle")}</td>
-                        <td>{new Date(r.date).toLocaleDateString()}</td>
-                        <td>{tr(r.fuelType)}</td>
-                        <td>{r.quantity} L</td>
-                        <td>₮{r.pricePerLiter}</td>
-                        <td><strong>₮{r.totalCost?.toLocaleString()}</strong></td>
-                        <td>{r.fuelStation}</td>
-                      </>
-                    )}
-                    {reportType === 'maintenance' && (
-                      <>
-                        <td><strong>{r.maintenanceId}</strong></td>
-                        <td>{r.vehicle?.registrationNumber || tr("Vehicle")}</td>
-                        <td>{tr(r.maintenanceType)}</td>
-                        <td>{r.description}</td>
-                        <td>{new Date(r.serviceDate).toLocaleDateString()}</td>
-                        <td>{r.serviceCenter}</td>
-                        <td><strong>₮{r.cost?.toLocaleString()}</strong></td>
-                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{tr(r.status)}</span></td>
-                      </>
-                    )}
-                    {reportType === 'expense' && (
-                      <>
-                        <td><strong>{r.expenseId}</strong></td>
-                        <td>{r.vehicle?.registrationNumber || tr("Vehicle")}</td>
-                        <td><span className="badge badge-ontrip">{tr(r.category)}</span></td>
-                        <td>{r.description}</td>
-                        <td>{new Date(r.date).toLocaleDateString()}</td>
-                        <td><strong>₮{r.amount?.toLocaleString()}</strong></td>
-                        <td>{tr(r.paymentMethod)}</td>
-                      </>
-                    )}
-                    {reportType === 'vehicle' && (
-                      <>
-                        <td><strong>{r.vehicleId}</strong></td>
-                        <td>{r.registrationNumber}</td>
-                        <td>{tr(r.vehicleType)}</td>
-                        <td>{r.brand} {r.model}</td>
-                        <td>{tr(r.fuelType)}</td>
-                        <td>{r.currentMileage?.toLocaleString()} {tr("km")}</td>
-                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{tr(r.status)}</span></td>
-                      </>
-                    )}
-                    {reportType === 'driver' && (
-                      <>
-                        <td><strong>{r.driverId}</strong></td>
-                        <td>{r.name}</td>
-                        <td>{r.phone}</td>
-                        <td>{r.licenseNumber}</td>
-                        <td>{new Date(r.licenseExpiry).toLocaleDateString()}</td>
-                        <td><span className={`badge badge-${r.status?.toLowerCase().replace(' ', '-')}`}>{tr(r.status)}</span></td>
-                      </>
-                    )}
+                    {columns.map((c) => (
+                      <td key={c.label}>{c.render(r)}</td>
+                    ))}
                   </tr>
                 ))}
               </tbody>

@@ -1,5 +1,6 @@
 import { DataEngine } from '../models/dataEngine.js';
 import { createAnalyzer, dayKey } from '../reports/gpsAnalysis.js';
+import { translate } from '../utils/serverI18n.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_RANGE_MS = 31 * DAY_MS;
@@ -165,20 +166,23 @@ export const exportGpsReport = async (req, res, next) => {
     }
 
     const report = await buildGpsReport({ from: range.from, to: range.to, vehicleId });
+    // column titles in the language the page is shown in (?lang=), else the user's own language
+    const lang = ['mn', 'en'].includes(req.query.lang) ? req.query.lang : req.user?.language === 'en' ? 'en' : 'mn';
+    const t = (list) => list.map((text) => translate(lang, text));
     let csv;
     if (type === 'trips') {
       csv = toCsv(
-        ['Start', 'End', 'Distance km', 'Duration min', 'Max speed km/h', 'Avg speed km/h', 'Start lat', 'Start lng', 'End lat', 'End lng'],
-        report.rows[0].trips.map((t) => [t.start, t.end, t.distanceKm, t.durationMin, t.maxSpeed, t.avgSpeed, t.startLat, t.startLng, t.endLat, t.endLng])
+        t(['Start', 'End', 'Distance km', 'Duration min', 'Max speed km/h', 'Avg speed km/h', 'Start lat', 'Start lng', 'End lat', 'End lng']),
+        report.rows[0].trips.map((x) => [x.start, x.end, x.distanceKm, x.durationMin, x.maxSpeed, x.avgSpeed, x.startLat, x.startLng, x.endLat, x.endLng])
       );
     } else if (type === 'stops') {
       csv = toCsv(
-        ['Start', 'End', 'Duration min', 'Idling (engine on)', 'Lat', 'Lng'],
-        report.rows[0].stops.map((s) => [s.start, s.end, s.durationMin, s.idle ? 'yes' : 'no', s.lat, s.lng])
+        t(['Start', 'End', 'Duration min', 'Idling (engine on)', 'Lat', 'Lng']),
+        report.rows[0].stops.map((x) => [x.start, x.end, x.durationMin, translate(lang, x.idle ? 'yes' : 'no'), x.lat, x.lng])
       );
     } else {
       csv = toCsv(
-        ['Vehicle', 'Distance km', 'Trips', 'Driving min', 'Stopped min', 'Idling min', 'Max speed km/h', 'Avg speed km/h', 'Speeding alerts', 'Geofence alerts', 'Fuel litres', 'Fuel cost', 'km per litre'],
+        t(['Vehicle', 'Distance km', 'Trips', 'Driving min', 'Stopped min', 'Idling min', 'Max speed km/h', 'Avg speed km/h', 'Speeding alerts', 'Geofence alerts', 'Fuel litres', 'Fuel cost', 'km per litre']),
         report.rows.map((r) => [r.registrationNumber, r.distanceKm, r.tripCount, r.drivingMin, r.stopMin, r.idleMin, r.maxSpeed, r.avgSpeed, r.speedingAlerts, r.geofenceAlerts, r.fuelLiters, r.fuelCost, r.kmPerLiter])
       );
     }

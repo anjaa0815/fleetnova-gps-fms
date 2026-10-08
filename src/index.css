@@ -4,8 +4,8 @@
    ========================================================================== */
 
 :root {
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Inter Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
   /* Color Palette */
   --bg-primary: #0a0d14;
@@ -817,5 +817,175 @@ button, input, select, textarea {
   }
   .card {
     padding: 1rem;
+  }
+}
+
+/* ==========================================================================
+   PRINT: reports print as a plain black-on-white document (no menus, buttons or dark theme)
+   ========================================================================== */
+.print-only {
+  display: none;
+}
+
+@page {
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+@media print {
+  :root {
+    --bg-primary: #fff;
+    --bg-secondary: #f3f4f6;
+    --bg-card: #fff;
+    --bg-card-hover: #fff;
+    --bg-glass: #fff;
+    --border-subtle: #c9ced6;
+    --text-primary: #111827;
+    --text-secondary: #374151;
+    --text-muted: #4b5563;
+    --accent-cyan: #0e7490;
+    --primary: #1d4ed8;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: #111827;
+    font-size: 11pt;
+  }
+
+  .sidebar,
+  .navbar,
+  .floating-ai-btn,
+  .floating-chat-drawer,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  .app-container {
+    display: block;
+    min-height: 0;
+    background: #fff;
+  }
+
+  .main-content-wrapper {
+    background: #fff;
+    display: block;
+  }
+
+  .page-body {
+    padding: 0;
+    max-width: none;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0.75rem;
+    break-inside: auto;
+  }
+
+  .table-responsive {
+    overflow: visible;
+    border: none;
+    background: #fff;
+  }
+
+  .data-table {
+    font-size: 9pt;
+  }
+
+  .data-table th {
+    background: #e5e7eb !important;
+    color: #111827;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid #9ca3af;
+  }
+
+  .data-table td {
+    padding: 0.35rem 0.5rem;
+    color: #111827;
+    border-bottom: 1px solid #d1d5db;
+  }
+
+  .data-table thead {
+    display: table-header-group; /* repeat the column titles on every page */
+  }
+
+  .data-table tr {
+    break-inside: avoid;
+  }
+
+  .card-title {
+    break-after: avoid; /* a heading is never left alone at the bottom of a page */
+  }
+
+  .badge {
+    background: none !important;
+    color: #111827 !important;
+    border: 1px solid #9ca3af;
+    padding: 0.05rem 0.4rem;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .print-header {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #111827;
+  }
+
+  .print-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .print-header-org {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 12pt;
+  }
+
+  .print-header-org img {
+    height: 28px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .print-header-meta {
+    text-align: right;
+    font-size: 8.5pt;
+    color: #4b5563;
+  }
+
+  .print-header h1 {
+    font-size: 16pt;
+    font-weight: 800;
+    margin: 0 0 0.15rem;
+  }
+
+  .print-header-line {
+    font-size: 9.5pt;
+    color: #374151;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
