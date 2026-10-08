@@ -20,6 +20,7 @@ import {
   sendVerificationEmail
 } from '../services/emailVerification.js';
 import {
+  ORG_ROLES,
   createOrganizationWithAdmin,
   serializeOrg,
   serializeUser
@@ -344,8 +345,6 @@ export const getAllUsers = async (req, res, next) => {
     next(error);
   }
 };
-
-const ORG_ROLES = ['admin', 'fleet_manager', 'driver'];
 
 // @desc Admin creates a user inside the caller's organization
 // @route POST /api/auth/users

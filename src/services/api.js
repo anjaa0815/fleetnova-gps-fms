@@ -132,7 +132,10 @@ export const organizationApi = {
 export const platformApi = {
   listOrganizations: () => apiRequest('/platform/organizations'),
   createOrganization: (data) => apiRequest('/platform/organizations', 'POST', data),
-  updateOrganization: (id, data) => apiRequest(`/platform/organizations/${id}`, 'PUT', data)
+  updateOrganization: (id, data) => apiRequest(`/platform/organizations/${id}`, 'PUT', data),
+  listUsers: (orgId) => apiRequest(`/platform/organizations/${orgId}/users`),
+  createUser: (orgId, data) => apiRequest(`/platform/organizations/${orgId}/users`, 'POST', data),
+  updateUser: (orgId, userId, data) => apiRequest(`/platform/organizations/${orgId}/users/${userId}`, 'PUT', data)
 };
 
 // Public (unauthenticated) API used for per-organization login pages

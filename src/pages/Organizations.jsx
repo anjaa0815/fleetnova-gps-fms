@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Plus, Link as LinkIcon } from 'lucide-react';
+import { Building2, Plus, Link as LinkIcon, Pencil, Users as UsersIcon } from 'lucide-react';
 import Modal from '../components/Modal.jsx';
+import OrgUsersModal from '../components/OrgUsersModal.jsx';
 import Loading from '../components/Loading.jsx';
 import { platformApi } from '../services/api.js';
 import { useT } from '../i18n/LanguageContext.jsx';
@@ -27,6 +28,8 @@ export default function Organizations() {
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [usersOf, setUsersOf] = useState(null); // organization whose users are being managed
+  const [renaming, setRenaming] = useState(null); // { org, name, error }
 
   const loadOrgs = async () => {
     try {
@@ -50,6 +53,20 @@ export default function Organizations() {
       loadOrgs();
     } catch (err) {
       alert(tr(err.message || 'Failed to update organization'));
+    }
+  };
+
+  const handleRename = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await platformApi.updateOrganization(renaming.org._id, { name: renaming.name });
+      setRenaming(null);
+      loadOrgs();
+    } catch (err) {
+      setRenaming({ ...renaming, error: tr(err.message || 'Failed to update organization') });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -119,6 +136,15 @@ export default function Organizations() {
                 <tr key={org._id}>
                   <td>
                     <strong>{org.name}</strong>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      style={{ marginLeft: '0.5rem', padding: '0.15rem 0.4rem' }}
+                      title={tr('Rename organization')}
+                      aria-label={tr('Rename organization')}
+                      onClick={() => setRenaming({ org, name: org.name, error: null })}
+                    >
+                      <Pencil size={12} />
+                    </button>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       <a href={loginLink(org.slug)} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-cyan)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <LinkIcon size={11} /> ?org={org.slug}
@@ -146,12 +172,17 @@ export default function Organizations() {
                   <td>{limitText(org.usage.vehicles, org.limits.maxVehicles)}</td>
                   <td>{org.planExpiresAt ? new Date(org.planExpiresAt).toLocaleDateString() : org.trialEndsAt ? new Date(org.trialEndsAt).toLocaleDateString() : '—'}</td>
                   <td>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setUsersOf(org)}>
+                      <UsersIcon size={13} /> {tr('Users')}
+                    </button>
                     <button
                       className={`btn btn-sm ${org.status === 'active' ? 'btn-danger' : 'btn-secondary'}`}
                       onClick={() => handleUpdate(org._id, { status: org.status === 'active' ? 'suspended' : 'active' })}
                     >
                       {org.status === 'active' ? tr('Suspend') : tr('Activate')}
                     </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -159,6 +190,31 @@ export default function Organizations() {
           </table>
         </div>
       </div>
+
+      {usersOf && <OrgUsersModal org={usersOf} onClose={() => setUsersOf(null)} onChanged={loadOrgs} />}
+
+      <Modal isOpen={Boolean(renaming)} onClose={() => setRenaming(null)} title={tr('Rename organization')} maxWidth="480px">
+        {renaming && (
+          <form onSubmit={handleRename}>
+            {renaming.error && (
+              <div style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                {renaming.error}
+              </div>
+            )}
+            <div className="form-group">
+              <label className="form-label">{tr('Organization / Company Name *')}</label>
+              <input className="form-control" required minLength={2} maxLength={100} autoFocus value={renaming.name} onChange={(e) => setRenaming({ ...renaming, name: e.target.value })} />
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                {tr('The login address (?org=...) stays the same.')}
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setRenaming(null)}>{tr('Cancel')}</button>
+              <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? tr('Saving Changes...') : tr('Save Changes')}</button>
+            </div>
+          </form>
+        )}
+      </Modal>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={tr('New Organization')}>
         <form onSubmit={handleCreate}>
