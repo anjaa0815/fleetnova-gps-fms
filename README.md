@@ -231,7 +231,7 @@ Alerts (speeding, geofence enter/exit) can also be sent by email and SMS:
 
 *GPS Reports* summarizes what the trackers recorded over a period (up to 31 days) for the whole fleet or one vehicle:
 distance, trips, driving time, stops and idling (engine on), max/average speed, speeding and geofence alerts, and
-fuel purchased with km per litre. Click a vehicle for its trip and stop lists; every table exports to CSV
+fuel purchased with km per litre. Click a vehicle for its trip and stop lists; every table exports to CSV (UTF-8 with BOM, titles in the UI language) and prints as a plain A4 document with a letterhead
 (`GET /api/reports/gps`, `GET /api/reports/gps.csv?type=vehicles|trips|stops`).
 
 How the numbers are derived (`server/reports/gpsAnalysis.js`): a vehicle is *moving* at 3 km/h or more; a pause of

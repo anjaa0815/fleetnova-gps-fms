@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ClipboardList, Download, ArrowLeft } from 'lucide-react';
+import { ClipboardList, Download, ArrowLeft, Printer } from 'lucide-react';
 import Loading from '../components/Loading.jsx';
+import PrintHeader from '../components/PrintHeader.jsx';
 import { gpsReportApi, vehicleApi } from '../services/api.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
@@ -20,7 +21,7 @@ const PRESETS = [
 const panel = { padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' };
 
 export default function GpsReports() {
-  const { tr } = useT();
+  const { tr, lang } = useT();
   const today = dateInput(new Date());
   const [from, setFrom] = useState(dateInput(new Date(Date.now() - 6 * 86400000)));
   const [to, setTo] = useState(today);
@@ -75,7 +76,7 @@ export default function GpsReports() {
     try {
       const query = new URLSearchParams(params);
       if (type !== 'vehicles') query.set('type', type);
-      await gpsReportApi.downloadCsv(query.toString(), `gps-${type}-${from}_${to}.csv`);
+      await gpsReportApi.downloadCsv(query.toString(), `gps-${type}-${from}_${to}.csv`, lang);
     } catch (err) {
       alert(tr(err.message || 'Failed to export'));
     }
@@ -95,7 +96,14 @@ export default function GpsReports() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <PrintHeader
+        title={tr('GPS Reports')}
+        lines={[
+          `${tr('From Date')}: ${from} — ${tr('To Date')}: ${to}`,
+          selectedVehicle ? `${tr('Vehicle')}: ${selectedVehicle.registrationNumber}` : null
+        ]}
+      />
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>{tr('GPS Reports')}</h2>
           <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
@@ -109,12 +117,13 @@ export default function GpsReports() {
               <button className="btn btn-secondary btn-sm" onClick={() => download('stops')}><Download size={14} /> {tr('Stops CSV')}</button>
             </>
           )}
+          <button className="btn btn-secondary btn-sm" onClick={() => window.print()}><Printer size={14} /> {tr('Print')}</button>
           <button className="btn btn-primary btn-sm" onClick={() => download('vehicles')}><Download size={14} /> {tr('Export CSV')}</button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="card" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      <div className="card no-print" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           {PRESETS.map((p) => (
             <button key={p.id} className="btn btn-secondary btn-sm" onClick={() => applyPreset(p)}>{tr(p.label)}</button>
@@ -174,7 +183,7 @@ export default function GpsReports() {
             {/* Vehicle table / single vehicle detail */}
             {selectedVehicle ? (
               <>
-                <button className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setVehicleId('')}>
+                <button className="btn btn-secondary btn-sm no-print" style={{ alignSelf: 'flex-start' }} onClick={() => setVehicleId('')}>
                   <ArrowLeft size={14} /> {tr('All vehicles')}
                 </button>
                 <div className="card">
@@ -257,7 +266,7 @@ export default function GpsReports() {
                     </tbody>
                   </table>
                 </div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
+                <p className="no-print" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
                   {tr('Click a vehicle to see its trips and stops. Vehicles without a tracker show no distance.')}
                 </p>
               </div>

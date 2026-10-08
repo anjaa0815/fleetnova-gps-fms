@@ -256,7 +256,7 @@ test('GPS report API: totals, trips, stops, fuel, alerts, CSV and access rules',
   assert.ok(new Date(detail.body.data.trips[0].start) > new Date(detail.body.data.trips[2].start)); // newest first
 
   // CSV exports
-  const csvRes = await api('GET', `/reports/gps.csv?${range}`, { token: a.token, raw: true });
+  const csvRes = await api('GET', `/reports/gps.csv?${range}&lang=en`, { token: a.token, raw: true });
   assert.equal(csvRes.status, 200);
   assert.match(csvRes.headers.get('content-type'), /text\/csv/);
   const bytes = Buffer.from(await csvRes.arrayBuffer());
@@ -265,7 +265,13 @@ test('GPS report API: totals, trips, stops, fuel, alerts, CSV and access rules',
   assert.ok(csv.startsWith('Vehicle,Distance km,Trips'));
   assert.ok(csv.includes('RPT 1,'));
   assert.ok(csv.includes("'=1+1,"), 'formula-like cells are neutralized');
-  const tripsCsv = await (await api('GET', `/reports/gps.csv?${range}&vehicleId=${va._id}&type=trips`, { token: a.token, raw: true })).text();
+  // column titles follow ?lang=, and the user's own language when it is absent (new users are Mongolian)
+  const mnCsv = (await (await api('GET', `/reports/gps.csv?${range}&lang=mn`, { token: a.token, raw: true })).text()).replace(/^\uFEFF/, '');
+  assert.ok(!mnCsv.startsWith('Vehicle,') && /^[А-Яа-яӨөҮү]/.test(mnCsv), 'titles are translated');
+  assert.ok(mnCsv.split('\r\n')[0].includes('"Зай, км"'), 'a title containing a comma is quoted');
+  const defaultCsv = (await (await api('GET', `/reports/gps.csv?${range}`, { token: a.token, raw: true })).text()).replace(/^\uFEFF/, '');
+  assert.equal(defaultCsv.split('\r\n')[0], mnCsv.split('\r\n')[0]);
+  const tripsCsv = await (await api('GET', `/reports/gps.csv?${range}&vehicleId=${va._id}&type=trips&lang=en`, { token: a.token, raw: true })).text();
   assert.equal(tripsCsv.trim().split('\r\n').length, 4); // header + 3 trips
   assert.equal((await api('GET', `/reports/gps.csv?${range}&type=trips`, { token: a.token, raw: true })).status, 400);
 

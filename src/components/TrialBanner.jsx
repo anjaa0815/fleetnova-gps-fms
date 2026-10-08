@@ -36,6 +36,7 @@ export default function TrialBanner({ onNavigate }) {
   const bad = readOnly;
   return (
     <div
+      className="no-print"
       style={{
         padding: '0.65rem 1rem',
         backgroundColor: bad ? 'rgba(244, 63, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
