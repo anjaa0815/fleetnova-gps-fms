@@ -10,6 +10,7 @@ import Expense from './Expense.js';
 import Notification from './Notification.js';
 import Invoice from './Invoice.js';
 import Command from './Command.js';
+import AuditLog from './AuditLog.js';
 import Organization from './Organization.js';
 import Device from './Device.js';
 import Position from './Position.js';
@@ -218,6 +219,7 @@ export const DataEngine = {
         case 'deliveries': return Delivery;
         case 'invoices': return Invoice;
         case 'commands': return Command;
+        case 'auditLogs': return AuditLog;
         default: return null;
       }
     }

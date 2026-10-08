@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import DashboardLayout from './layouts/DashboardLayout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -35,7 +35,7 @@ import LanguageSwitch from './components/LanguageSwitch.jsx';
 
 function MainApp() {
   const { tr } = useT();
-  const { isAuthenticated, loading, role } = useAuth();
+  const { isAuthenticated, loading, role, acting } = useAuth();
 
   // Link from the confirmation email: /?verify=<token>
   const [verifyToken, setVerifyToken] = useState(() => new URLSearchParams(window.location.search).get('verify'));
@@ -60,6 +60,14 @@ function MainApp() {
   useEffect(() => {
     if (role === 'super_admin') setCurrentTab((tab) => (tab === 'dashboard' ? 'organizations' : tab));
   }, [role]);
+
+  // The platform owner entering an organization lands on its dashboard; leaving returns to the organizations
+  const wasActing = useRef(false);
+  useEffect(() => {
+    if (acting && !wasActing.current) setCurrentTab('dashboard');
+    if (!acting && wasActing.current && role === 'super_admin') setCurrentTab('organizations');
+    wasActing.current = acting;
+  }, [acting, role]);
 
   if (loading) {
     return (

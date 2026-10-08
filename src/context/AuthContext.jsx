@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authApi } from '../services/api.js';
+import { authApi, ACT_AS_KEY } from '../services/api.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
 const AuthContext = createContext(null);
@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     setError(null);
+    localStorage.removeItem(ACT_AS_KEY); // a new sign-in never resumes work inside an organization
     try {
       const res = await authApi.login({ email, password });
       if (res.success && res.data) {
@@ -86,7 +87,28 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('fleetnova_token');
+    localStorage.removeItem(ACT_AS_KEY);
     setUser(null);
+  };
+
+  // Platform owner: work inside a customer organization as its administrator (the server records every change),
+  // and leave it again. The session is re-read, so the whole app then behaves as that organization's admin.
+  const enterOrganization = async (orgId) => {
+    localStorage.setItem(ACT_AS_KEY, orgId);
+    try {
+      const res = await authApi.getMe();
+      setUser(res.data);
+      return { success: true };
+    } catch (err) {
+      localStorage.removeItem(ACT_AS_KEY);
+      return { success: false, message: err.message };
+    }
+  };
+
+  const exitOrganization = async () => {
+    localStorage.removeItem(ACT_AS_KEY);
+    const res = await authApi.getMe();
+    setUser(res.data);
   };
 
   // Merge a fresh organization object (e.g. after editing its profile) into the session
@@ -116,8 +138,11 @@ export const AuthProvider = ({ children }) => {
     error,
     isAuthenticated: !!user,
     role: user?.role,
+    acting: Boolean(user?.acting),
     organization: user?.organization || null,
     setOrganization,
+    enterOrganization,
+    exitOrganization,
     login,
     register,
     logout,

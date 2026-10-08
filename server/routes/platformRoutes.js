@@ -4,7 +4,7 @@ import {
   createOrganization,
   updateOrganization
 } from '../controllers/organizationController.js';
-import { listOrgUsers, createUserInOrg, updateOrgUser } from '../controllers/platformUserController.js';
+import { listOrgUsers, createUserInOrg, updateOrgUser, listAuditLog } from '../controllers/platformUserController.js';
 import { listAllInvoices } from '../controllers/billingController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/roleMiddleware.js';
@@ -19,5 +19,6 @@ router.put('/organizations/:id', updateOrganization);
 router.route('/organizations/:id/users').get(listOrgUsers).post(createUserInOrg);
 router.put('/organizations/:id/users/:userId', updateOrgUser);
 router.get('/invoices', listAllInvoices);
+router.get('/audit', listAuditLog);
 
 export default router;

@@ -80,7 +80,7 @@ export const getBilling = async (req, res, next) => {
 export const createInvoiceRequest = async (req, res, next) => {
   try {
     const months = Number(req.body.months);
-    const user = await DataEngine.findById('users', req.user._id);
+    const user = await runAsSystem(() => DataEngine.findById('users', req.user._id));
     const invoice = await createInvoice({ org: req.org, user: user || req.user, plan: String(req.body.plan || ''), months, baseUrl: baseUrlFor(req) });
     res.status(201).json({ success: true, data: serializeInvoice(invoice, { full: true }) });
   } catch (error) {
