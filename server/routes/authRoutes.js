@@ -15,6 +15,7 @@ import {
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/roleMiddleware.js';
+import { serializeCreates } from '../middleware/serializeCreates.js';
 import {
   registerLimiter,
   loginAccountLimiter,
@@ -40,7 +41,7 @@ router.put('/profile', protect, updateProfile);
 
 // Admin-only management
 router.get('/users', protect, authorize('admin'), getAllUsers);
-router.post('/users', protect, authorize('admin'), createOrgUser);
+router.post('/users', protect, authorize('admin'), serializeCreates('users'), createOrgUser);
 router.put('/users/:id/alert-channels', protect, authorize('admin'), updateAlertChannels);
 router.put('/users/:id/status', protect, authorize('admin'), updateUserStatus);
 

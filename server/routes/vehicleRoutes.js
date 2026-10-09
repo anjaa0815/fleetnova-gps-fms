@@ -8,12 +8,13 @@ import {
 } from '../controllers/vehicleController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/roleMiddleware.js';
+import { serializeCreates } from '../middleware/serializeCreates.js';
 
 const router = express.Router();
 
 router.route('/')
   .get(protect, getVehicles)
-  .post(protect, authorize('admin', 'fleet_manager'), createVehicle);
+  .post(protect, authorize('admin', 'fleet_manager'), serializeCreates('vehicles'), createVehicle);
 
 router.route('/:id')
   .get(protect, getVehicleById)
