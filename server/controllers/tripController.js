@@ -88,6 +88,17 @@ export const getTripById = async (req, res, next) => {
   }
 };
 
+// A point picked on the map: { lat, lng } within the world, or nothing (null). Returns { value } or { error }.
+const readPoint = (raw, what) => {
+  if (raw === undefined || raw === null || raw === '') return { value: null };
+  const lat = Number(raw.lat);
+  const lng = Number(raw.lng);
+  if (typeof raw !== 'object' || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return { error: `Invalid ${what} location on the map` };
+  }
+  return { value: { lat, lng } };
+};
+
 // @desc Create new trip with strict business validation
 // @route POST /api/trips
 export const createTrip = async (req, res, next) => {
@@ -104,6 +115,9 @@ export const createTrip = async (req, res, next) => {
       tripExpense = 0,
       notes = ''
     } = req.body;
+    const from = readPoint(req.body.sourcePoint, 'origin');
+    const to = readPoint(req.body.destinationPoint, 'destination');
+    if (from.error || to.error) return res.status(400).json({ success: false, message: from.error || to.error });
 
     if (!vehicleId || !driverId || !source || !destination || !startDate || !expectedEndDate || distance === undefined) {
       return res.status(400).json({
@@ -173,6 +187,8 @@ export const createTrip = async (req, res, next) => {
       driver: driver._id,
       source: source.trim(),
       destination: destination.trim(),
+      sourcePoint: from.value,
+      destinationPoint: to.value,
       startDate: new Date(startDate),
       expectedEndDate: new Date(expectedEndDate),
       distance: Number(distance) || 0,
@@ -352,7 +368,14 @@ export const updateTrip = async (req, res, next) => {
     ]);
     if (missing) return res.status(404).json({ success: false, message: `${missing} not found` });
 
-    const updated = await DataEngine.findByIdAndUpdate('trips', req.params.id, req.body);
+    const body = { ...req.body };
+    for (const [field, what] of [['sourcePoint', 'origin'], ['destinationPoint', 'destination']]) {
+      if (body[field] === undefined) continue;
+      const point = readPoint(body[field], what);
+      if (point.error) return res.status(400).json({ success: false, message: point.error });
+      body[field] = point.value;
+    }
+    const updated = await DataEngine.findByIdAndUpdate('trips', req.params.id, body);
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Trip not found' });
     }

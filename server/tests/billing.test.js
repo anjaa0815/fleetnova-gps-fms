@@ -42,7 +42,8 @@ function startMockQpay() {
         return send(200, { token_type: 'Bearer', access_token: `tok-${qpay.auths}`, expires_in: Math.floor(Date.now() / 1000) + 3600 });
       }
       if (!String(req.headers.authorization || '').startsWith('Bearer tok-')) return send(401, { error: 'NO_CREDENDIALS' });
-      if (qpay.rejectBearerOnce) { qpay.rejectBearerOnce = false; return send(401, { error: 'TOKEN_EXPIRED' }); }
+      // only a request the test makes itself uses up the rejection (the background worker also calls QPay to check payments)
+      if (qpay.rejectBearerOnce && req.url === '/v2/invoice') { qpay.rejectBearerOnce = false; return send(401, { error: 'TOKEN_EXPIRED' }); }
       if (req.url === '/v2/invoice') {
         const id = `QI-${qpay.invoices.length + 1}`;
         qpay.invoices.push({ id, body });

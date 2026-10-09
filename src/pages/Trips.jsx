@@ -12,13 +12,47 @@ import {
   User,
   AlertTriangle,
   Clock,
-  ArrowRight
+  ArrowRight,
+  MapPin
 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import FitBounds from '../components/FitBounds.jsx';
+import LocationPicker, { pinIcon } from '../components/LocationPicker.jsx';
 import DataTable from '../components/DataTable.jsx';
 import Modal from '../components/Modal.jsx';
 import { tripApi, vehicleApi, driverApi } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useT } from '../i18n/LanguageContext.jsx';
+
+// "📍 47.91860, 106.91770 · remove" under an input whose place is set on the map
+function PointNote({ point, onClear }) {
+  const { tr } = useT();
+  return (
+    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+      <MapPin size={11} style={{ verticalAlign: 'middle' }} /> {Number(point.lat).toFixed(5)}, {Number(point.lng).toFixed(5)}{' · '}
+      <a href="#" onClick={(e) => { e.preventDefault(); onClear(); }} style={{ color: 'var(--accent-cyan)' }}>{tr('Remove from map')}</a>
+    </div>
+  );
+}
+
+// Origin (A) and destination (B) of a trip on a small map
+function TripMap({ trip }) {
+  const a = trip.sourcePoint ? [trip.sourcePoint.lat, trip.sourcePoint.lng] : null;
+  const b = trip.destinationPoint ? [trip.destinationPoint.lat, trip.destinationPoint.lng] : null;
+  const points = [a, b].filter(Boolean);
+  return (
+    <div style={{ height: '220px', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+      <MapContainer center={points[0]} zoom={11} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <FitBounds points={points} fitKey={trip._id} />
+        {a && <Marker position={a} icon={pinIcon('A', '#2563eb')} />}
+        {b && <Marker position={b} icon={pinIcon('B', '#10b981')} />}
+        {a && b && <Polyline positions={[a, b]} pathOptions={{ color: '#64748b', weight: 2, dashArray: '6' }} />}
+      </MapContainer>
+    </div>
+  );
+}
 
 export default function Trips() {
   const { tr } = useT();
@@ -49,6 +83,10 @@ export default function Trips() {
     driverId: '',
     source: '',
     destination: '',
+    sourcePoint: null,
+    destinationPoint: null,
+    sourceAuto: '', // the place name the map gave, so a new pin can replace it but never a name typed by hand
+    destinationAuto: '',
     startDate: new Date().toISOString().split('T')[0] + 'T09:00',
     expectedEndDate: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0] + 'T18:00',
     distance: 100,
@@ -57,6 +95,17 @@ export default function Trips() {
     notes: ''
   };
   const [formData, setFormData] = useState(initialForm);
+  const [picking, setPicking] = useState(null); // 'source' | 'destination' while the map picker is open
+
+  const placePicked = (picked) => {
+    const field = picking;
+    setFormData((f) => ({
+      ...f,
+      [`${field}Point`]: { lat: picked.lat, lng: picked.lng },
+      ...(picked.label && (f[field] === '' || f[field] === f[`${field}Auto`]) ? { [field]: picked.label, [`${field}Auto`]: picked.label } : {})
+    }));
+    setPicking(null);
+  };
 
   const fetchTrips = async () => {
     setLoading(true);
@@ -109,7 +158,8 @@ export default function Trips() {
     e.preventDefault();
     setActionError(null);
     try {
-      await tripApi.create(formData);
+      const { sourceAuto, destinationAuto, ...trip } = formData; // eslint-disable-line no-unused-vars
+      await tripApi.create(trip);
       setCreateModalOpen(false);
       setFormData(initialForm);
       fetchTrips();
@@ -409,25 +459,37 @@ export default function Trips() {
           <div className="grid-cols-2" style={{ gap: '0.75rem' }}>
             <div className="form-group">
               <label className="form-label">{tr("Origin / Source Hub *")}</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder={tr("e.g. New Delhi ICD")}
-                value={formData.source}
-                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                required
-              />
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder={tr("e.g. New Delhi ICD")}
+                  value={formData.source}
+                  onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                  required
+                />
+                <button type="button" className="btn btn-secondary" title={tr('Choose on the map')} aria-label={tr('Choose on the map')} onClick={() => setPicking('source')}>
+                  <MapPin size={16} color={formData.sourcePoint ? 'var(--accent-emerald)' : undefined} />
+                </button>
+              </div>
+              {formData.sourcePoint && <PointNote point={formData.sourcePoint} onClear={() => setFormData({ ...formData, sourcePoint: null })} />}
             </div>
             <div className="form-group">
               <label className="form-label">{tr("Destination Facility *")}</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder={tr("e.g. Mundra Port, Gujarat")}
-                value={formData.destination}
-                onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-                required
-              />
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder={tr("e.g. Mundra Port, Gujarat")}
+                  value={formData.destination}
+                  onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                  required
+                />
+                <button type="button" className="btn btn-secondary" title={tr('Choose on the map')} aria-label={tr('Choose on the map')} onClick={() => setPicking('destination')}>
+                  <MapPin size={16} color={formData.destinationPoint ? 'var(--accent-emerald)' : undefined} />
+                </button>
+              </div>
+              {formData.destinationPoint && <PointNote point={formData.destinationPoint} onClear={() => setFormData({ ...formData, destinationPoint: null })} />}
             </div>
           </div>
 
@@ -569,6 +631,15 @@ export default function Trips() {
         </form>
       </Modal>
 
+      <LocationPicker
+        isOpen={picking !== null}
+        onClose={() => setPicking(null)}
+        onPick={placePicked}
+        letter={picking === 'destination' ? 'B' : 'A'}
+        title={picking === 'destination' ? tr('Choose the destination on the map') : tr('Choose the origin on the map')}
+        initial={picking ? formData[`${picking}Point`] : null}
+      />
+
       {/* View Trip Details Modal */}
       {selectedTripDetails && (
         <Modal
@@ -593,6 +664,10 @@ export default function Trips() {
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tr("Corridor Length")}</div>
               </div>
             </div>
+
+            {(selectedTripDetails.sourcePoint || selectedTripDetails.destinationPoint) && (
+              <TripMap trip={selectedTripDetails} />
+            )}
 
             <div className="grid-cols-2" style={{ gap: '1rem' }}>
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
