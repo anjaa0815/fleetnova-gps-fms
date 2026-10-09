@@ -7,6 +7,9 @@ export function getOrgSlugFromLocation(location = window.location) {
   const fromQuery = new URLSearchParams(location.search).get('org');
   if (fromQuery && /^[a-z0-9-]{1,60}$/i.test(fromQuery)) return fromQuery.toLowerCase();
 
+  // an IP address (http://192.168.2.150:3000) has no sub-domain
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(location.hostname)) return null;
+
   const parts = location.hostname.split('.');
   if (parts.length >= 3 && !IGNORED_SUBDOMAINS.has(parts[0]) && /^[a-z0-9-]+$/i.test(parts[0])) {
     return parts[0].toLowerCase();
