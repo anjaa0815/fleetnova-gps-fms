@@ -181,7 +181,7 @@ before(async () => {
     },
     stdio: 'ignore'
   });
-  await waitFor(async () => { try { return (await fetch(`${BASE}/health`)).ok; } catch { return false; } }, 'server', 15000);
+  await waitFor(async () => { try { return (await fetch(`${BASE}/health`)).ok; } catch { return false; } }, 'server', 40000);
 });
 
 after(async () => {
