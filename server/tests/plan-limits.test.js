@@ -114,7 +114,11 @@ test('a request that fails does not hold the others back, and the limit frees up
     api('POST', '/vehicles', { token, body: vehicle(1) }),
     api('POST', '/vehicles', { token, body: vehicle(2) })
   ]);
-  assert.deepEqual(batch.map((r) => r.status), [400, 201, 400, 201]);
+  // which of the two identical requests reaches the server first is not fixed: exactly one of them is created
+  const [invalid, dupA, dupB, other] = batch.map((r) => r.status);
+  assert.equal(invalid, 400);
+  assert.deepEqual([dupA, dupB].sort(), [201, 400]);
+  assert.equal(other, 201);
   const filled = await Promise.all(Array.from({ length: 10 }, (_, i) => api('POST', '/vehicles', { token, body: vehicle(10 + i) })));
   assert.equal(tally(filled)[201], 8, 'room for 8 more');
   const first = (await api('GET', '/vehicles?limit=100', { token })).body.data[0];
