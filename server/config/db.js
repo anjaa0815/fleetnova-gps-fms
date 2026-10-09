@@ -94,17 +94,17 @@ export const connectDB = async () => {
         serverSelectionTimeoutMS: 5000,
       });
       isMongooseConnected = true;
-      console.log(`[FLEETNOVA] MongoDB Connected Successfully: ${conn.connection.host}`);
+      console.log(`[CLIXGPS] MongoDB Connected Successfully: ${conn.connection.host}`);
       return conn;
     } catch (error) {
       // REQUIRE_MONGODB=true: never run on the local JSON store by accident (tests, production)
       if (process.env.REQUIRE_MONGODB === 'true') throw error;
-      console.warn(`[FLEETNOVA] MongoDB connection failed (${error.message}). Falling back to internal persistent Mongoose-compatible engine.`);
+      console.warn(`[CLIXGPS] MongoDB connection failed (${error.message}). Falling back to internal persistent Mongoose-compatible engine.`);
       isMongooseConnected = false;
     }
   } else {
     if (process.env.REQUIRE_MONGODB === 'true') throw new Error('REQUIRE_MONGODB is set but MONGODB_URI is missing');
-    console.log('[FLEETNOVA] No remote MONGODB_URI detected. Using internal persistent MERN Data Engine.');
+    console.log('[CLIXGPS] No remote MONGODB_URI detected. Using internal persistent MERN Data Engine.');
     isMongooseConnected = false;
   }
 };

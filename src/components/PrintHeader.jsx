@@ -14,7 +14,7 @@ export default function PrintHeader({ title, lines = [] }) {
       <div className="print-header-top">
         <div className="print-header-org">
           {logo && <img src={logo} alt="" />}
-          <strong>{organization?.name || 'FLEETNOVA'}</strong>
+          <strong>{organization?.name || 'CLIXGPS'}</strong>
         </div>
         <div className="print-header-meta">
           <div>{tr('Printed')}: {new Date().toLocaleString()}</div>

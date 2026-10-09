@@ -4,7 +4,7 @@ export const errorHandler = (err, req, res, next) => {
     return res.status(404).json({ success: false, message: 'Not found', stack: null });
   }
 
-  console.error('[FLEETNOVA Error]', err);
+  console.error('[CLIXGPS Error]', err);
 
   const statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
 

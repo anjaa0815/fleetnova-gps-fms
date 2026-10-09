@@ -16,7 +16,7 @@ async function bootstrapAdmin(store) {
     : (store.users || []).some((u) => u.role === 'super_admin');
   if (exists) return;
   if (password.length < 8) {
-    console.warn('[FLEETNOVA] ADMIN_PASSWORD must be at least 8 characters; platform admin not created.');
+    console.warn('[CLIXGPS] ADMIN_PASSWORD must be at least 8 characters; platform admin not created.');
     return;
   }
   if (isDBConnected()) {
@@ -29,7 +29,7 @@ async function bootstrapAdmin(store) {
       phone: '',
       status: 'active'
     }));
-    console.log('[FLEETNOVA] Platform admin account created from ADMIN_EMAIL / ADMIN_PASSWORD.');
+    console.log('[CLIXGPS] Platform admin account created from ADMIN_EMAIL / ADMIN_PASSWORD.');
     return;
   }
   store.users = [
@@ -47,7 +47,7 @@ async function bootstrapAdmin(store) {
     }
   ];
   saveLocalStore();
-  console.log('[FLEETNOVA] Platform admin account created from ADMIN_EMAIL / ADMIN_PASSWORD.');
+  console.log('[CLIXGPS] Platform admin account created from ADMIN_EMAIL / ADMIN_PASSWORD.');
 }
 
 // Writes a freshly built demo data set into MongoDB (only into an empty database)
@@ -57,7 +57,7 @@ async function seedMongo() {
   const demo = process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO_DATA === 'true';
   if (!demo) return bootstrapAdmin(null);
   if (await runAsSystem(() => DataEngine.countDocuments('organizations'))) {
-    console.log('[FLEETNOVA] Database already seeded with realistic fleet data.');
+    console.log('[CLIXGPS] Database already seeded with realistic fleet data.');
     return;
   }
   const scratch = {};
@@ -65,7 +65,7 @@ async function seedMongo() {
   await runAsSystem(async () => {
     for (const name of COLLECTIONS) await DataEngine.createMany(name, scratch[name] || []);
   });
-  console.log('[FLEETNOVA] Demo data written to MongoDB.');
+  console.log('[CLIXGPS] Demo data written to MongoDB.');
 }
 
 export async function seedFleetData() {
@@ -87,11 +87,11 @@ async function seedStore(store, saveLocalStore) {
 
   // If already seeded with vehicles and users, skip unless forced
   if (store.organizations.length > 0 && store.users && store.users.length > 0 && store.vehicles && store.vehicles.length >= 10) {
-    console.log('[FLEETNOVA] Database already seeded with realistic fleet data.');
+    console.log('[CLIXGPS] Database already seeded with realistic fleet data.');
     return;
   }
 
-  console.log('[FLEETNOVA] Seeding initial commercial fleet data (Mongolia, amounts in MNT)...');
+  console.log('[CLIXGPS] Seeding initial commercial fleet data (Mongolia, amounts in MNT)...');
 
   const salt = await bcrypt.genSalt(10);
   const adminPassword = await bcrypt.hash('admin123', salt);
@@ -1248,7 +1248,7 @@ async function seedStore(store, saveLocalStore) {
 
   saveLocalStore();
   console.log(
-    `[FLEETNOVA] Successfully seeded: ${orgs.length} Organizations, ${users.length + 2} Users, ${drivers.length} Drivers, ${vehicles.length} Vehicles, ` +
+    `[CLIXGPS] Successfully seeded: ${orgs.length} Organizations, ${users.length + 2} Users, ${drivers.length} Drivers, ${vehicles.length} Vehicles, ` +
     `${trips.length} Trips, ${fuels.length} Fuel logs, ${maintenances.length} Maintenance logs, ` +
     `${expenses.length} Expenses, ${notifications.length} Notifications.`
   );
@@ -1257,7 +1257,7 @@ async function seedStore(store, saveLocalStore) {
 // Allow direct execution via CLI `node seedData.js` or `npm run seed`
 if (process.argv[1] && process.argv[1].endsWith('seedData.js')) {
   seedFleetData().then(() => {
-    console.log('[FLEETNOVA] CLI Seed execution finished.');
+    console.log('[CLIXGPS] CLI Seed execution finished.');
     process.exit(0);
   });
 }

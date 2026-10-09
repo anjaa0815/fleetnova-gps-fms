@@ -72,7 +72,7 @@ function MainApp() {
   if (loading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0a0d14' }}>
-        <Loading message={tr("Initializing FLEETNOVA Telematics Engine...")} />
+        <Loading message={tr("Initializing CLIXGPS Telematics Engine...")} />
       </div>
     );
   }
@@ -138,7 +138,7 @@ function MainApp() {
     <DashboardLayout
       currentTab={currentTab}
       onSelectTab={navigateTo}
-      currentTitle={titles[currentTab] || 'FLEETNOVA'}
+      currentTitle={titles[currentTab] || 'CLIXGPS'}
     >
       {currentTab === 'dashboard' && <Dashboard onNavigate={navigateTo} />}
 

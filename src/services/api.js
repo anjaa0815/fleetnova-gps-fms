@@ -1,4 +1,4 @@
-// Centralized API Client for FLEETNOVA REST Endpoints
+// Centralized API Client for CLIXGPS REST Endpoints
 
 const BASE_URL = '/api';
 

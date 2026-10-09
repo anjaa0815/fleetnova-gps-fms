@@ -205,7 +205,7 @@ export default function Reports() {
   const handleExportCSV = () => {
     if (records.length === 0) return;
     downloadCsv(
-      `FLEETNOVA_${reportType.toUpperCase()}_REPORT_${new Date().toISOString().split('T')[0]}.csv`,
+      `CLIXGPS_${reportType.toUpperCase()}_REPORT_${new Date().toISOString().split('T')[0]}.csv`,
       columns.map((c) => c.csvLabel),
       records.map((r) => columns.map((c) => c.csv(r)))
     );

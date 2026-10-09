@@ -1,4 +1,4 @@
-# FLEETNOVA — ажиллуулах, байрлуулах, ашиглах заавар
+# CLIXGPS — ажиллуулах, байрлуулах, ашиглах заавар
 
 Энэ заавар таныг системийг өөрийн компьютер дээр нээж үзэхээс эхлээд интернэтэд байрлуулж, жинхэнэ GPS төхөөрөмж холбох хүртэл алхам алхмаар хөтөлнө.
 
@@ -22,7 +22,7 @@
 
 ```
 Хөтөч (вэб UI) ──HTTPS──▶ ┌──────────────────────────────┐        ┌──────────┐
-                           │  FLEETNOVA (нэг Node процесс) │ ◀────▶ │ MongoDB  │
+                           │  CLIXGPS (нэг Node процесс) │ ◀────▶ │ MongoDB  │
 GPS төхөөрөмж ──TCP 5027──▶│  • вэб UI + REST API          │        └──────────┘
  (Teltonika)               │  • GPS хүлээн авагч           │
 GPS төхөөрөмж ──TCP 5023──▶│  • сануулга, имэйл/SMS ажилтан│ ──▶ SMTP / SMS үйлчилгээ
@@ -60,7 +60,7 @@ npm run dev
 ```
 
 - `npm install` ~10–60 секунд (интернэтээс сан татна).
-- `npm run dev` ажиллаж эхэлмэгц терминалд `FLEETNOVA SERVER RUNNING` гэж гарна.
+- `npm run dev` ажиллаж эхэлмэгц терминалд `CLIXGPS SERVER RUNNING` гэж гарна.
 - Хөтчөөс **http://localhost:3000** хаягийг нээнэ.
 
 Анх асахад систем жишээ өгөгдөл (Монгол компаниуд, машин, жолооч, рейс, түлш, засвар) өөрөө үүсгэнэ. MongoDB суулгах шаардлагагүй, өгөгдөл `server/data/fleetnova_store.json` файлд хадгалагдана.
@@ -193,7 +193,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d --bui
 
 ```bash
 docker compose -f docker-compose.prod.yml ps          # app, mongo, caddy гурвуулаа "running" байх ёстой
-docker compose -f docker-compose.prod.yml logs -f app # "FLEETNOVA SERVER RUNNING", "MongoDB Connected Successfully"
+docker compose -f docker-compose.prod.yml logs -f app # "CLIXGPS SERVER RUNNING", "MongoDB Connected Successfully"
 curl https://fleet.танай-домэйн.mn/api/health         # {"success":true,...,"status":"operational"}
 ```
 
@@ -395,7 +395,7 @@ SMTP_PORT=587
 SMTP_SECURE=false                 # 465 порт бол true
 SMTP_USER=you@gmail.com
 SMTP_PASS=<апп-нууц-үг>
-EMAIL_FROM=FLEETNOVA <you@gmail.com>
+EMAIL_FROM=CLIXGPS <you@gmail.com>
 ```
 
 - Gmail-д энгийн нууц үг биш, "App password" (2 шатлалт баталгаажуулалт асаасны дараа үүсгэнэ) хэрэгтэй.

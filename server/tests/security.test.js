@@ -166,7 +166,7 @@ before(async () => {
       ...process.env, NODE_ENV: 'production', PORT: String(HTTP_PORT), HOST: '127.0.0.1',
       GPS_TCP_PORT: '0', GT06_TCP_PORT: '0', JWT_SECRET: 'test-secret', FLEETNOVA_DATA_FILE: DATA_FILE, ...dbEnv(),
       ADMIN_EMAIL: SUPER.email, ADMIN_PASSWORD: SUPER.password,
-      SMTP_HOST: '127.0.0.1', SMTP_PORT: String(SMTP_PORT), EMAIL_FROM: 'FLEETNOVA <no-reply@test.example>',
+      SMTP_HOST: '127.0.0.1', SMTP_PORT: String(SMTP_PORT), EMAIL_FROM: 'CLIXGPS <no-reply@test.example>',
       APP_BASE_URL: 'https://fleet.example.com',
       EMAIL_VERIFICATION_TTL_MS: '3000', EMAIL_RESEND_COOLDOWN_MS: '500',
       RATE_LIMIT_LOGIN_MAX: '3', RATE_LIMIT_REGISTER_MAX: '14', RATE_LIMIT_API_MAX: '100000'
@@ -194,7 +194,7 @@ test('sign-up requires confirming the email address before the first login', asy
   assert.equal(res.body.data.emailVerified, false);
 
   const mail = await waitFor(() => emailsTo('a@verify.example')[0], 'verification email');
-  assert.match(mail.data, /^Subject: \[FLEETNOVA\] Confirm your email address/m);
+  assert.match(mail.data, /^Subject: \[CLIXGPS\] Confirm your email address/m);
   const decoded = decodeQuotedPrintable(mail.data);
   assert.match(decoded, /https:\/\/fleet\.example\.com\/\?verify=[0-9a-f]{64}/);
   assert.match(decoded, /Hello Admin,/);

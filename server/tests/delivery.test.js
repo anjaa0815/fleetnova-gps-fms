@@ -175,7 +175,7 @@ before(async () => {
     env: {
       ...process.env, NODE_ENV: 'production', PORT: String(HTTP_PORT), HOST: '127.0.0.1',
       GPS_TCP_PORT: String(TCP_PORT), GT06_TCP_PORT: '0', GPS_TCP_HOST: '127.0.0.1', JWT_SECRET: 'test-secret', RATE_LIMIT_DISABLED: 'true', REQUIRE_EMAIL_VERIFICATION: 'false', FLEETNOVA_DATA_FILE: DATA_FILE, ...dbEnv(),
-      SMTP_HOST: '127.0.0.1', SMTP_PORT: String(SMTP_PORT), EMAIL_FROM: 'FLEETNOVA <alerts@test.example>',
+      SMTP_HOST: '127.0.0.1', SMTP_PORT: String(SMTP_PORT), EMAIL_FROM: 'CLIXGPS <alerts@test.example>',
       SMS_PROVIDER: 'http', SMS_HTTP_URL: `http://127.0.0.1:${SMS_PORT}/send`, SMS_HTTP_TOKEN: 'gateway-token',
       DELIVERY_POLL_MS: '200', DELIVERY_RETRY_DELAYS_MS: '100,100,100'
     },
@@ -245,7 +245,7 @@ test('a speeding alert is emailed and texted to the users who opted in (and only
   assert.equal(newEmails.length, 2);
   assert.equal(newSms.length, 1);
   assert.deepEqual(newEmails.flatMap((e) => e.to).sort(), [admin.email, manager.email].sort());
-  assert.ok(newEmails.every((e) => /^Subject: \[FLEETNOVA\] Speed limit exceeded: /m.test(e.data)));
+  assert.ok(newEmails.every((e) => /^Subject: \[CLIXGPS\] Speed limit exceeded: /m.test(e.data)));
   assert.match(newEmails[0].data, /travelling at 125 km\/h \(limit 90 km\/h\)/);
   assert.match(newEmails[0].data, /openstreetmap\.org/);
   assert.match(newEmails[0].data, /Alert Flow/);

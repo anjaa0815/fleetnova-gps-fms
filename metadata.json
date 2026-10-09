@@ -1,5 +1,5 @@
 {
-  "name": "FLEETNOVA - Smart Fleet Management System",
+  "name": "CLIXGPS - Smart Fleet Management System",
   "description": "Enterprise-grade smart fleet management platform with vehicle tracking, driver allocation, fuel monitoring, maintenance scheduling, and Gemini-powered FleetAI assistant.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

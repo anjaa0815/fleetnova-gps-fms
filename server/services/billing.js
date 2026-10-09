@@ -59,7 +59,7 @@ export async function createInvoice({ org, user, plan, months, baseUrl }) {
   if (pendingCount >= 10) throw new ServiceError('Too many unpaid payment requests. Please cancel some first.', 429);
 
   const senderInvoiceNo = `FN-${Date.now().toString(36).toUpperCase()}-${random(3).toUpperCase()}`;
-  const description = translate(user.language === 'en' ? 'en' : 'mn', 'FLEETNOVA {plan} plan, {months} month(s)', { plan: getPlan(plan).label, months });
+  const description = translate(user.language === 'en' ? 'en' : 'mn', 'CLIXGPS {plan} plan, {months} month(s)', { plan: getPlan(plan).label, months });
   const invoice = await DataEngine.create('invoices', {
     createdBy: user._id,
     plan,
@@ -145,7 +145,7 @@ async function sendReceipt(invoice) {
   const until = org?.planExpiresAt ? new Date(org.planExpiresAt).toLocaleDateString('en-CA', { timeZone: process.env.ALERT_TIME_ZONE || 'Asia/Ulaanbaatar' }) : '';
   await getProvider('email').send({
     to,
-    subject: t('[FLEETNOVA] Payment received'),
+    subject: t('[CLIXGPS] Payment received'),
     text: [
       t('We received your payment of {amount} MNT for the {plan} plan ({months} month(s)).', { amount: invoice.amount.toLocaleString('en-US'), plan: getPlan(invoice.plan).label, months: invoice.months }),
       until ? t('Your plan is active until {date}.', { date: until }) : null,

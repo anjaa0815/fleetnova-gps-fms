@@ -53,11 +53,11 @@ export async function sendVerificationEmail({ user, token, baseUrl }) {
   const hours = Math.max(1, Math.round(verificationTtlMs() / 3600000));
   await getProvider('email').send({
     to: user.email,
-    subject: t('[FLEETNOVA] Confirm your email address'),
+    subject: t('[CLIXGPS] Confirm your email address'),
     text: [
       t('Hello {name},', { name: user.name }),
       '',
-      t('Confirm your email address to activate your FLEETNOVA account:'),
+      t('Confirm your email address to activate your CLIXGPS account:'),
       link,
       '',
       t('The link is valid for {hours} hours and can be used once.', { hours }),

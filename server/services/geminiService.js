@@ -23,7 +23,7 @@ function getAIClient() {
 export async function askFleetAI(userPrompt, fleetContext, lang = 'en') {
   const ai = getAIClient();
 
-  const systemInstruction = `You are FleetAI, the intelligent assistant for FLEETNOVA Smart Fleet Management System.
+  const systemInstruction = `You are FleetAI, the intelligent assistant for CLIXGPS Smart Fleet Management System.
 Your purpose is to help authorized fleet managers, admins, and drivers understand and optimize fleet operations.
 Use the real-time fleet data provided in the context below.
 Do not invent vehicle, driver, trip, fuel, maintenance or expense information.
@@ -69,7 +69,7 @@ function generateAlgorithmicFleetResponse(query, context) {
   const { summary, vehicles = [], drivers = [], maintenances = [], expenses = [], fuels = [] } = context;
 
   if (q.includes('summary') || q.includes('overview') || q.includes('condition') || q.includes('today')) {
-    return `### 🚚 FLEETNOVA Live Operations Summary
+    return `### 🚚 CLIXGPS Live Operations Summary
 - **Total Fleet Size:** ${summary.totalVehicles} vehicles (${summary.activeVehicles} on active trips, ${summary.availableVehicles} available, ${summary.maintenanceVehicles} under service)
 - **Active Trips:** ${summary.activeTrips} ongoing trips | **Completed Trips:** ${summary.completedTrips}
 - **Financials:**
@@ -124,7 +124,7 @@ ${availableDrivers.slice(0, 3).map(d => `- ${d.name} (${d.phone}) - Available`).
   }
 
   return `### 🤖 FleetAI Assistant
-Based on the live FLEETNOVA fleet database:
+Based on the live CLIXGPS fleet database:
 - **Vehicles:** ${vehicles.length} total (${summary.availableVehicles} ready)
 - **Active Deliveries:** ${summary.activeTrips} ongoing trips
 - **Fleet Health:** Operational readiness at ${Math.round((summary.availableVehicles / (vehicles.length || 1)) * 100)}%
@@ -143,7 +143,7 @@ function generateAlgorithmicFleetResponseMn(query, context) {
   const money = (n) => `₮${(n || 0).toLocaleString()}`;
 
   if (has('summary', 'overview', 'today', 'хураангуй', 'тойм', 'өнөөдөр')) {
-    return `### 🚚 FLEETNOVA бодит цагийн үйл ажиллагааны хураангуй
+    return `### 🚚 CLIXGPS бодит цагийн үйл ажиллагааны хураангуй
 - **Паркийн хэмжээ:** ${summary.totalVehicles} тээврийн хэрэгсэл (${summary.activeVehicles} рейсэнд, ${summary.availableVehicles} чөлөөтэй, ${summary.maintenanceVehicles} засварт)
 - **Идэвхтэй рейс:** ${summary.activeTrips} | **Дууссан рейс:** ${summary.completedTrips}
 - **Санхүү:**
@@ -195,7 +195,7 @@ ${(context.documentAlerts || []).length ? context.documentAlerts.map((a) => `- $
   }
 
   return `### 🤖 FleetAI туслах
-FLEETNOVA парк өгөгдлийн сангаас:
+CLIXGPS парк өгөгдлийн сангаас:
 - **Тээврийн хэрэгсэл:** нийт ${vehicles.length} (${summary.availableVehicles} бэлэн)
 - **Идэвхтэй хүргэлт:** ${summary.activeTrips} рейс
 - **Бэлэн байдал:** ${Math.round((summary.availableVehicles / (vehicles.length || 1)) * 100)}%
