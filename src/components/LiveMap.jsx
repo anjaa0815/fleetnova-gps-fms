@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 const POLL_MS = 10000;
 
 // Arrow marker rotated by the vehicle heading; grey when the tracker is offline
-const makeIcon = (heading, online) =>
+export const vehicleIcon = (heading, online) =>
   new L.DivIcon({
     className: 'custom-vehicle-marker',
     html: `<div style="width:30px;height:30px;border-radius:50%;background:${online ? '#10b981' : '#64748b'};border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;">
@@ -122,7 +122,7 @@ export default function LiveMap({ vehicles = [] }) {
 
           {hasLive &&
             live.map((p) => (
-              <Marker key={p.deviceId} position={[p.lat, p.lng]} icon={makeIcon(p.heading, p.online)}>
+              <Marker key={p.deviceId} position={[p.lat, p.lng]} icon={vehicleIcon(p.heading, p.online)}>
                 <Popup>
                   <div className="text-slate-900 text-xs">
                     <p className="font-bold text-sm mb-1">{p.vehicle?.registrationNumber || p.name}</p>

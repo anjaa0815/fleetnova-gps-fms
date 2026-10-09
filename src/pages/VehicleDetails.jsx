@@ -11,15 +11,21 @@ import {
   ShieldCheck,
   User,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  MapPin
 } from 'lucide-react';
 import Loading from '../components/Loading.jsx';
 import StatCard from '../components/StatCard.jsx';
+import VehicleLocationModal from '../components/VehicleLocationModal.jsx';
 import { vehicleApi } from '../services/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function VehicleDetails({ vehicleId, onBack }) {
   const { tr } = useT();
+  const { role } = useAuth();
+  const canTrack = role === 'admin' || role === 'fleet_manager'; // drivers are not allowed to read live positions
+  const [showLocation, setShowLocation] = useState(false);
   const [vehicle, setVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -82,7 +88,12 @@ export default function VehicleDetails({ vehicleId, onBack }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {canTrack && (
+            <button className="btn btn-primary" onClick={() => setShowLocation(true)}>
+              <MapPin size={16} /> {tr('Show location')}
+            </button>
+          )}
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <Clock size={15} /> {tr("Last Service:")} {vehicle.lastServiceDate ? new Date(vehicle.lastServiceDate).toLocaleDateString() : 'N/A'}
           </span>
@@ -123,6 +134,7 @@ export default function VehicleDetails({ vehicleId, onBack }) {
           subtext={tr('{a} km logged', { a: analytics?.totalDistance?.toLocaleString() || 0 })}
           icon={Navigation}
           color="#3b82f6"
+          {...(canTrack ? { onIconClick: () => setShowLocation(true), iconTitle: tr('Show location') } : {})}
         />
         <StatCard
           title={tr("Fuel Consumed")}
@@ -415,6 +427,7 @@ export default function VehicleDetails({ vehicleId, onBack }) {
           )}
         </div>
       )}
+      {canTrack && <VehicleLocationModal isOpen={showLocation} onClose={() => setShowLocation(false)} vehicle={vehicle} />}
     </div>
   );
 }
