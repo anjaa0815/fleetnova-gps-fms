@@ -10,13 +10,14 @@ import { sendCommand, listCommands, cancelPendingCommand } from '../controllers/
 import { rateLimit } from '../middleware/rateLimit.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/roleMiddleware.js';
+import { serializeCreates } from '../middleware/serializeCreates.js';
 
 const router = express.Router();
 
 router.use(protect, authorize('admin', 'fleet_manager'));
 
 router.get('/connection-info', getConnectionInfo);
-router.route('/').get(getDevices).post(createDevice);
+router.route('/').get(getDevices).post(serializeCreates('devices'), createDevice);
 router.route('/:id').put(updateDevice).delete(deleteDevice);
 
 // Commands to a tracker. The role rules per command type are enforced in the service (engine commands: admin only).
