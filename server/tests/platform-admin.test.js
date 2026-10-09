@@ -104,7 +104,7 @@ test('deleting an organization: confirmations, what goes and what stays', async 
 
   // an open payment request blocks it; once paid it does not
   assert.equal((await api('PUT', base, { token: sup, body: { status: 'active' } })).status, 200);
-  const invoice = await api('POST', '/billing/invoices', { token: doomed.token, body: { plan: 'basic', months: 1 } });
+  const invoice = await api('POST', '/billing/invoices', { token: doomed.token, body: { plan: 'gps', months: 1 } });
   assert.equal(invoice.status, 201, JSON.stringify(invoice.body));
   assert.equal((await api('PUT', base, { token: sup, body: { status: 'suspended' } })).status, 200);
   const blocked = await api('DELETE', base, { token: sup, body: { confirmName: 'Doomed Co' } });
@@ -206,12 +206,16 @@ test('platform invoice list: totals, filters, limit and who may see it', async (
   const sup = await superToken();
   const a = await newOrg('Pays Co');
   const b = await newOrg('Waits Co');
+  // a payment is for the registered GPS devices
+  for (const [org, imei] of [[a, '333333333333331'], [b, '333333333333332']]) {
+    assert.equal((await api('POST', '/devices', { token: org.token, body: { name: 'T', imei, protocol: 'teltonika' } })).status, 201);
+  }
 
   // Pays Co buys a plan (paid), then asks for another period (open); Waits Co has one open request
-  const first = (await api('POST', '/billing/invoices', { token: a.token, body: { plan: 'basic', months: 1 } })).body.data;
+  const first = (await api('POST', '/billing/invoices', { token: a.token, body: { plan: 'gps', months: 1 } })).body.data;
   assert.equal((await api('POST', `/billing/invoices/${first._id}/simulate-pay`, { token: a.token })).status, 200);
-  const second = (await api('POST', '/billing/invoices', { token: a.token, body: { plan: 'basic', months: 3 } })).body.data;
-  const third = (await api('POST', '/billing/invoices', { token: b.token, body: { plan: 'pro', months: 1 } })).body.data;
+  const second = (await api('POST', '/billing/invoices', { token: a.token, body: { plan: 'gps', months: 3 } })).body.data;
+  const third = (await api('POST', '/billing/invoices', { token: b.token, body: { plan: 'gps', months: 1 } })).body.data;
 
   const all = await api('GET', '/platform/invoices', { token: sup });
   assert.equal(all.status, 200);

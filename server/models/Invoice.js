@@ -7,7 +7,9 @@ const invoiceSchema = new mongoose.Schema(
     // the organization's name when the invoice was made (the invoice outlives the organization)
     orgName: { type: String, default: '' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-    plan: { type: String, enum: ['basic', 'pro'], required: true },
+    plan: { type: String, enum: ['basic', 'pro', 'gps'], required: true },
+    // GPS devices the invoice pays for (per-GPS plan)
+    devices: { type: Number, default: 0 },
     months: { type: Number, required: true },
     amount: { type: Number, required: true }, // MNT
     description: { type: String, default: '' },

@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { DataEngine } from '../models/dataEngine.js';
-import { PLANS, PLAN_IDS, getPlan, positionRetentionDays } from '../config/plans.js';
+import { PLANS, PLAN_IDS, MAX_GPS_PER_PURCHASE, limitsFor, positionRetentionDays } from '../config/plans.js';
 import { slugify, RESERVED_SLUGS } from '../utils/slug.js';
 import { passwordError } from './passwordReset.js';
 
@@ -33,6 +33,7 @@ export const serializeOrg = (org) =>
     slug: org.slug,
     status: org.status,
     plan: org.plan,
+    deviceLimit: org.plan === 'gps' ? org.deviceLimit ?? 0 : null,
     trialEndsAt: org.trialEndsAt || null,
     planExpiresAt: org.planExpiresAt || null,
     contactEmail: org.contactEmail || '',
@@ -78,12 +79,22 @@ export function trialEndDate(from = new Date()) {
 }
 
 // Creates a new tenant together with its first administrator.
-export async function createOrganizationWithAdmin({ organizationName, plan = 'trial', admin, emailVerified = true, language = 'mn' }) {
+// The number of GPS devices of the per-GPS plan: a whole number from 1
+export function checkDeviceLimit(value) {
+  const n = Number(value);
+  if (value === undefined || value === null || value === '' || !Number.isInteger(n) || n < 1 || n > MAX_GPS_PER_PURCHASE) {
+    throw new ServiceError('Enter the number of GPS devices (a whole number from 1)');
+  }
+  return n;
+}
+
+export async function createOrganizationWithAdmin({ organizationName, plan = 'trial', deviceLimit, admin, emailVerified = true, language = 'mn' }) {
   const name = typeof organizationName === 'string' ? organizationName.trim() : '';
   if (name.length < 2 || name.length > 100) {
     throw new ServiceError('Organization name must be between 2 and 100 characters');
   }
   if (!PLAN_IDS.includes(plan)) throw new ServiceError('Invalid plan');
+  const paidDevices = plan === 'gps' ? checkDeviceLimit(deviceLimit) : null;
 
   const { name: adminName, email, password, phone = '' } = admin || {};
   if (!adminName || !email || !password) {
@@ -102,6 +113,7 @@ export async function createOrganizationWithAdmin({ organizationName, plan = 'tr
     slug: await uniqueSlug(name),
     status: 'active',
     plan,
+    deviceLimit: paidDevices,
     trialEndsAt: plan === 'trial' ? trialEndDate() : null,
     contactEmail: normalizedEmail,
     contactPhone: phone,
@@ -126,7 +138,7 @@ export async function createOrganizationWithAdmin({ organizationName, plan = 'tr
 }
 
 export const planLimits = (org) => {
-  const plan = getPlan(org?.plan);
+  const plan = limitsFor(org);
   return { label: plan.label, maxVehicles: plan.maxVehicles, maxUsers: plan.maxUsers, maxDevices: plan.maxDevices,
     maxEmailsPerDay: plan.maxEmailsPerDay,
     maxSmsPerDay: plan.maxSmsPerDay,

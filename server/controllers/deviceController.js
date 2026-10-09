@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { DataEngine } from '../models/dataEngine.js';
 import { runAsSystem } from '../middleware/tenantContext.js';
-import { getPlan, isWithinLimit } from '../config/plans.js';
+import { limitsFor, isWithinLimit } from '../config/plans.js';
 import { findMissingRef } from '../utils/refs.js';
 import { registerTraccarDevice, removeTraccarDevice, traccarConfigured } from '../services/traccarClient.js';
 import { commandsSupported } from '../services/deviceCommands.js';
@@ -92,7 +92,7 @@ export const createDevice = async (req, res, next) => {
     }
 
     const count = await DataEngine.countDocuments('devices');
-    if (!isWithinLimit(getPlan(req.org?.plan).maxDevices, count)) {
+    if (!isWithinLimit(limitsFor(req.org).maxDevices, count)) {
       return res.status(403).json({ success: false, message: 'Device limit reached for your plan' });
     }
 

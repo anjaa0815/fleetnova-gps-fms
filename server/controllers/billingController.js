@@ -21,6 +21,7 @@ export const serializeInvoice = (inv, { full = false } = {}) => ({
   _id: inv._id,
   plan: inv.plan,
   months: inv.months,
+  devices: inv.devices || 0,
   amount: inv.amount,
   description: inv.description,
   status: inv.status,
@@ -50,20 +51,23 @@ export function subscriptionState(org, now = Date.now()) {
 export const getBilling = async (req, res, next) => {
   try {
     const invoices = await DataEngine.find('invoices', {}, { sort: { createdAt: -1 }, limit: 20 });
+    const registeredDevices = await DataEngine.countDocuments('devices');
     res.status(200).json({
       success: true,
       data: {
         mode: billingMode(),
         graceDays: GRACE_DAYS,
         months: BILLING_MONTHS,
+        registeredDevices,
         plans: BILLABLE_PLANS.map((id) => ({
           id,
           label: PLANS[id].label,
-          monthlyPrice: planPriceMnt(id),
+          pricePerDevice: planPriceMnt(id),
           limits: { ...planLimits({ plan: id }), positionRetentionDays: positionRetentionDays(id) }
         })),
         current: {
           plan: req.org.plan,
+          deviceLimit: req.org.plan === 'gps' ? req.org.deviceLimit ?? 0 : null,
           state: subscriptionState(req.org),
           trialEndsAt: req.org.trialEndsAt || null,
           planExpiresAt: req.org.planExpiresAt || null
@@ -76,12 +80,12 @@ export const getBilling = async (req, res, next) => {
   }
 };
 
-// @route POST /api/billing/invoices   { plan, months }
+// @route POST /api/billing/invoices   { plan, months, devices? }
 export const createInvoiceRequest = async (req, res, next) => {
   try {
     const months = Number(req.body.months);
     const user = await runAsSystem(() => DataEngine.findById('users', req.user._id));
-    const invoice = await createInvoice({ org: req.org, user: user || req.user, plan: String(req.body.plan || ''), months, baseUrl: baseUrlFor(req) });
+    const invoice = await createInvoice({ org: req.org, user: user || req.user, plan: String(req.body.plan || 'gps'), months, devices: req.body.devices, baseUrl: baseUrlFor(req) });
     res.status(201).json({ success: true, data: serializeInvoice(invoice, { full: true }) });
   } catch (error) {
     next(error);

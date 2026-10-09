@@ -5,7 +5,9 @@ const organizationSchema = new mongoose.Schema(
     name: { type: String, required: [true, 'Organization name is required'], trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     status: { type: String, enum: ['active', 'suspended'], default: 'active' },
-    plan: { type: String, enum: ['trial', 'basic', 'pro', 'enterprise'], default: 'trial' },
+    plan: { type: String, enum: ['trial', 'basic', 'pro', 'gps', 'enterprise'], default: 'trial' },
+    // per-GPS plan: how many GPS devices the organization has paid for (the most it may register)
+    deviceLimit: { type: Number, default: null, min: 0 },
     trialEndsAt: { type: Date, default: null },
     // end of the paid period (null = no expiry, e.g. enterprise / plans set by the platform owner)
     planExpiresAt: { type: Date, default: null },

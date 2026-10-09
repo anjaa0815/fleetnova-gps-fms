@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { DataEngine } from '../models/dataEngine.js';
 import { runWithTenant, runAsSystem } from '../middleware/tenantContext.js';
-import { BILLABLE_PLANS, BILLING_MONTHS, planPriceMnt, getPlan } from '../config/plans.js';
+import { BILLABLE_PLANS, BILLING_MONTHS, MAX_GPS_PER_PURCHASE, planPriceMnt, getPlan } from '../config/plans.js';
 import { createQpayInvoice, checkQpayPayment, qpayConfigured } from './qpay.js';
 import { ServiceError } from './organizationService.js';
 import { invalidateOrganization } from '../gps/lookupCache.js';
@@ -25,9 +25,10 @@ export const billingMode = () => {
   return loopbackHost() || process.env.BILLING_SIMULATE === 'true' ? 'simulated' : 'disabled';
 };
 
-export const invoiceAmount = (plan, months) => {
-  const monthly = planPriceMnt(plan);
-  return monthly ? monthly * months : null;
+// Price of `devices` GPS devices for `months` months
+export const invoiceAmount = (plan, months, devices) => {
+  const perDevice = planPriceMnt(plan);
+  return perDevice && devices > 0 ? perDevice * devices * months : null;
 };
 
 // Calendar months in UTC (31 Jan + 1 month = 28 / 29 Feb)
@@ -44,27 +45,35 @@ export function addMonths(date, months) {
 const random = (bytes) => crypto.randomBytes(bytes).toString('hex');
 
 // Must run inside the organization's tenant context
-export async function createInvoice({ org, user, plan, months, baseUrl }) {
+// `devices` is the number of GPS devices to pay for: the registered ones unless more are asked for (room to add some)
+export async function createInvoice({ org, user, plan, months, devices, baseUrl }) {
   if (!BILLABLE_PLANS.includes(plan)) throw new ServiceError('This plan cannot be bought online');
   if (!BILLING_MONTHS.includes(months)) throw new ServiceError('Invalid period');
   const mode = billingMode();
   if (mode === 'disabled') throw new ServiceError('Online payment is not available', 503);
-  const amount = invoiceAmount(plan, months);
+  const registered = await DataEngine.countDocuments('devices');
+  if (registered < 1) throw new ServiceError('Register at least one GPS device before paying');
+  const count = devices === undefined || devices === null || devices === '' ? registered : Number(devices);
+  if (!Number.isInteger(count) || count < registered || count > MAX_GPS_PER_PURCHASE) {
+    throw new ServiceError('The number of GPS devices cannot be less than the registered ones');
+  }
+  const amount = invoiceAmount(plan, months, count);
   if (!amount) throw new ServiceError('This plan cannot be bought online');
 
   // The same open request is shown again (page reloads must not pile up invoices)
-  const open = await DataEngine.find('invoices', { status: 'pending', plan, months, amount }, { sort: { createdAt: -1 }, limit: 1 });
+  const open = await DataEngine.find('invoices', { status: 'pending', plan, months, devices: count, amount }, { sort: { createdAt: -1 }, limit: 1 });
   if (open[0] && new Date(open[0].expiresAt).getTime() > Date.now() + 60 * 1000 && open[0].provider === (mode === 'qpay' ? 'qpay' : 'simulated')) return open[0];
   const pendingCount = await DataEngine.countDocuments('invoices', { status: 'pending' });
   if (pendingCount >= 10) throw new ServiceError('Too many unpaid payment requests. Please cancel some first.', 429);
 
   const senderInvoiceNo = `FN-${Date.now().toString(36).toUpperCase()}-${random(3).toUpperCase()}`;
-  const description = translate(user.language === 'en' ? 'en' : 'mn', 'CLIXGPS {plan} plan, {months} month(s)', { plan: getPlan(plan).label, months });
+  const description = translate(user.language === 'en' ? 'en' : 'mn', 'CLIXGPS {n} GPS devices, {months} month(s)', { n: count, months });
   const invoice = await DataEngine.create('invoices', {
     orgName: org.name,
     createdBy: user._id,
     plan,
     months,
+    devices: count,
     amount,
     description,
     status: 'pending',
@@ -112,7 +121,15 @@ export async function applyPaidInvoice(invoice) {
       const now = new Date();
       const current = org.planExpiresAt ? new Date(org.planExpiresAt) : null;
       // renewing the same plan continues the running period; any other change starts now
-      const base = org.plan === invoice.plan && current && current > now ? current : now;
+      // On the per-GPS plan the remaining time is kept in device-months: paying for another number of devices turns
+      // what is left into time at the new number, so a cheap long period cannot be stretched over many devices.
+      const gps = invoice.plan === 'gps';
+      const devices = gps ? Number(invoice.devices) || 0 : 0;
+      let base = now;
+      if (org.plan === invoice.plan && current && current > now) {
+        const paid = Number(org.deviceLimit) || 0;
+        base = !gps || devices === paid ? current : new Date(now.getTime() + ((current - now) * paid) / Math.max(devices, 1));
+      }
       const periodEnd = addMonths(base, invoice.months);
       // compare-and-set on a version counter (an organization saved before the counter existed has none)
       const version = org.subscriptionVersion;
@@ -120,6 +137,7 @@ export async function applyPaidInvoice(invoice) {
       // eslint-disable-next-line no-await-in-loop
       const updated = await DataEngine.updateIf('organizations', orgId, unchanged, {
         plan: invoice.plan,
+        ...(gps ? { deviceLimit: devices } : {}),
         planExpiresAt: periodEnd.toISOString(),
         trialEndsAt: null,
         appliedInvoiceIds: [...applied, invoiceId].slice(-KEEP_APPLIED_IDS),
@@ -148,7 +166,9 @@ async function sendReceipt(invoice) {
     to,
     subject: t('[CLIXGPS] Payment received'),
     text: [
-      t('We received your payment of {amount} MNT for the {plan} plan ({months} month(s)).', { amount: invoice.amount.toLocaleString('en-US'), plan: getPlan(invoice.plan).label, months: invoice.months }),
+      invoice.plan === 'gps'
+        ? t('We received your payment of {amount} MNT for {n} GPS devices ({months} month(s)).', { amount: invoice.amount.toLocaleString('en-US'), n: invoice.devices, months: invoice.months })
+        : t('We received your payment of {amount} MNT for the {plan} plan ({months} month(s)).', { amount: invoice.amount.toLocaleString('en-US'), plan: getPlan(invoice.plan).label, months: invoice.months }),
       until ? t('Your plan is active until {date}.', { date: until }) : null,
       `${t('Invoice')}: ${invoice.senderInvoiceNo}`,
       '',

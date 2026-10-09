@@ -117,7 +117,7 @@ export default function PlatformInvoices() {
                   <tr key={i._id}>
                     <td>{new Date(i.createdAt).toLocaleDateString()}</td>
                     <td><strong>{i.organization || '—'}</strong></td>
-                    <td>{tr(i.plan)} · {tr('{n} month(s)', { n: i.months })}</td>
+                    <td>{i.plan === 'gps' ? `${tr('{n} GPS', { n: i.devices })} · ` : `${tr(i.plan)} · `}{tr('{n} month(s)', { n: i.months })}</td>
                     <td><strong>{mnt(i.amount)}</strong></td>
                     <td>
                       <span className={`badge badge-${STATUS_BADGE[i.status] || 'inactive'}`}>{tr(i.status)}</span>

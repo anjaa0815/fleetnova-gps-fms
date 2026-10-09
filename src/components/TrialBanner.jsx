@@ -15,7 +15,7 @@ export default function TrialBanner({ onNavigate }) {
   let end = null;
   let paid = false;
   if (organization.plan === 'trial' && organization.trialEndsAt) end = new Date(organization.trialEndsAt).getTime();
-  else if (['basic', 'pro'].includes(organization.plan) && organization.planExpiresAt) {
+  else if (['basic', 'pro', 'gps'].includes(organization.plan) && organization.planExpiresAt) {
     end = new Date(organization.planExpiresAt).getTime();
     paid = true;
   }
