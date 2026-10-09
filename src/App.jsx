@@ -140,7 +140,8 @@ function MainApp() {
       onSelectTab={navigateTo}
       currentTitle={titles[currentTab] || 'CLIXGPS'}
     >
-      {currentTab === 'dashboard' && <Dashboard onNavigate={navigateTo} />}
+      {/* the platform owner has no fleet data: the first render, before the organizations tab is chosen, asks for none */}
+      {currentTab === 'dashboard' && role !== 'super_admin' && <Dashboard onNavigate={navigateTo} />}
 
       {currentTab === 'vehicles' && (
         <Vehicles

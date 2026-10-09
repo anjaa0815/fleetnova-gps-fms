@@ -5,6 +5,7 @@ import { useT } from '../i18n/LanguageContext.jsx';
 import L from 'leaflet';
 import FitBounds from './FitBounds.jsx';
 import { trackingApi, geofenceApi } from '../services/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const POLL_MS = 10000;
 
@@ -31,11 +32,14 @@ const demoIcon = new L.DivIcon({
 // the vehicles at placeholder positions so the page is not empty (clearly labelled as demo).
 export default function LiveMap({ vehicles = [] }) {
   const { tr } = useT();
+  const { role } = useAuth();
+  const canTrack = role === 'admin' || role === 'fleet_manager'; // drivers are not allowed to read live positions
   const [live, setLive] = useState([]);
   const [geofences, setGeofences] = useState([]);
   const [fitKey, setFitKey] = useState(0);
 
   useEffect(() => {
+    if (!canTrack) return undefined;
     let cancelled = false;
     let first = true;
     const load = async () => {
@@ -58,7 +62,7 @@ export default function LiveMap({ vehicles = [] }) {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [canTrack]);
 
   const hasLive = live.length > 0;
   const onlineCount = live.filter((p) => p.online).length;
