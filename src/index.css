@@ -1007,3 +1007,10 @@ button, input, select, textarea {
     print-color-adjust: exact;
   }
 }
+
+/* Leaflet's panes and controls use z-index up to 1000: keep them inside the map, so a modal opened above a map covers it */
+.leaflet-container {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
