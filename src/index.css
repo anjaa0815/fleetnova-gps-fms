@@ -182,6 +182,24 @@ button, input, select, textarea {
   text-transform: uppercase;
 }
 
+.sidebar-org {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sidebar-org-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
 .sidebar-nav {
   flex: 1;
   overflow-y: auto;

@@ -22,6 +22,7 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import ClixLogo from './ClixLogo.jsx';
 import { useT } from '../i18n/LanguageContext.jsx';
 
 export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onCloseMobile }) {
@@ -77,21 +78,7 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
       <aside className={`sidebar ${isMobileOpen ? 'open' : ''}`}>
         {/* Brand Header */}
         <div className="sidebar-header">
-          <div className="brand-logo-area">
-            <div className="brand-icon-box">
-              {organization?.branding?.logoUrl ? (
-                <img src={organization.branding.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              ) : (
-                <Truck size={22} />
-              )}
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div className="brand-text-name" style={organization ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' } : undefined}>
-                {organization ? organization.name : tr("CLIXGPS")}
-              </div>
-              <div className="brand-tagline">{organization ? tr("Powered by CLIXGPS") : tr("SMART FLEET MANAGEMENT")}</div>
-            </div>
-          </div>
+          <ClixLogo width={140} padding={5} />
           {onCloseMobile && (
             <button
               onClick={onCloseMobile}
@@ -108,6 +95,20 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
             </button>
           )}
         </div>
+
+        {/* The customer organization keeps its own name and logo under the CLIX logo */}
+        {organization && (
+          <div className="sidebar-org">
+            <div className="brand-icon-box" style={{ width: 28, height: 28, flexShrink: 0 }}>
+              {organization.branding?.logoUrl ? (
+                <img src={organization.branding.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                <Truck size={16} />
+              )}
+            </div>
+            <div className="sidebar-org-name" title={organization.name}>{organization.name}</div>
+          </div>
+        )}
 
         {/* Navigation List */}
         <div className="sidebar-nav">
