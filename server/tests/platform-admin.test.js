@@ -201,3 +201,42 @@ test('platform admins: add, list, reset a password, switch off', async () => {
   assert.equal((await api('PUT', `/platform/admins/${orgUser._id}`, { token: sup, body: { status: 'inactive' } })).status, 404, 'an organization user is not a platform admin');
   assert.equal((await login(org.email, 'password123')).status, 200, 'and was not touched');
 });
+
+test('platform invoice list: totals, filters, limit and who may see it', async () => {
+  const sup = await superToken();
+  const a = await newOrg('Pays Co');
+  const b = await newOrg('Waits Co');
+
+  // Pays Co buys a plan (paid), then asks for another period (open); Waits Co has one open request
+  const first = (await api('POST', '/billing/invoices', { token: a.token, body: { plan: 'basic', months: 1 } })).body.data;
+  assert.equal((await api('POST', `/billing/invoices/${first._id}/simulate-pay`, { token: a.token })).status, 200);
+  const second = (await api('POST', '/billing/invoices', { token: a.token, body: { plan: 'basic', months: 3 } })).body.data;
+  const third = (await api('POST', '/billing/invoices', { token: b.token, body: { plan: 'pro', months: 1 } })).body.data;
+
+  const all = await api('GET', '/platform/invoices', { token: sup });
+  assert.equal(all.status, 200);
+  const mine = (id) => all.body.data.find((i) => i._id === id);
+  assert.equal(mine(first._id).organization, 'Pays Co');
+  assert.equal(mine(first._id).status, 'paid');
+  assert.equal(mine(second._id).status, 'pending');
+  assert.equal(mine(third._id).organization, 'Waits Co');
+  assert.equal(mine(third._id).orgId, b.org._id);
+  assert.ok(all.body.summary.paidCount >= 1 && all.body.summary.paidTotal >= first.amount && all.body.summary.paidThisMonth >= first.amount);
+  assert.ok(all.body.summary.pendingCount >= 2);
+  assert.ok(all.body.data.every((x, i, rows) => i === 0 || new Date(rows[i - 1].createdAt) >= new Date(x.createdAt)), 'newest first');
+  assert.ok(!JSON.stringify(all.body).includes('callbackToken'));
+
+  // filters change the rows, never the totals
+  const paid = await api('GET', '/platform/invoices?status=paid', { token: sup });
+  assert.ok(paid.body.data.length >= 1 && paid.body.data.every((i) => i.status === 'paid'));
+  assert.deepEqual(paid.body.summary, all.body.summary);
+  const ofWaits = await api('GET', `/platform/invoices?orgId=${b.org._id}`, { token: sup });
+  assert.deepEqual(ofWaits.body.data.map((i) => i._id), [third._id]);
+  const one = await api('GET', '/platform/invoices?limit=1', { token: sup });
+  assert.equal(one.body.data.length, 1);
+  assert.equal((await api('GET', '/platform/invoices?limit=0', { token: sup })).status, 200);
+
+  // only platform admins
+  assert.equal((await api('GET', '/platform/invoices', { token: a.token })).status, 403);
+  assert.equal((await api('GET', '/platform/invoices')).status, 401);
+});
