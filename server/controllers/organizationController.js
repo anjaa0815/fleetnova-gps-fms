@@ -1,4 +1,6 @@
 import { invalidateOrganization } from '../gps/lookupCache.js';
+import { invalidateGeofences } from '../gps/geofenceCache.js';
+import { runWithTenant } from '../middleware/tenantContext.js';
 import { DataEngine } from '../models/dataEngine.js';
 import { PLAN_IDS, ORG_STATUSES } from '../config/plans.js';
 import {
@@ -228,5 +230,60 @@ export const updateOrganization = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// Everything an organization owns, in the order it is removed (users last). Invoices stay: they are the payment history.
+const ORGANIZATION_DATA = ['positions', 'commands', 'deliveries', 'notifications', 'geofences', 'trips', 'fuels', 'maintenances', 'expenses', 'devices', 'vehicles', 'drivers', 'users'];
+
+// @route DELETE /api/platform/organizations/:id   { confirmName }
+// Permanent. Only a suspended organization, only when its exact name is typed, never while a payment is still open.
+// Its data and users are deleted; its invoices and the log of what the platform owner did there are kept.
+export const deleteOrganization = async (req, res, next) => {
+  try {
+    const org = await DataEngine.findById('organizations', req.params.id);
+    if (!org) return res.status(404).json({ success: false, message: 'Organization not found' });
+    if (org.status !== 'suspended') {
+      return res.status(400).json({ success: false, message: 'Suspend the organization first. Only a suspended organization can be deleted.' });
+    }
+    if (typeof req.body?.confirmName !== 'string' || req.body.confirmName.trim() !== org.name) {
+      return res.status(400).json({ success: false, message: 'Type the exact name of the organization to confirm' });
+    }
+
+    const orgContext = { orgId: String(org._id) };
+    const invoices = await runWithTenant(orgContext, () => DataEngine.find('invoices'));
+    if (invoices.some((i) => i.status === 'pending' && new Date(i.expiresAt).getTime() > Date.now())) {
+      return res.status(400).json({ success: false, message: 'The organization has an unpaid payment request. Wait until it expires, or until it is paid.' });
+    }
+
+    // the invoices outlive the organization, so they keep its name
+    await runWithTenant(orgContext, async () => {
+      for (const invoice of invoices) {
+        if (!invoice.orgName) await DataEngine.findByIdAndUpdate('invoices', invoice._id, { orgName: org.name });
+      }
+    });
+
+    const removed = {};
+    await runWithTenant(orgContext, async () => {
+      for (const collection of ORGANIZATION_DATA) removed[collection] = await DataEngine.deleteMany(collection, {});
+    });
+    await DataEngine.findByIdAndDelete('organizations', org._id);
+    invalidateOrganization(org._id);
+    invalidateGeofences(org._id);
+
+    await DataEngine.create('auditLogs', {
+      actor: req.user._id,
+      actorEmail: req.user.email,
+      orgId: org._id,
+      orgName: org.name,
+      method: 'DELETE',
+      path: `/api/platform/organizations/${org._id}`,
+      status: 200,
+      ip: String(req.ip || '')
+    });
+    console.log(`[Platform] ${req.user.email} deleted the organization "${org.name}": ${JSON.stringify(removed)}`);
+    return res.status(200).json({ success: true, message: 'Organization deleted', data: { removed } });
+  } catch (error) {
+    return next(error);
   }
 };

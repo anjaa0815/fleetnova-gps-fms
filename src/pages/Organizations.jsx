@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Plus, Link as LinkIcon, Pencil, Users as UsersIcon, LogIn, History } from 'lucide-react';
+import { Building2, Plus, Link as LinkIcon, Pencil, Users as UsersIcon, LogIn, History, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal.jsx';
 import OrgUsersModal from '../components/OrgUsersModal.jsx';
 import OrgAuditModal from '../components/OrgAuditModal.jsx';
+import OrgDeleteModal from '../components/OrgDeleteModal.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import Loading from '../components/Loading.jsx';
 import { platformApi } from '../services/api.js';
@@ -33,6 +34,7 @@ export default function Organizations() {
   const [saving, setSaving] = useState(false);
   const [usersOf, setUsersOf] = useState(null); // organization whose users are being managed
   const [auditOf, setAuditOf] = useState(null); // organization whose activity log is shown
+  const [deleting, setDeleting] = useState(null); // organization being deleted
   const [renaming, setRenaming] = useState(null); // { org, name, error }
 
   const loadOrgs = async () => {
@@ -197,6 +199,11 @@ export default function Organizations() {
                     >
                       {org.status === 'active' ? tr('Suspend') : tr('Activate')}
                     </button>
+                    {org.status === 'suspended' && (
+                      <button className="btn btn-danger btn-sm" title={tr('Delete organization')} onClick={() => setDeleting(org)}>
+                        <Trash2 size={13} /> {tr('Delete')}
+                      </button>
+                    )}
                     </div>
                   </td>
                 </tr>
@@ -208,6 +215,7 @@ export default function Organizations() {
 
       {usersOf && <OrgUsersModal org={usersOf} onClose={() => setUsersOf(null)} onChanged={loadOrgs} />}
       {auditOf && <OrgAuditModal org={auditOf} onClose={() => setAuditOf(null)} />}
+      {deleting && <OrgDeleteModal org={deleting} onClose={() => setDeleting(null)} onDeleted={() => { setDeleting(null); loadOrgs(); }} />}
 
       <Modal isOpen={Boolean(renaming)} onClose={() => setRenaming(null)} title={tr('Rename organization')} maxWidth="480px">
         {renaming && (

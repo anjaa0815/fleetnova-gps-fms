@@ -169,7 +169,7 @@ export const listAllInvoices = async (req, res, next) => {
     const names = new Map(orgs.map((o) => [String(o._id), o.name]));
     res.status(200).json({
       success: true,
-      data: invoices.map((i) => ({ ...serializeInvoice(i), organization: names.get(String(i.orgId)) || '' }))
+      data: invoices.map((i) => ({ ...serializeInvoice(i), organization: names.get(String(i.orgId)) || i.orgName || '' }))
     });
   } catch (error) {
     next(error);
