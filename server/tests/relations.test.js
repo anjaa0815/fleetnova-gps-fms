@@ -191,3 +191,35 @@ test('the dashboard lists open maintenance with its own fields', async () => {
     assert.equal(typeof m.isOverdue, 'boolean');
   }
 });
+
+test('a trip keeps the places picked on the map, and refuses nonsense coordinates', async () => {
+  const v = await newVehicle('MAP 1');
+  const d = await newDriver(31);
+  const base = { vehicleId: v._id, driverId: d._id, source: 'Ulaanbaatar', destination: 'Darkhan', startDate: day(1), expectedEndDate: day(2), distance: 220 };
+
+  for (const bad of [{ lat: 91, lng: 0 }, { lat: 0, lng: 181 }, { lat: 'x', lng: 1 }, { lat: 47.9 }, 'here', [47.9, 106.9]]) {
+    const res = await api('POST', '/trips', { ...base, sourcePoint: bad });
+    assert.equal(res.status, 400, JSON.stringify(bad));
+    assert.match(res.body.message, /location on the map/);
+  }
+  assert.equal((await api('POST', '/trips', { ...base, destinationPoint: { lat: 100, lng: 1 } })).status, 400);
+
+  const made = await api('POST', '/trips', { ...base, sourcePoint: { lat: '47.9186', lng: 106.9177 }, destinationPoint: { lat: 49.4867, lng: 105.9228 } });
+  assert.equal(made.status, 201, JSON.stringify(made.body));
+  const got = (await api('GET', `/trips/${made.body.data._id}`)).body.data;
+  assert.deepEqual({ ...got.sourcePoint }, { lat: 47.9186, lng: 106.9177 });
+  assert.deepEqual({ ...got.destinationPoint }, { lat: 49.4867, lng: 105.9228 });
+
+  // the place name stays the source of truth: a trip without points is still fine
+  const plain = await api('POST', '/trips', { ...base, vehicleId: (await newVehicle('MAP 2'))._id, driverId: (await newDriver(32))._id });
+  assert.equal(plain.status, 201);
+  assert.equal((await api('GET', `/trips/${plain.body.data._id}`)).body.data.sourcePoint ?? null, null);
+
+  // editing: a point can be replaced or cleared, nonsense is refused
+  assert.equal((await api('PUT', `/trips/${made.body.data._id}`, { sourcePoint: { lat: 500, lng: 1 } })).status, 400);
+  const moved = await api('PUT', `/trips/${made.body.data._id}`, { destinationPoint: { lat: 50, lng: 106 }, sourcePoint: null });
+  assert.equal(moved.status, 200, JSON.stringify(moved.body));
+  const after = (await api('GET', `/trips/${made.body.data._id}`)).body.data;
+  assert.deepEqual({ ...after.destinationPoint }, { lat: 50, lng: 106 });
+  assert.equal(after.sourcePoint ?? null, null);
+});

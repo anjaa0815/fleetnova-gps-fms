@@ -33,6 +33,9 @@ const tripSchema = new mongoose.Schema(
       required: [true, 'Destination location is required'],
       trim: true
     },
+    // where on the map (optional): picked on the map next to the written place name
+    sourcePoint: { type: { lat: Number, lng: Number, _id: false }, default: null },
+    destinationPoint: { type: { lat: Number, lng: Number, _id: false }, default: null },
     startDate: {
       type: Date,
       required: true
