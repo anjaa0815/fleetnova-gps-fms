@@ -34,6 +34,7 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
   // Role-based Nav Configuration
   const navItems = [
     { id: 'organizations', label: tr("Organizations"), icon: Building2, roles: ['super_admin'] },
+    { id: 'platform-invoices', label: tr("Invoices"), icon: CreditCard, roles: ['super_admin'] },
     { id: 'platform-admins', label: tr("Platform Admins"), icon: ShieldCheck, roles: ['super_admin'] },
     { id: 'dashboard', label: tr("Dashboard"), icon: LayoutDashboard, roles: ['admin', 'fleet_manager', 'driver'] },
     { id: 'vehicles', label: tr("Vehicles"), icon: Truck, roles: ['admin', 'fleet_manager', 'driver'] },

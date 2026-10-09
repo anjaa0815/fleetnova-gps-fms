@@ -25,6 +25,7 @@ import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
 import Organizations from './pages/Organizations.jsx';
 import PlatformAdmins from './pages/PlatformAdmins.jsx';
+import PlatformInvoices from './pages/PlatformInvoices.jsx';
 import Devices from './pages/Devices.jsx';
 import VerifyEmail from './pages/VerifyEmail.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
@@ -110,6 +111,7 @@ function MainApp() {
   const titles = {
     organizations: tr('Platform Organizations'),
     'platform-admins': tr('Platform Admins'),
+    'platform-invoices': tr('Invoices'),
     devices: tr('GPS Devices & Tracking'),
     geofences: tr('Geofences & Zone Alerts'),
     'gps-reports': tr('GPS Usage Reports'),
@@ -212,6 +214,12 @@ function MainApp() {
       {currentTab === 'organizations' && (
         <ProtectedRoute allowedRoles={['super_admin']}>
           <Organizations />
+        </ProtectedRoute>
+      )}
+
+      {currentTab === 'platform-invoices' && (
+        <ProtectedRoute allowedRoles={['super_admin']}>
+          <PlatformInvoices />
         </ProtectedRoute>
       )}
 

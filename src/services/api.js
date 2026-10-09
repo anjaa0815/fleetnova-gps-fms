@@ -86,7 +86,7 @@ export const billingApi = {
   getInvoice: (id) => apiRequest(`/billing/invoices/${id}`),
   cancelInvoice: (id) => apiRequest(`/billing/invoices/${id}/cancel`, 'POST'),
   simulatePay: (id) => apiRequest(`/billing/invoices/${id}/simulate-pay`, 'POST'),
-  platformInvoices: () => apiRequest('/platform/invoices')
+  platformInvoices: (query = '') => apiRequest(`/platform/invoices${query ? `?${query}` : ''}`)
 };
 
 // GPS reports

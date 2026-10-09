@@ -162,14 +162,36 @@ export const qpayCallback = async (req, res, next) => {
 // @route GET /api/platform/invoices
 export const listAllInvoices = async (req, res, next) => {
   try {
-    const { invoices, orgs } = await runAsSystem(async () => ({
-      invoices: await DataEngine.find('invoices', {}, { sort: { createdAt: -1 }, limit: 200 }),
+    const { all, orgs } = await runAsSystem(async () => ({
+      all: await DataEngine.find('invoices', {}, { sort: { createdAt: -1 } }),
       orgs: await DataEngine.find('organizations')
     }));
     const names = new Map(orgs.map((o) => [String(o._id), o.name]));
+
+    // totals over every invoice, whatever the filter or the limit
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    const summary = { paidCount: 0, paidTotal: 0, paidThisMonth: 0, pendingCount: 0, expiredCount: 0, cancelledCount: 0 };
+    for (const i of all) {
+      if (i.status === 'paid') {
+        summary.paidCount += 1;
+        summary.paidTotal += Number(i.paidAmount || i.amount) || 0;
+        if (i.paidAt && new Date(i.paidAt) >= monthStart) summary.paidThisMonth += Number(i.paidAmount || i.amount) || 0;
+      } else if (i.status === 'pending') summary.pendingCount += 1;
+      else if (i.status === 'expired') summary.expiredCount += 1;
+      else if (i.status === 'cancelled') summary.cancelledCount += 1;
+    }
+
+    const { status, orgId } = req.query;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 200, 1), 500);
+    const rows = all
+      .filter((i) => (!status || i.status === status) && (!orgId || String(i.orgId) === String(orgId)))
+      .slice(0, limit);
     res.status(200).json({
       success: true,
-      data: invoices.map((i) => ({ ...serializeInvoice(i), organization: names.get(String(i.orgId)) || i.orgName || '' }))
+      summary,
+      data: rows.map((i) => ({ ...serializeInvoice(i), orgId: i.orgId, organization: names.get(String(i.orgId)) || i.orgName || '' }))
     });
   } catch (error) {
     next(error);
