@@ -61,6 +61,7 @@ export async function createInvoice({ org, user, plan, months, baseUrl }) {
   const senderInvoiceNo = `FN-${Date.now().toString(36).toUpperCase()}-${random(3).toUpperCase()}`;
   const description = translate(user.language === 'en' ? 'en' : 'mn', 'CLIXGPS {plan} plan, {months} month(s)', { plan: getPlan(plan).label, months });
   const invoice = await DataEngine.create('invoices', {
+    orgName: org.name,
     createdBy: user._id,
     plan,
     months,

@@ -24,6 +24,7 @@ import FleetAI from './pages/FleetAI.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
 import Organizations from './pages/Organizations.jsx';
+import PlatformAdmins from './pages/PlatformAdmins.jsx';
 import Devices from './pages/Devices.jsx';
 import VerifyEmail from './pages/VerifyEmail.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
@@ -108,6 +109,7 @@ function MainApp() {
   // Titles mapping
   const titles = {
     organizations: tr('Platform Organizations'),
+    'platform-admins': tr('Platform Admins'),
     devices: tr('GPS Devices & Tracking'),
     geofences: tr('Geofences & Zone Alerts'),
     'gps-reports': tr('GPS Usage Reports'),
@@ -210,6 +212,12 @@ function MainApp() {
       {currentTab === 'organizations' && (
         <ProtectedRoute allowedRoles={['super_admin']}>
           <Organizations />
+        </ProtectedRoute>
+      )}
+
+      {currentTab === 'platform-admins' && (
+        <ProtectedRoute allowedRoles={['super_admin']}>
+          <PlatformAdmins />
         </ProtectedRoute>
       )}
 

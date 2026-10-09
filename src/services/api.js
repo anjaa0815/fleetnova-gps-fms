@@ -27,7 +27,7 @@ export async function apiRequest(endpoint, method = 'GET', data = null, customHe
     headers
   };
 
-  if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+  if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
     config.body = JSON.stringify(data);
   }
 
@@ -144,6 +144,10 @@ export const platformApi = {
   listUsers: (orgId) => apiRequest(`/platform/organizations/${orgId}/users`),
   createUser: (orgId, data) => apiRequest(`/platform/organizations/${orgId}/users`, 'POST', data),
   updateUser: (orgId, userId, data) => apiRequest(`/platform/organizations/${orgId}/users/${userId}`, 'PUT', data),
+  deleteOrganization: (id, confirmName) => apiRequest(`/platform/organizations/${id}`, 'DELETE', { confirmName }),
+  listAdmins: () => apiRequest('/platform/admins'),
+  createAdmin: (data) => apiRequest('/platform/admins', 'POST', data),
+  updateAdmin: (id, data) => apiRequest(`/platform/admins/${id}`, 'PUT', data),
   auditLog: (orgId) => apiRequest(`/platform/audit?limit=200${orgId ? `&orgId=${orgId}` : ''}`)
 };
 
