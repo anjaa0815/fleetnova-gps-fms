@@ -9,11 +9,12 @@ import Loading from '../components/Loading.jsx';
 import { platformApi } from '../services/api.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
-const PLANS = ['trial', 'basic', 'pro', 'enterprise'];
+const PLANS = ['trial', 'basic', 'pro', 'gps', 'enterprise'];
 
 const emptyForm = {
   organizationName: '',
   plan: 'trial',
+  deviceLimit: '',
   adminName: '',
   adminEmail: '',
   adminPassword: '',
@@ -52,6 +53,23 @@ export default function Organizations() {
   useEffect(() => {
     loadOrgs();
   }, []);
+
+  // the per-GPS plan is for a number of devices: ask for it
+  const askDevices = (current) => {
+    const answer = window.prompt(tr('Number of GPS devices this organization has paid for'), current || '');
+    if (answer === null) return null;
+    return Number(answer);
+  };
+  const changePlan = (org, plan) => {
+    if (plan !== 'gps') return handleUpdate(org._id, { plan });
+    const deviceLimit = askDevices(org.deviceLimit);
+    if (deviceLimit === null) return loadOrgs(); // put the selector back
+    return handleUpdate(org._id, { plan, deviceLimit });
+  };
+  const changeDevices = (org) => {
+    const deviceLimit = askDevices(org.deviceLimit);
+    if (deviceLimit !== null) handleUpdate(org._id, { deviceLimit });
+  };
 
   const handleUpdate = async (id, patch) => {
     try {
@@ -167,12 +185,18 @@ export default function Organizations() {
                       className="form-control"
                       style={{ padding: '0.3rem 0.5rem', minWidth: '120px' }}
                       value={org.plan}
-                      onChange={(e) => handleUpdate(org._id, { plan: e.target.value })}
+                      onChange={(e) => changePlan(org, e.target.value)}
                     >
                       {PLANS.map((p) => (
                         <option key={p} value={p}>{tr(p)}</option>
                       ))}
                     </select>
+                    {org.plan === 'gps' && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                        {tr('{n} GPS devices', { n: org.deviceLimit })}{' '}
+                        <a href="#" onClick={(e) => { e.preventDefault(); changeDevices(org); }} style={{ color: 'var(--accent-cyan)' }}>{tr('Change')}</a>
+                      </div>
+                    )}
                   </td>
                   <td>
                     <span className={`badge badge-${org.status === 'active' ? 'active' : 'inactive'}`}>
@@ -260,6 +284,12 @@ export default function Organizations() {
                 ))}
               </select>
             </div>
+            {form.plan === 'gps' && (
+              <div className="form-group">
+                <label className="form-label">{tr('Number of GPS devices *')}</label>
+                <input type="number" min="1" step="1" className="form-control" required value={form.deviceLimit} onChange={(e) => setForm({ ...form, deviceLimit: e.target.value })} />
+              </div>
+            )}
             <div className="form-group">
               <label className="form-label">{tr('Administrator Name *')}</label>
               <input className="form-control" required value={form.adminName} onChange={(e) => setForm({ ...form, adminName: e.target.value })} />

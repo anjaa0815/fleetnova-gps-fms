@@ -6,6 +6,7 @@ import { PLAN_IDS, ORG_STATUSES } from '../config/plans.js';
 import {
   DELIVERY_TYPES,
   ServiceError,
+  checkDeviceLimit,
   createOrganizationWithAdmin,
   planLimits,
   serializeOrg,
@@ -165,10 +166,11 @@ export const listOrganizations = async (req, res, next) => {
 // @route POST /api/platform/organizations
 export const createOrganization = async (req, res, next) => {
   try {
-    const { organizationName, plan = 'trial', adminName, adminEmail, adminPassword, adminPhone = '' } = req.body;
+    const { organizationName, plan = 'trial', deviceLimit, adminName, adminEmail, adminPassword, adminPhone = '' } = req.body;
     const { org, user } = await createOrganizationWithAdmin({
       organizationName,
       plan,
+      deviceLimit,
       admin: { name: adminName, email: adminEmail, password: adminPassword, phone: adminPhone }
     });
     return res.status(201).json({
@@ -184,7 +186,7 @@ export const createOrganization = async (req, res, next) => {
 // @route PUT /api/platform/organizations/:id
 export const updateOrganization = async (req, res, next) => {
   try {
-    const { name, status, plan, trialEndsAt, planExpiresAt } = req.body;
+    const { name, status, plan, deviceLimit, trialEndsAt, planExpiresAt } = req.body;
     const update = {};
 
     // renaming keeps the slug, so the organization's login address (?org=...) does not change
@@ -201,9 +203,17 @@ export const updateOrganization = async (req, res, next) => {
     if (plan !== undefined) {
       if (!PLAN_IDS.includes(plan)) throw new ServiceError('Invalid plan');
       update.plan = plan;
+      // the number of devices belongs to the per-GPS plan only
+      update.deviceLimit = plan === 'gps' ? checkDeviceLimit(deviceLimit) : null;
       if (plan !== 'trial') update.trialEndsAt = null;
       // a plan assigned by the platform owner has no end date unless one is given below
       update.planExpiresAt = null;
+    }
+    if (plan === undefined && deviceLimit !== undefined) {
+      const current = await DataEngine.findById('organizations', req.params.id);
+      if (!current) return res.status(404).json({ success: false, message: 'Organization not found' });
+      if (current.plan !== 'gps') throw new ServiceError('The number of GPS devices only applies to the per-GPS plan');
+      update.deviceLimit = checkDeviceLimit(deviceLimit);
     }
     if (planExpiresAt !== undefined) {
       if (planExpiresAt === null || planExpiresAt === '') update.planExpiresAt = null;

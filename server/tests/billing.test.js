@@ -152,7 +152,7 @@ before(async () => {
     env: {
       NODE_ENV: 'production', ADMIN_EMAIL: SUPER.email, ADMIN_PASSWORD: SUPER.password,
       QPAY_BASE_URL: `http://127.0.0.1:${MOCK_PORT}/v2`, QPAY_USERNAME: 'merchant', QPAY_PASSWORD: 'secret', QPAY_INVOICE_CODE: 'TEST_INVOICE',
-      APP_BASE_URL: 'https://fleet.example.com', PLAN_PRICE_BASIC: '50000', PLAN_PRICE_PRO: '200000',
+      APP_BASE_URL: 'https://fleet.example.com',
       BILLING_CHECK_INTERVAL_MS: '0', BILLING_POLL_MS: '1000', BILLING_FIRST_RUN_MS: '500',
       SMTP_HOST: '127.0.0.1', SMTP_PORT: String(SMTP_PORT)
     }
@@ -168,16 +168,27 @@ after(() => {
 });
 
 let counter = 0;
-async function newOrg(label) {
+let imeiCounter = 0;
+const addDevices = async (token, n) => {
+  for (let i = 0; i < n; i += 1) {
+    imeiCounter += 1;
+    const res = await api('POST', '/devices', { token, body: { name: `Tracker ${imeiCounter}`, imei: String(860000000000000 + imeiCounter), protocol: 'teltonika' } });
+    assert.equal(res.status, 201, JSON.stringify(res.body));
+  }
+};
+// An organization with `devices` registered GPS devices (a payment is for the registered devices)
+async function newOrg(label, devices = 2) {
   counter += 1;
   const email = `admin${counter}@${label}.billing.example`;
   const reg = await api('POST', '/auth/register', { body: { organizationName: `Bill ${label} ${counter}`, name: 'Admin', email, password: 'password123' } });
   assert.equal(reg.status, 201, JSON.stringify(reg.body));
+  await addDevices(reg.body.data.token, devices);
   return { token: reg.body.data.token, orgId: reg.body.data.organization._id, email };
 }
 const platformToken = async () => (await api('POST', '/auth/login', { body: SUPER })).body.data.token;
-const invoice = async (org, plan, months) => {
-  const res = await api('POST', '/billing/invoices', { token: org.token, body: { plan, months } });
+const PRICE = 27500; // MNT per GPS device per month
+const invoice = async (org, months, devices) => {
+  const res = await api('POST', '/billing/invoices', { token: org.token, body: { plan: 'gps', months, ...(devices ? { devices } : {}) } });
   assert.equal(res.status, 201, JSON.stringify(res.body));
   return res.body.data;
 };
@@ -200,7 +211,9 @@ test('billing overview: administrators only, with plans, prices and the current 
   const res = await api('GET', '/billing', { token: org.token });
   assert.equal(res.status, 200);
   assert.equal(res.body.data.mode, 'qpay');
-  assert.deepEqual(res.body.data.plans.map((p) => [p.id, p.monthlyPrice]), [['basic', 50000], ['pro', 200000]]);
+  assert.deepEqual(res.body.data.plans.map((p) => [p.id, p.pricePerDevice]), [['gps', 27500]]);
+  assert.equal(res.body.data.registeredDevices, 2);
+  assert.equal(res.body.data.current.deviceLimit, null);
   assert.deepEqual(res.body.data.months, [1, 3, 6, 12]);
   assert.equal(res.body.data.current.plan, 'trial');
   assert.equal(res.body.data.current.state, 'trial');
@@ -210,19 +223,30 @@ test('billing overview: administrators only, with plans, prices and the current 
   assert.equal(manager.status, 201, JSON.stringify(manager.body));
   const mt = (await api('POST', '/auth/login', { body: { email: manager.body.data.email, password: 'password123' } })).body.data.token;
   assert.equal((await api('GET', '/billing', { token: mt })).status, 403);
-  assert.equal((await api('POST', '/billing/invoices', { token: mt, body: { plan: 'basic', months: 1 } })).status, 403);
+  assert.equal((await api('POST', '/billing/invoices', { token: mt, body: { plan: 'gps', months: 1 } })).status, 403);
   assert.equal((await api('GET', '/billing', { token: await platformToken() })).status, 403);
   assert.equal((await api('GET', '/billing')).status, 401);
 });
 
 test('invoice creation: validation, amount, QPay request, sanitized links, token reuse', async () => {
   const org = await newOrg('create');
-  for (const body of [{ plan: 'trial', months: 1 }, { plan: 'enterprise', months: 1 }, { plan: 'gold', months: 1 }, { plan: 'basic', months: 2 }, { plan: 'basic' }, { plan: 'basic', months: -1 }]) {
+  for (const body of [{ plan: 'trial', months: 1 }, { plan: 'enterprise', months: 1 }, { plan: 'gold', months: 1 }, { plan: 'basic', months: 1 }, { plan: 'pro', months: 1 }, { plan: 'gps', months: 2 }, { plan: 'gps' }, { plan: 'gps', months: -1 }]) {
     assert.equal((await api('POST', '/billing/invoices', { token: org.token, body })).status, 400, JSON.stringify(body));
   }
+  // the number of GPS devices: never below the registered ones (2), a whole number
+  for (const devices of [1, 0, -3, 2.5, 'many', 1000000]) {
+    assert.equal((await api('POST', '/billing/invoices', { token: org.token, body: { plan: 'gps', months: 1, devices } })).status, 400, `devices ${devices}`);
+  }
+  // nothing to pay for without a registered device
+  const empty = await newOrg('nodevice', 0);
+  const none = await api('POST', '/billing/invoices', { token: empty.token, body: { plan: 'gps', months: 1 } });
+  assert.equal(none.status, 400);
+  assert.match(none.body.message, /at least one GPS device/);
+
   const authsBefore = qpay.auths;
-  const inv = await invoice(org, 'basic', 3);
-  assert.equal(inv.amount, 150000); // 3 x 50 000
+  const inv = await invoice(org, 3);
+  assert.equal(inv.devices, 2);
+  assert.equal(inv.amount, 2 * 3 * PRICE); // 2 devices x 3 months x 27 500
   assert.equal(inv.status, 'pending');
   assert.ok(inv.qrImage.startsWith('iVBOR'));
   assert.equal(inv.shortUrl.startsWith('https://qpay.mn/'), true);
@@ -231,29 +255,31 @@ test('invoice creation: validation, amount, QPay request, sanitized links, token
 
   const sent = mockInvoice(inv.senderInvoiceNo).body;
   assert.equal(sent.invoice_code, 'TEST_INVOICE');
-  assert.equal(sent.amount, 150000);
+  assert.equal(sent.amount, 165000);
   assert.equal(sent.invoice_receiver_code, org.orgId);
   assert.match(sent.callback_url, new RegExp(`^https://fleet\\.example\\.com/api/billing/qpay/callback/${inv._id}/[0-9a-f]{48}$`));
   assert.equal(qpay.authHeaders.at(-1), `Basic ${Buffer.from('merchant:secret').toString('base64')}`);
 
   // reloading the page shows the same open invoice instead of creating another one
-  const again = await invoice(org, 'basic', 3);
+  const again = await invoice(org, 3);
   assert.equal(again._id, inv._id);
-  const other = await invoice(org, 'pro', 1);
-  assert.equal(other.amount, 200000);
+  // another number of devices is another invoice: pre-buying room for 3 devices
+  const other = await invoice(org, 1, 3);
+  assert.equal(other.amount, 3 * PRICE);
+  assert.equal(other.devices, 3);
   assert.notEqual(other._id, inv._id);
 
   // the access token is reused for later calls, and a token QPay rejects early is replaced once
   assert.equal(qpay.auths, authsBefore + 1);
   qpay.rejectBearerOnce = true;
-  await invoice(org, 'pro', 6);
+  await invoice(org, 6);
   assert.equal(qpay.auths, authsBefore + 2);
 });
 
 test('paying: polling settles the invoice, the plan starts, a receipt is e-mailed, tenants stay apart', async () => {
   const org = await newOrg('pay');
   const other = await newOrg('payother');
-  const inv = await invoice(org, 'basic', 3);
+  const inv = await invoice(org, 3);
 
   let current = (await api('GET', `/billing/invoices/${inv._id}`, { token: org.token })).body.data;
   assert.equal(current.status, 'pending');
@@ -266,12 +292,19 @@ test('paying: polling settles the invoice, the plan starts, a receipt is e-maile
   assert.ok(current.paidAt);
 
   const mine = await myOrg(org);
-  assert.equal(mine.plan, 'basic');
+  assert.equal(mine.plan, 'gps');
+  assert.equal(mine.deviceLimit, 2);
   assert.equal(mine.trialEndsAt, null);
   assert.ok(near(mine.planExpiresAt, addMonths(new Date(), 3)), mine.planExpiresAt);
+  // the devices paid for are the devices that may be registered
+  const third = await api('POST', '/devices', { token: org.token, body: { name: 'Third', imei: '861000000000001', protocol: 'teltonika' } });
+  assert.equal(third.status, 403);
+  assert.match(third.body.message, /Device limit reached/);
+  assert.equal((await api('GET', '/organization', { token: org.token })).body.data.limits.maxDevices, 2);
   const overview = (await api('GET', '/billing', { token: org.token })).body.data;
   assert.equal(overview.current.state, 'active');
   assert.equal(overview.invoices[0].status, 'paid');
+  assert.equal(overview.current.deviceLimit, 2);
 
   // polling again changes nothing
   const expiry = mine.planExpiresAt;
@@ -295,7 +328,7 @@ test('paying: polling settles the invoice, the plan starts, a receipt is e-maile
 
 test('the QPay callback: needs the token, never trusts the request, settles only what QPay confirms, once', async () => {
   const org = await newOrg('callback');
-  const inv = await invoice(org, 'basic', 1);
+  const inv = await invoice(org, 1);
   const path = callbackPath(inv);
   const token = path.split('/').pop();
 
@@ -317,7 +350,7 @@ test('the QPay callback: needs the token, never trusts the request, settles only
   ]);
   assert.deepEqual([...new Set(burst)], [200]);
   const mine = await myOrg(org);
-  assert.equal(mine.plan, 'basic');
+  assert.equal(mine.plan, 'gps');
   assert.ok(near(mine.planExpiresAt, addMonths(new Date(), 1)), `expected one month, got ${mine.planExpiresAt}`);
   await fetch(`${BASE}${path}`);
   assert.equal((await myOrg(org)).planExpiresAt, mine.planExpiresAt);
@@ -325,13 +358,13 @@ test('the QPay callback: needs the token, never trusts the request, settles only
 
 test('an underpaid invoice is not applied; a cancelled invoice stays cancelled', async () => {
   const org = await newOrg('under');
-  const inv = await invoice(org, 'pro', 1);
+  const inv = await invoice(org, 1);
   payAtQpay(inv, inv.amount - 1);
   const polled = (await api('GET', `/billing/invoices/${inv._id}`, { token: org.token })).body.data;
   assert.equal(polled.status, 'pending');
   assert.equal((await myOrg(org)).plan, 'trial');
 
-  const second = await invoice(org, 'basic', 1);
+  const second = await invoice(org, 1, 3);
   const cancelled = await api('POST', `/billing/invoices/${second._id}/cancel`, { token: org.token });
   assert.equal(cancelled.status, 200);
   assert.equal(cancelled.body.data.status, 'cancelled');
@@ -339,32 +372,78 @@ test('an underpaid invoice is not applied; a cancelled invoice stays cancelled',
   assert.equal((await api('GET', `/billing/invoices/${second._id}`, { token: org.token })).body.data.status, 'cancelled');
   assert.equal((await myOrg(org)).plan, 'trial');
   // a paid invoice cannot be cancelled
-  const third = await invoice(org, 'basic', 3);
+  const third = await invoice(org, 3);
   payAtQpay(third);
   await api('GET', `/billing/invoices/${third._id}`, { token: org.token });
   assert.equal((await api('POST', `/billing/invoices/${third._id}/cancel`, { token: org.token })).status, 409);
 });
 
-test('renewing continues the running period; another plan starts now', async () => {
+test('renewing continues the running period; another number of devices converts the time left; another plan starts now', async () => {
   const org = await newOrg('renew');
-  const first = await invoice(org, 'basic', 1);
+  const first = await invoice(org, 1);
   payAtQpay(first);
   await api('GET', `/billing/invoices/${first._id}`, { token: org.token });
   const firstEnd = new Date((await myOrg(org)).planExpiresAt);
   assert.ok(near(firstEnd, addMonths(new Date(), 1)));
 
-  const renewal = await invoice(org, 'basic', 3);
+  const renewal = await invoice(org, 3);
   payAtQpay(renewal);
   await api('GET', `/billing/invoices/${renewal._id}`, { token: org.token });
   const renewedEnd = new Date((await myOrg(org)).planExpiresAt);
   assert.ok(near(renewedEnd, addMonths(firstEnd, 3), 1000), `renewal should continue from ${firstEnd.toISOString()}, got ${renewedEnd.toISOString()}`);
 
-  const upgrade = await invoice(org, 'pro', 1);
-  payAtQpay(upgrade);
-  await api('GET', `/billing/invoices/${upgrade._id}`, { token: org.token });
-  const upgraded = await myOrg(org);
-  assert.equal(upgraded.plan, 'pro');
-  assert.ok(near(upgraded.planExpiresAt, addMonths(new Date(), 1)), 'a different plan starts now');
+  assert.equal((await myOrg(org)).deviceLimit, 2);
+
+  // 2 -> 4 devices: the time left was paid for 2 devices, so it halves; the new month comes on top
+  const more = await invoice(org, 1, 4);
+  assert.equal(more.amount, 4 * PRICE);
+  payAtQpay(more);
+  await api('GET', `/billing/invoices/${more._id}`, { token: org.token });
+  const grown = await myOrg(org);
+  assert.equal(grown.deviceLimit, 4);
+  const halfway = new Date(Date.now() + (renewedEnd.getTime() - Date.now()) / 2);
+  assert.ok(near(grown.planExpiresAt, addMonths(halfway, 1)), `expected ${addMonths(halfway, 1).toISOString()}, got ${grown.planExpiresAt}`);
+  assert.ok(new Date(grown.planExpiresAt) < renewedEnd, 'four devices for a long cheap period would have stretched it');
+
+  // a plan the platform owner assigned starts the per-GPS plan today
+  const platform = await platformToken();
+  await api('PUT', `/platform/organizations/${org.orgId}`, { token: platform, body: { plan: 'basic', planExpiresAt: new Date(Date.now() + 90 * DAY).toISOString() } });
+  const switched = await invoice(org, 1);
+  payAtQpay(switched);
+  await api('GET', `/billing/invoices/${switched._id}`, { token: org.token });
+  const now = await myOrg(org);
+  assert.equal(now.plan, 'gps');
+  assert.equal(now.deviceLimit, 2);
+  assert.ok(near(now.planExpiresAt, addMonths(new Date(), 1)), 'a different plan starts now');
+});
+
+test('the platform owner assigns the per-GPS plan with a number of devices', async () => {
+  const platform = await platformToken();
+  const org = await newOrg('assign', 0);
+  const put = (body) => api('PUT', `/platform/organizations/${org.orgId}`, { token: platform, body });
+  assert.equal((await put({ plan: 'gps' })).status, 400);
+  for (const deviceLimit of [0, -1, 1.5, 'x', 1000001]) assert.equal((await put({ plan: 'gps', deviceLimit })).status, 400, String(deviceLimit));
+  assert.equal((await put({ deviceLimit: 3 })).status, 400, 'not on the trial plan');
+
+  const set = await put({ plan: 'gps', deviceLimit: 2 });
+  assert.equal(set.status, 200, JSON.stringify(set.body));
+  assert.equal(set.body.data.deviceLimit, 2);
+  assert.equal(set.body.data.limits.maxDevices, 2);
+  await addDevices(org.token, 2);
+  assert.equal((await api('POST', '/devices', { token: org.token, body: { name: 'Over', imei: '862000000000001', protocol: 'teltonika' } })).status, 403);
+  assert.equal((await put({ deviceLimit: 5 })).body.data.deviceLimit, 5);
+  await addDevices(org.token, 1);
+
+  // another plan forgets the number
+  const back = await put({ plan: 'basic' });
+  assert.equal(back.body.data.deviceLimit, null);
+
+  // a new organization on the plan
+  const bad = await api('POST', '/platform/organizations', { token: platform, body: { organizationName: 'Gps Co', plan: 'gps', adminName: 'A', adminEmail: 'a@gpsco.example', adminPassword: 'password123' } });
+  assert.equal(bad.status, 400);
+  const good = await api('POST', '/platform/organizations', { token: platform, body: { organizationName: 'Gps Co', plan: 'gps', deviceLimit: 7, adminName: 'A', adminEmail: 'a@gpsco.example', adminPassword: 'password123' } });
+  assert.equal(good.status, 201, JSON.stringify(good.body));
+  assert.equal(good.body.data.organization.deviceLimit, 7);
 });
 
 test('an expired subscription turns read-only after the grace period, but paying always works', async () => {
@@ -389,10 +468,14 @@ test('an expired subscription turns read-only after the grace period, but paying
   assert.equal((await api('GET', '/billing', { token: org.token })).body.data.current.state, 'expired');
 
   // paying works while read-only, and unlocks the account
-  const inv = await invoice(org, 'basic', 1);
+  const inv = await invoice(org, 1);
   payAtQpay(inv);
   assert.equal((await api('GET', `/billing/invoices/${inv._id}`, { token: org.token })).body.data.status, 'paid');
   assert.equal((await api('POST', '/vehicles', { token: org.token, body: vehicle(4) })).status, 201);
+
+  // the per-GPS plan turns read-only after its grace period too
+  await api('PUT', `/platform/organizations/${org.orgId}`, { token: platform, body: { plan: 'gps', deviceLimit: 2, planExpiresAt: new Date(Date.now() - 10 * DAY).toISOString() } });
+  assert.equal((await api('POST', '/vehicles', { token: org.token, body: vehicle(5) })).status, 402);
 
   // a plan assigned by the platform owner without a date never expires
   await api('PUT', `/platform/organizations/${org.orgId}`, { token: platform, body: { plan: 'pro' } });
@@ -405,37 +488,39 @@ test('an expired trial can pay too', async () => {
   const platform = await platformToken();
   await api('PUT', `/platform/organizations/${org.orgId}`, { token: platform, body: { trialEndsAt: new Date(Date.now() - DAY).toISOString() } });
   assert.equal((await api('POST', '/vehicles', { token: org.token, body: { registrationNumber: 'X 1' } })).status, 402);
-  const inv = await invoice(org, 'pro', 1);
+  const inv = await invoice(org, 1);
   payAtQpay(inv);
   await api('GET', `/billing/invoices/${inv._id}`, { token: org.token });
   const mine = await myOrg(org);
-  assert.equal(mine.plan, 'pro');
+  assert.equal(mine.plan, 'gps');
   assert.equal(mine.trialEndsAt, null);
 });
 
 test('the background worker settles a payment nobody was polling for', async () => {
   const org = await newOrg('worker');
-  const inv = await invoice(org, 'basic', 1);
+  const inv = await invoice(org, 1);
   payAtQpay(inv); // no callback, no polling page: only the worker (every second here) can notice
   const start = Date.now();
   let mine;
   do {
     await sleep(300);
     mine = await myOrg(org);
-  } while (mine.plan !== 'basic' && Date.now() - start < 8000);
-  assert.equal(mine.plan, 'basic');
+  } while (mine.plan !== 'gps' && Date.now() - start < 8000);
+  assert.equal(mine.plan, 'gps');
   assert.ok(near(mine.planExpiresAt, addMonths(new Date(), 1)));
 });
 
 test('the platform owner sees every invoice with the organization name', async () => {
   const org = await newOrg('platform');
-  await invoice(org, 'basic', 1);
+  await invoice(org, 1);
   const platform = await platformToken();
   const list = await api('GET', '/platform/invoices', { token: platform });
   assert.equal(list.status, 200);
   const mine = list.body.data.find((i) => i.organization.startsWith('Bill platform'));
   assert.ok(mine);
   assert.equal(mine.qrImage, undefined);
+  assert.equal(mine.devices, 2);
+  assert.equal(mine.amount, 2 * PRICE);
   assert.equal((await api('GET', '/platform/invoices', { token: org.token })).status, 403);
 });
 
@@ -447,7 +532,7 @@ test('without QPay credentials: simulated outside production, disabled in produc
   const prodFile = `${DATA_FILE}.prod`;
   fs.rmSync(devFile, { force: true });
   fs.rmSync(prodFile, { force: true });
-  const common = { QPAY_USERNAME: '', QPAY_PASSWORD: '', QPAY_INVOICE_CODE: '', PLAN_PRICE_BASIC: '50000' };
+  const common = { QPAY_USERNAME: '', QPAY_PASSWORD: '', QPAY_INVOICE_CODE: '', PLAN_PRICE_GPS: '30000' };
   const exposedPort = HTTP_PORT + 102;
   const exposedFile = `${DATA_FILE}.exposed`;
   fs.rmSync(exposedFile, { force: true });
@@ -461,7 +546,7 @@ test('without QPay credentials: simulated outside production, disabled in produc
     const exposedLogin = await exposedApi('POST', '/auth/login', { body: { email: 'admin@fleetnova.com', password: 'admin123' } });
     const exposedToken = exposedLogin.body.data.token;
     assert.equal((await exposedApi('GET', '/billing', { token: exposedToken })).body.data.mode, 'disabled');
-    assert.equal((await exposedApi('POST', '/billing/invoices', { token: exposedToken, body: { plan: 'basic', months: 1 } })).status, 503);
+    assert.equal((await exposedApi('POST', '/billing/invoices', { token: exposedToken, body: { plan: 'gps', months: 1 } })).status, 503);
     exposed.kill();
     await waitForServer(`http://127.0.0.1:${devPort}`);
     await waitForServer(`http://127.0.0.1:${prodPort}`);
@@ -471,17 +556,26 @@ test('without QPay credentials: simulated outside production, disabled in produc
     const login = await devApi('POST', '/auth/login', { body: { email: 'admin@fleetnova.com', password: 'admin123' } });
     const token = login.body.data.token;
     assert.equal((await devApi('GET', '/billing', { token })).body.data.mode, 'simulated');
-    const created = await devApi('POST', '/billing/invoices', { token, body: { plan: 'basic', months: 1 } });
+    // the price is the PLAN_PRICE_GPS override per registered device (the demo organization starts with none)
+    let registered = (await devApi('GET', '/billing', { token })).body.data.registeredDevices;
+    if (registered === 0) {
+      assert.equal((await devApi('POST', '/billing/invoices', { token, body: { plan: 'gps', months: 1 } })).status, 400);
+      assert.equal((await devApi('POST', '/devices', { token, body: { name: 'Demo tracker', imei: '863000000000001', protocol: 'teltonika' } })).status, 201);
+      registered = (await devApi('GET', '/billing', { token })).body.data.registeredDevices;
+    }
+    assert.ok(registered > 0);
+    const created = await devApi('POST', '/billing/invoices', { token, body: { plan: 'gps', months: 1 } });
     assert.equal(created.status, 201, JSON.stringify(created.body));
     assert.equal(created.body.data.provider, 'simulated');
+    assert.equal(created.body.data.amount, registered * 30000);
     const paid = await devApi('POST', `/billing/invoices/${created.body.data._id}/simulate-pay`, { token });
     assert.equal(paid.body.data.status, 'paid');
-    assert.equal((await devApi('GET', '/organization', { token })).body.data.plan, 'basic');
+    assert.equal((await devApi('GET', '/organization', { token })).body.data.plan, 'gps');
 
     const reg = await prodApi('POST', '/auth/register', { body: { organizationName: 'Prod No Qpay', name: 'A', email: 'a@prodnoqpay.example', password: 'password123' } });
     const ptoken = reg.body.data.token;
     assert.equal((await prodApi('GET', '/billing', { token: ptoken })).body.data.mode, 'disabled');
-    assert.equal((await prodApi('POST', '/billing/invoices', { token: ptoken, body: { plan: 'basic', months: 1 } })).status, 503);
+    assert.equal((await prodApi('POST', '/billing/invoices', { token: ptoken, body: { plan: 'gps', months: 1 } })).status, 503);
     // the pay-without-paying shortcut must not exist in production
     assert.equal((await prodApi('POST', `/billing/invoices/${'a'.repeat(24)}/simulate-pay`, { token: ptoken })).status, 404);
   } finally {

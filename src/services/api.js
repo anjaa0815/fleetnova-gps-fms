@@ -82,7 +82,7 @@ export const deviceApi = {
 // Billing (QPay)
 export const billingApi = {
   overview: () => apiRequest('/billing'),
-  createInvoice: (plan, months) => apiRequest('/billing/invoices', 'POST', { plan, months }),
+  createInvoice: (plan, months, devices) => apiRequest('/billing/invoices', 'POST', { plan, months, devices }),
   getInvoice: (id) => apiRequest(`/billing/invoices/${id}`),
   cancelInvoice: (id) => apiRequest(`/billing/invoices/${id}/cancel`, 'POST'),
   simulatePay: (id) => apiRequest(`/billing/invoices/${id}/simulate-pay`, 'POST'),

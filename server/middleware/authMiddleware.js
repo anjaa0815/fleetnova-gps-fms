@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { DataEngine } from '../models/dataEngine.js';
 import { JWT_SECRET } from '../config/jwt.js';
 import { runWithTenant } from './tenantContext.js';
-import { GRACE_DAYS } from '../config/plans.js';
+import { GRACE_DAYS, PAID_PLANS } from '../config/plans.js';
 
 export const ACT_AS_HEADER = 'x-act-as-org';
 
@@ -52,7 +52,7 @@ export const protect = async (req, res, next) => {
           return deny(res, 402, 'Your trial has expired. Please choose a plan to continue.');
         }
         if (
-          ['basic', 'pro'].includes(org.plan) &&
+          PAID_PLANS.includes(org.plan) &&
           org.planExpiresAt &&
           Date.now() > new Date(org.planExpiresAt).getTime() + GRACE_DAYS * 24 * 60 * 60 * 1000
         ) {
