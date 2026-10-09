@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { publicApi } from '../services/api.js';
 import { describeApiError } from '../utils/apiError.js';
 import CheckEmailPanel from '../components/CheckEmailPanel.jsx';
+import ClixLogo from '../components/ClixLogo.jsx';
 import { getOrgSlugFromLocation } from '../utils/orgSlug.js';
 import { useT } from '../i18n/LanguageContext.jsx';
 
@@ -104,26 +105,29 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
             backgroundColor: 'rgba(15, 21, 35, 0.6)'
           }}
         >
-          <div
-            style={{
-              width: '54px',
-              height: '54px',
-              borderRadius: 'var(--radius-md)',
-              background: 'linear-gradient(135deg, #2563eb, #06b6d4)',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 1rem auto',
-              boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)'
-            }}
-          >
-            {orgBrand?.branding?.logoUrl ? (
-              <img src={orgBrand.branding.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'var(--radius-md)' }} />
-            ) : (
-              <Truck size={28} />
-            )}
-          </div>
+          <ClixLogo width={orgBrand ? 170 : 300} padding={orgBrand ? 6 : 10} style={{ marginBottom: '1rem' }} />
+          {orgBrand && (
+            <div
+              style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, #2563eb, #06b6d4)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto',
+                boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)'
+              }}
+            >
+              {orgBrand.branding?.logoUrl ? (
+                <img src={orgBrand.branding.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'var(--radius-md)' }} />
+              ) : (
+                <Truck size={28} />
+              )}
+            </div>
+          )}
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
             {orgBrand ? orgBrand.name : tr("CLIXGPS")}
           </h2>
