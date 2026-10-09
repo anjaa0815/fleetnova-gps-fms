@@ -46,11 +46,11 @@ export async function sendPasswordResetEmail({ user, token, baseUrl, lang }) {
   const minutes = Math.max(1, Math.round(resetTtlMs() / 60000));
   await getProvider('email').send({
     to: user.email,
-    subject: t('[FLEETNOVA] Reset your password'),
+    subject: t('[CLIXGPS] Reset your password'),
     text: [
       t('Hello {name},', { name: user.name }),
       '',
-      t('We received a request to reset the password of your FLEETNOVA account. Choose a new password here:'),
+      t('We received a request to reset the password of your CLIXGPS account. Choose a new password here:'),
       link,
       '',
       t('The link is valid for {minutes} minutes and can be used once.', { minutes }),
@@ -64,11 +64,11 @@ export async function sendPasswordChangedEmail({ user, lang }) {
   const t = (text, params) => translate(lang, text, params);
   await getProvider('email').send({
     to: user.email,
-    subject: t('[FLEETNOVA] Your password was changed'),
+    subject: t('[CLIXGPS] Your password was changed'),
     text: [
       t('Hello {name},', { name: user.name }),
       '',
-      t('The password of your FLEETNOVA account was just changed and all other sessions were signed out.'),
+      t('The password of your CLIXGPS account was just changed and all other sessions were signed out.'),
       t('If this was not you, reset your password again right away and contact your administrator.')
     ].join('\n')
   });

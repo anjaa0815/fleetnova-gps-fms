@@ -80,8 +80,8 @@ export const sendTestMessage = async (req, res, next) => {
     try {
       await provider.send({
         to,
-        subject: '[FLEETNOVA] Test message',
-        text: `FLEETNOVA test message for ${req.org.name}. Alert delivery by ${channel} works.`
+        subject: '[CLIXGPS] Test message',
+        text: `CLIXGPS test message for ${req.org.name}. Alert delivery by ${channel} works.`
       });
     } catch (error) {
       return res.status(502).json({ success: false, message: `Sending failed: ${error.message}` });

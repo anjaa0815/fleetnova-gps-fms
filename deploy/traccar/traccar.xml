@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE properties SYSTEM 'http://java.sun.com/dtd/properties.dtd'>
-<!-- Traccar as the GPS receiver for FLEETNOVA. Verify the keys against the docs of the Traccar version you run. -->
+<!-- Traccar as the GPS receiver for CLIXGPS. Verify the keys against the docs of the Traccar version you run. -->
 <properties>
   <entry key='config.default'>./conf/default.xml</entry>
 
@@ -10,10 +10,10 @@
   <entry key='database.user'>sa</entry>
   <entry key='database.password'></entry>
 
-  <!-- Only devices registered in FLEETNOVA (and mirrored here through the API) are accepted -->
+  <!-- Only devices registered in CLIXGPS (and mirrored here through the API) are accepted -->
   <entry key='database.registerUnknown'>false</entry>
 
-  <!-- Forward every decoded position to FLEETNOVA as JSON -->
+  <!-- Forward every decoded position to CLIXGPS as JSON -->
   <entry key='forward.enable'>true</entry>
   <entry key='forward.json'>true</entry>
   <entry key='forward.url'>http://app:3000/api/gps/traccar?token=change-me-forward-token</entry>

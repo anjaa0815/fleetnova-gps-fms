@@ -87,9 +87,9 @@ export default function Sidebar({ currentTab, onSelectTab, isMobileOpen, onClose
             </div>
             <div style={{ minWidth: 0 }}>
               <div className="brand-text-name" style={organization ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' } : undefined}>
-                {organization ? organization.name : tr("FLEETNOVA")}
+                {organization ? organization.name : tr("CLIXGPS")}
               </div>
-              <div className="brand-tagline">{organization ? tr("Powered by FLEETNOVA") : tr("SMART FLEET MANAGEMENT")}</div>
+              <div className="brand-tagline">{organization ? tr("Powered by CLIXGPS") : tr("SMART FLEET MANAGEMENT")}</div>
             </div>
           </div>
           {onCloseMobile && (

@@ -50,7 +50,7 @@ async function startServer() {
 
   // Behind a reverse proxy set TRUST_PROXY (e.g. 1) so client IPs, and therefore rate limits, are the real ones
   app.set('trust proxy', trustProxySetting());
-  if (rateLimitDisabled()) console.warn('[FLEETNOVA] Rate limiting is DISABLED (RATE_LIMIT_DISABLED=true).');
+  if (rateLimitDisabled()) console.warn('[CLIXGPS] Rate limiting is DISABLED (RATE_LIMIT_DISABLED=true).');
 
   // Middleware
   app.use(express.json({ limit: '1mb' }));
@@ -84,7 +84,7 @@ async function startServer() {
   app.get('/api/health', (req, res) => {
     res.json({
       success: true,
-      service: 'FLEETNOVA Smart Fleet Management System',
+      service: 'CLIXGPS Smart Fleet Management System',
       status: 'operational',
       timestamp: new Date().toISOString()
     });
@@ -125,7 +125,7 @@ async function startServer() {
   app.listen(Number(PORT), process.env.HOST || 'localhost', () => {
     console.log('');
     console.log('==========================================');
-    console.log('FLEETNOVA SERVER RUNNING');
+    console.log('CLIXGPS SERVER RUNNING');
     console.log('==========================================');
     console.log(`Website: http://localhost:${PORT}`);
     console.log(`Health:  http://localhost:${PORT}/api/health`);
@@ -145,6 +145,6 @@ async function startServer() {
 }
 
 startServer().catch((err) => {
-  console.error('[FLEETNOVA] Fatal server error:', err);
+  console.error('[CLIXGPS] Fatal server error:', err);
   process.exit(1);
 });

@@ -41,11 +41,11 @@ export function buildMessages(org, notification, lang) {
     lines.push(`${t('Location')}: https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`);
   }
   lines.push(`${t('Organization')}: ${org.name}`);
-  if (process.env.APP_BASE_URL) lines.push(`FLEETNOVA: ${process.env.APP_BASE_URL}`);
-  lines.push('', t('You receive this alert because email alerts are enabled for your account in FLEETNOVA.'));
+  if (process.env.APP_BASE_URL) lines.push(`CLIXGPS: ${process.env.APP_BASE_URL}`);
+  lines.push('', t('You receive this alert because email alerts are enabled for your account in CLIXGPS.'));
 
   return {
-    subject: oneLine(`[FLEETNOVA] ${title}: ${notification.params?.vehicle || ''}`).slice(0, MAX_SUBJECT),
+    subject: oneLine(`[CLIXGPS] ${title}: ${notification.params?.vehicle || ''}`).slice(0, MAX_SUBJECT),
     emailText: lines.join('\n'),
     smsText: oneLine(`${message} (${when.slice(-8, -3)})`).slice(0, MAX_SMS)
   };

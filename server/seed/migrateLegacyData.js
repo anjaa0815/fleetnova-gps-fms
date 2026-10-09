@@ -35,6 +35,6 @@ export function migrateLegacyData(store, defaultOrgName = 'Default Organization'
   orphanUsers.forEach((u) => { u.orgId = org._id; });
   orphanDocs.forEach((d) => { d.orgId = org._id; });
   saveLocalStore();
-  console.log(`[FLEETNOVA] Migrated existing data into organization "${org.name}".`);
+  console.log(`[CLIXGPS] Migrated existing data into organization "${org.name}".`);
   return true;
 }

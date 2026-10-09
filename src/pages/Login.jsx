@@ -125,7 +125,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
             )}
           </div>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            {orgBrand ? orgBrand.name : tr("FLEETNOVA")}
+            {orgBrand ? orgBrand.name : tr("CLIXGPS")}
           </h2>
           <p style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 700, letterSpacing: '0.1em', marginTop: '2px' }}>
             {tr("SMART FLEET MANAGEMENT SYSTEM")}
@@ -223,7 +223,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgot }) {
               disabled={loading}
               style={{ width: '100%', padding: '0.75rem', fontSize: '0.95rem' }}
             >
-              {loading ? tr("Authenticating...") : tr("Sign In to FLEETNOVA")} <ArrowRight size={16} />
+              {loading ? tr("Authenticating...") : tr("Sign In to CLIXGPS")} <ArrowRight size={16} />
             </button>
           </form>
 

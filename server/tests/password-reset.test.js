@@ -89,7 +89,7 @@ before(async () => {
       ...process.env, NODE_ENV: 'production', PORT: String(HTTP_PORT), HOST: '127.0.0.1',
       GPS_TCP_PORT: '0', GT06_TCP_PORT: '0', JWT_SECRET: 'test-secret', FLEETNOVA_DATA_FILE: DATA_FILE, ...dbEnv(),
       ADMIN_EMAIL: SUPER.email, ADMIN_PASSWORD: SUPER.password,
-      SMTP_HOST: '127.0.0.1', SMTP_PORT: String(SMTP_PORT), EMAIL_FROM: 'FLEETNOVA <no-reply@test.example>',
+      SMTP_HOST: '127.0.0.1', SMTP_PORT: String(SMTP_PORT), EMAIL_FROM: 'CLIXGPS <no-reply@test.example>',
       APP_BASE_URL: 'https://fleet.example.com',
       PASSWORD_RESET_TTL_MS: '4000', PASSWORD_RESET_COOLDOWN_MS: '600',
       RATE_LIMIT_REGISTER_MAX: '1000', RATE_LIMIT_RESET_MAX: '14', RATE_LIMIT_API_MAX: '100000'
@@ -138,7 +138,7 @@ test('forgot-password: same answer for everyone, email only for active accounts,
 
   const first = resetToken(await waitFor(() => resetMails(owner.email)[0], 'reset email'));
   const mail = resetMails(owner.email)[0];
-  assert.match(mail.data, /^Subject: \[FLEETNOVA\] Reset your password/m);
+  assert.match(mail.data, /^Subject: \[CLIXGPS\] Reset your password/m);
   assert.match(decode(mail.data), /https:\/\/fleet\.example\.com\/\?reset=[0-9a-f]{64}/);
   assert.match(decode(mail.data), /Hello Owner,/);
   assert.match(decode(mail.data), /valid for 1 minutes/);

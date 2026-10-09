@@ -1,6 +1,6 @@
-# FLEETNOVA — Smart Fleet Management System
+# CLIXGPS — Smart Fleet Management System
 
-**FLEETNOVA** is an enterprise-grade, centralized commercial fleet management web application built on the **MERN** stack (MongoDB, Express.js, React.js, Node.js) with intelligent AI operations telemetry powered by **Google Gemini API**.
+**CLIXGPS** is an enterprise-grade, centralized commercial fleet management web application built on the **MERN** stack (MongoDB, Express.js, React.js, Node.js) with intelligent AI operations telemetry powered by **Google Gemini API**.
 
 **📘 Монгол хэл дээрх дэлгэрэнгүй заавар (ажиллуулах, байрлуулах, GPS холбох): [docs/GUIDE.mn.md](docs/GUIDE.mn.md)**
 
@@ -329,7 +329,7 @@ An organization administrator opens **Billing** (sidebar), picks **Basic** or **
 
 ## 📡 Traccar as the GPS receiver (optional)
 
-[Traccar](https://www.traccar.org) (Apache 2.0, 200+ protocols) can receive the trackers while FLEETNOVA keeps organizations, plans, alerts, reports and the UI. Traccar decodes the device protocol and forwards each position to `POST /api/gps/traccar`; the position then goes through the same ingestion as Teltonika / GT06 / OsmAnd (geofences, speed alerts, e-mail / SMS, reports).
+[Traccar](https://www.traccar.org) (Apache 2.0, 200+ protocols) can receive the trackers while CLIXGPS keeps organizations, plans, alerts, reports and the UI. Traccar decodes the device protocol and forwards each position to `POST /api/gps/traccar`; the position then goes through the same ingestion as Teltonika / GT06 / OsmAnd (geofences, speed alerts, e-mail / SMS, reports).
 
 - Enable it with `TRACCAR_FORWARD_TOKEN` (the endpoint answers 503 while unset). Traccar sends the token in the `forward.url` query (`?token=`); `X-Traccar-Token` / `Authorization: Bearer` also work if your Traccar version can add headers.
 - Register devices with protocol **"Via Traccar server"**; the identifier is Traccar's `uniqueId` (6–32 letters, digits, `-`, `_`; usually the IMEI). Only devices of that protocol accept forwarded data.

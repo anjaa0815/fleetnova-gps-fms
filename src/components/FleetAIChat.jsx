@@ -19,7 +19,7 @@ export default function FleetAIChat({ isDrawer = false, onClose }) {
     {
       id: 'welcome',
       sender: 'ai',
-      text: tr("👋 Hello! I am **FleetAI**, your intelligent FLEETNOVA fleet operations co-pilot. I analyze real-time database records for all vehicles, drivers, trips, fuel metrics, and scheduled maintenance. How can I help optimize your fleet operations today?"),
+      text: tr("👋 Hello! I am **FleetAI**, your intelligent CLIXGPS fleet operations co-pilot. I analyze real-time database records for all vehicles, drivers, trips, fuel metrics, and scheduled maintenance. How can I help optimize your fleet operations today?"),
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);

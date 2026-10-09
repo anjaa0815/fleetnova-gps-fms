@@ -61,7 +61,7 @@ function getEmailProvider() {
         }
         try {
           await transporter.sendMail({
-            from: process.env.EMAIL_FROM || process.env.SMTP_USER || 'FLEETNOVA <no-reply@localhost>',
+            from: process.env.EMAIL_FROM || process.env.SMTP_USER || 'CLIXGPS <no-reply@localhost>',
             to,
             subject,
             text
@@ -122,7 +122,7 @@ function getSmsProvider() {
             'Content-Type': 'application/json',
             ...(process.env.SMS_HTTP_TOKEN ? { Authorization: `Bearer ${process.env.SMS_HTTP_TOKEN}` } : {})
           },
-          body: JSON.stringify({ to, text, from: process.env.SMS_FROM || 'FLEETNOVA' })
+          body: JSON.stringify({ to, text, from: process.env.SMS_FROM || 'CLIXGPS' })
         });
         if (!response.ok) await failFromResponse(response);
       }
